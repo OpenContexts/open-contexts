@@ -1,0 +1,1 @@
+ALTER TABLE "problem_revision" ALTER COLUMN "problem_status" DROP NOT NULL;

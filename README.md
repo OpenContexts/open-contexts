@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenContext
 
-## Getting Started
+A community-curated, moderated database of open problems in theoretical physics. Problems, comments,
+contributions, related links and suggested edits are stored in Postgres. Moderators manage the problems in
+the dashboard; nothing users submit appears on the site until a moderator approves it.
 
-First, run the development server:
+The design follows the static prototype at <https://rafunds3d.github.io/OpenContext/>. The product plan and
+roadmap are in [docs/PLAN.md](docs/PLAN.md).
+
+## Stack
+
+| Concern  | Choice |
+| -------- | ------ |
+| Framework | Next.js 16 (App Router, Cache Components, Turbopack) |
+| Styling  | Tailwind CSS v4; design tokens in `app/globals.css` |
+| Database | Neon Postgres via `drizzle-orm/neon-http`, migrations with drizzle-kit |
+| Auth     | Better Auth: email + password with verification and reset, optional GitHub, roles via the admin plugin |
+| Email    | react-email templates (`emails/`), sent with nodemailer over SMTP; printed to the terminal in development without SMTP |
+| Content  | Markdown + YAML frontmatter, rendered with react-markdown + KaTeX |
+| Validation | zod |
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local      # then fill in the values (see below)
+pnpm db:migrate                 # create the tables and the initial problems in your Neon database
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Neon**: create a project at <https://console.neon.tech>, then copy the *pooled* connection string into
+   `DATABASE_URL`.
+2. **Better Auth**: set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `BETTER_AUTH_URL`.
+3. **Email**: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` for any SMTP
+   account: your institute's mail server, or Gmail with an
+   [app password](https://myaccount.google.com/apppasswords) (`smtp.gmail.com`, port 465). In development you
+   can skip this: confirmation and password-reset links are printed in the `pnpm dev` terminal.
+4. **First admin**: sign up on `/sign-up`, then run `pnpm db:make-admin you@example.org`. This also
+   marks the account as verified. The dashboard is at `/admin`; from there, admins can make other users
+   moderators or admins under **Users**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Roles
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Can |
+| ---- | --- |
+| `user` | comment and submit contributions |
+| `moderator` | also approve and reject submissions (`/admin`, except **Users**) |
+| `admin` | also manage users: change roles, block and unblock accounts (`/admin/users`) |
 
-## Learn More
+Blocked accounts are signed out at once and cannot sign in again until they are unblocked. Their earlier
+submissions stay as they are.
 
-To learn more about Next.js, take a look at the following resources:
+### Who can sign up
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+There are two ways to create an account:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **GitHub**: any GitHub account, with any email address.
+- **Email and password**: the address must belong to a university or research institute and must be
+  confirmed. The check (`lib/auth/institutional.ts`) accepts:
 
-## Deploy on Vercel
+  - the ~10,600 domains of the [Hipo university list](https://github.com/Hipo/university-domains-list),
+    stored in `lib/auth/university-domains.json` (refresh with `pnpm update-university-domains`), including
+    subdomains such as `physik.uni-ulm.de`;
+  - academic suffixes such as `.edu`, `.ac.uk` and `.edu.au`;
+  - a short list of research institutes (CERN, Max Planck, DESY, national labs, …);
+  - anything in `EXTRA_EMAIL_DOMAINS` or `ALLOWED_EMAILS`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Only account creation is checked; existing accounts are not re-checked when they sign in.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The site needs `DATABASE_URL`: problems, accounts and submissions all live in the database. Without it, the
+problem list is empty and the database-backed sections show a setup hint.
+
+## Scripts
+
+| Script | What it does |
+| ------ | ------------ |
+| `pnpm dev` / `build` / `start` | Next.js |
+| `pnpm lint` / `typecheck` | ESLint / `tsc --noEmit` |
+| `pnpm db:generate` | Write a SQL migration from changes in `lib/db/schema` |
+| `pnpm db:migrate` | Apply pending migrations |
+| `pnpm db:push` | Push the schema directly (handy on a throwaway dev branch) |
+| `pnpm db:studio` | Browse the database |
+| `pnpm db:make-admin <email> [role]` | Set a user's role (`admin`, `moderator`, `user`) and mark the account verified |
+| `pnpm update-university-domains` | Refresh the list of university email domains |
+| `pnpm email:dev` | Preview the email templates in `emails/` at http://localhost:3001 |
+
+## Project structure
+
+```
+app/
+  (site)/                 public site: header + footer layout
+    page.tsx              home
+    problems/             list (search, status tabs, area filter) and /problems/[slug]
+      [slug]/contribute/  one page per way to contribute: result, reference, edit
+    contribute/           how contributing works; /contribute/new-problem
+    me/                   the signed-in user's submissions and their review status
+    (auth)/               sign-in, sign-up, forgot-password, reset-password
+    areas/ about/ guidelines/
+    progress/             problems by status over time (a static SVG chart, cached daily)
+  admin/                  dashboard (its own minimal design): overview, problems (editor, .md download),
+                          queues, review, activity, users
+  api/auth/[...all]/      Better Auth endpoints
+  fonts/                  Computer Modern (OFL)
+  globals.css             Tailwind theme tokens and markdown prose styles
+components/
+  ui/                     basic reusable elements: Button, Input, Field, ChoiceCards, ActionCard, FramedBox, …
+  admin/ui/               the admin dashboard's own small kit: buttons, inputs, cards, pills, page header
+  layout/                 header, footer, navigation, account menu
+  submissions/            the contribution forms
+  problems/               problem box, list rows, status icon/badge, kind labels, DB-backed page sections
+  progress/               the status chart
+  markdown/               safe markdown + math renderer, and an editor with live preview
+  admin/                  dashboard UI: navigation, problem editor, diff view, decision panel, row menus
+lib/
+  actions/                server actions for submissions (all create `pending` rows)
+  auth/                   Better Auth config, client, session helpers, institutional-email check
+  areas.ts                research areas that group the problems
+  email/send.ts           renders a template and sends it with nodemailer
+  validation/             zod schemas for submissions and the problem editor
+  data/                   database access: problems (cached), approved community content, moderation, users
+  db/                     Drizzle client and schema (auth, problems, community tables)
+  constants.ts            shared vocabularies (statuses, contribution kinds, roles, …)
+emails/                   react-email templates (verification, password reset)
+drizzle/                  generated SQL migrations (commit them)
+scripts/                  one-off CLI scripts
+```
+
+Put basic, domain-agnostic elements in `components/ui`. Feature-specific components go in
+`components/<feature>`.
+
+## Problems
+
+Problems live in the `problem` table: number, URL name (slug), title, status, areas, tags, who posed it and
+when, the boxed statement and the body as markdown, the history and the references. Comments, results,
+related links and suggested edits point at a problem by its id, so renaming a problem's URL keeps them.
+
+- **Moderators manage problems** under **Problems** in the dashboard: create (from scratch or from an
+  uploaded `.md` file), edit (with a markdown preview), delete, and download any problem as a `.md` file
+  with YAML frontmatter. A problem's number and URL are assigned when it is published and don't change.
+  Every change is recorded in the activity log, and a status change or a "What changed" note also appears
+  in the problem's public history.
+- **Users suggest changes**: an approved edit is written into the problem (its version goes up), and an
+  approved proposal becomes a new problem with the next free number.
+- **Editing conflicts**: each problem has a `version`. Saving a form that was opened before someone else's
+  change is refused instead of silently overwriting it, and edits suggested against an older version are
+  flagged in the review.
+- **Deleting** a problem also deletes its comments, results, links and suggested edits.
+- **Initial content**: migration `0003` creates the table with thirteen problems, so a new database shows
+  a populated site.
+
+Each `##` heading in the body becomes a lettered section (A., B., …) on the problem page.
+
+## Notes
+
+- **Why markdown and not MDX?** Problem texts are written and edited through the site, partly by users.
+  MDX executes JavaScript, so it can't safely render that text. Markdown with KaTeX (`trust: false`) and no
+  raw HTML can.
+- **Caching**: pages are rendered once and reused until something on them changes. Reading costs no
+  database query; only the account menu, the comment box and the moderator link are rendered per visitor.
+  - The problem list is cached under the `problems` tag. Every change to a problem (editor, approved edit,
+    approved proposal, deletion) calls `updateTag("problems")`.
+  - A problem page's content (`ProblemContent`) is also cached under `community:<problem id>`. Moderation
+    decisions invalidate it only when they change what the page shows: approving a comment, result or
+    link, or reopening an approved one. Posting, and rejecting what was never shown, re-render nothing.
+  - The page itself is still looked up per request (`connection()`), which keeps a just-published or
+    just-edited problem correct on its very first view; the content then comes from the cache.
+  - The home page's random problem is picked per request, but each problem's box is rendered only once.
+  - The problem list is a static page with every row rendered on the server; status, area and sort filters
+    run in the browser over those rows (`components/problems/problem-browser.tsx`). A search asks the
+    server for the matching ids (`lib/actions/search.ts`, cached per query). Before the page is interactive
+    it shows the full list. The progress page is rebuilt daily.
+  - The cache lives in the server's memory (self-hosted). On serverless hosting, entries are not shared
+    between instances; see the `use cache: remote` directive if that matters.
+  - Regenerated pages are kept on disk (`.next/server/route-cache`) and survive a restart. If you change
+    data directly in the database (e.g. `pnpm db:studio`), press **Refresh the site** on the dashboard's
+    overview (admins only) so the pages pick it up.
+- **KaTeX version**: `rehype-katex` renders math with its own `katex` dependency, while the stylesheet comes
+  from ours. `pnpm-workspace.yaml` overrides both to one version; mismatched versions break the sizing of
+  subscripts and superscripts.
+- **Accepted edits and new problems** stay published if their author's account is deleted.
+- **Transactions**: the Neon HTTP driver has no interactive transactions. Use `db.batch([...])` for atomic
+  multi-statement writes, as the moderation action does.
+- **Schema changes**: edit `lib/db/schema/*`, run `pnpm db:generate`, review the SQL in `drizzle/`, then run
+  `pnpm db:migrate`.

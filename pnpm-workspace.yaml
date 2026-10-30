@@ -1,3 +1,10 @@
 allowBuilds:
+  esbuild: true
   sharp: false
   unrs-resolver: false
+
+# rehype-katex renders with its own katex dependency, while the stylesheet comes from ours
+# (app/layout.tsx). Their class names differ between versions (0.19 renamed .sizing), so both must
+# be the same version, or subscripts and superscripts render at full size.
+overrides:
+  katex: "$katex"

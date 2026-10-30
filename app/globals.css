@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Design tokens, taken from the prototype (https://rafunds3d.github.io/OpenContext/).
+   Use them as utilities: bg-paper, text-ink-muted, border-rule, text-brand, max-w-measure, … */
+@theme {
+  --color-paper: #ffffff;
+  --color-ink: #111111;
+  --color-ink-muted: #454545;
+  --color-ink-subtle: #6e6e6e;
+  --color-rule: #d9d9d9;
+  --color-rule-strong: #b9b9b9;
+  --color-surface: #f7f7f7;
+
+  /* red: links, open problems, the problem box */
+  --color-brand: #b80808;
+  --color-brand-strong: #c00808;
+  --color-brand-dark: #5a0000;
+  --color-brand-tint: #fdf3f3;
+
+  /* gold: research areas, criteria boxes, notices */
+  --color-gold: #e0a820;
+  --color-gold-dark: #804000;
+  --color-gold-tint: #fefbf4;
+
+  --color-success: #2e7d32;
+  --color-success-tint: #f4faf4;
+  --color-info: #1a4fa0;
+  --color-info-tint: #f3f6fc;
+
+  --container-measure: 64rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-cmu-serif), "Latin Modern Roman", Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-cmu-sans), "Latin Modern Sans", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-cmu-mono), "Latin Modern Mono", Menlo, Consolas, monospace;
+  /* The admin dashboard uses the operating system's interface font. */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-paper font-serif text-lg/normal font-medium text-ink;
+  }
+  h1, h2, h3 {
+    @apply font-bold;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * KaTeX. Outside @layer on purpose: katex.min.css is unlayered, and unlayered rules beat layered ones,
+ * so inside a layer these would lose. `:root` adds specificity so the import order does not matter.
+ * KaTeX's fonts are Computer Modern like the body text, so 1em matches it (KaTeX's default is 1.21em).
+ */
+:root .katex {
+  font-size: 1em;
+}
+:root .katex-display {
+  margin-block: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Long-form text rendered from markdown (see components/markdown). */
+@layer components {
+  .prose-oc {
+    @apply hyphens-auto;
+    & p, & li {
+      @apply text-justify max-sm:text-left;
+    }
+    & p { @apply mb-4; }
+    & a { @apply text-brand hover:underline; }
+    & ul { @apply mb-4 list-disc pl-6; }
+    & ol { @apply mb-4 list-decimal pl-6; }
+    & li { @apply my-1; }
+    & blockquote { @apply mb-4 border-l-2 border-rule-strong pl-4 text-ink-muted; }
+    & code { @apply font-mono text-[0.92em]; }
+    & pre { @apply mb-4 overflow-auto rounded-sm border border-rule bg-surface px-4 py-3 text-sm; }
+    & h2 { @apply mt-9 mb-3.5 text-center text-base; }
+    & h3 { @apply mt-6 mb-2 text-center text-base font-medium italic; }
+    & > :last-child { @apply mb-0; }
+  }
+
+  /* Sections of a problem page are lettered A., B., C., … as in the paper. */
+  .lettered {
+    counter-reset: section;
+    & h2::before {
+      counter-increment: section;
+      content: counter(section, upper-alpha) ". ";
+    }
+  }
 }
