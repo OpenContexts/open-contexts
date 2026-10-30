@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
-import { AdminNav, AdminNavList } from "@/components/admin/admin-nav";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { AppleIcon } from "@/components/ui";
 import { getCurrentUser, isAdmin, isModerator } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -21,21 +20,17 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-medium text-zinc-500">Admin</span>
         </div>
         <div className="lg:flex-1 lg:overflow-y-auto lg:pt-2">
-          <Suspense fallback={<AdminNavList />}>
-            <NavWithCounts />
-          </Suspense>
+          <NavWithCounts />
         </div>
         <div className="hidden border-t border-zinc-100 p-3 lg:block">
-          <Suspense>
-            <SignedInAs />
-          </Suspense>
+          <SignedInAs />
           <Link href="/" className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900">
             View site <span aria-hidden>↗</span>
           </Link>
         </div>
       </aside>
       <main className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl px-5 py-8 lg:px-10 lg:py-10">{children}</div>
+        <div className="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">{children}</div>
       </main>
     </div>
   );

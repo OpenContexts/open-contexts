@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { NAV } from "@/lib/site";
 import { cn } from "@/lib/cn";
 
-/** The main links; `pathname` highlights the current section. */
-export function NavLinkList({ pathname }: { pathname?: string }) {
+/** The main links, with the current section highlighted. */
+export function NavLinks() {
+  const pathname = usePathname();
   return (
     <>
       {NAV.map(({ href, label }) => {
-        const active = !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
             key={href}
@@ -24,9 +25,4 @@ export function NavLinkList({ pathname }: { pathname?: string }) {
       })}
     </>
   );
-}
-
-/** Reads the URL, so it sits in <Suspense> with `<NavLinkList />` as the fallback (same size, no highlight). */
-export function NavLinks() {
-  return <NavLinkList pathname={usePathname()} />;
 }

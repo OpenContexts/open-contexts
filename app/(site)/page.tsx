@@ -1,24 +1,27 @@
-import { cacheLife } from "next/cache";
 import Form from "next/form";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { ProblemList } from "@/components/problems/problem-list";
 import { AppleIcon, Button, Input, SectionTitle } from "@/components/ui";
 import { AREAS } from "@/lib/areas";
-import { getProblemById, getProblems } from "@/lib/data/problems";
+import { getProblems } from "@/lib/data/problems";
 import { plural } from "@/lib/format";
 import { SITE } from "@/lib/site";
 
 export default async function HomePage() {
   const problems = await getProblems();
+  const open = problems.filter((p) => p.status === "open");
+
+  await connection(); // a new pick per request, never one frozen into a prerender
+  const random = pickRandom(open);
+
   const count = (status: string) => problems.filter((p) => p.status === status).length;
   const recent = [...problems].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 8);
 
   return (
     <>
-      <section className="pt-10 pb-2 text-center">
+      <section className="pt-12 pb-2 text-center">
         <h1 className="mb-1 text-[2rem] max-sm:text-[1.7rem]">{SITE.name}</h1>
         <p className="mb-4 text-[1.3rem] font-bold">{SITE.subtitle}</p>
         <p className="mx-auto mb-4 max-w-160 text-justify text-base hyphens-auto max-sm:text-left">
@@ -29,7 +32,7 @@ export default async function HomePage() {
         </p>
       </section>
 
-      <nav aria-label="Counts" className="my-5 flex flex-wrap justify-center gap-x-10 gap-y-2 border-y border-rule-strong py-3">
+      <nav aria-label="Counts" className="my-8 flex flex-wrap justify-center gap-x-10 gap-y-2 border-y border-rule-strong py-3">
         {[
           { href: "/problems", n: problems.length, label: problems.length === 1 ? "problem" : "problems" },
           { href: "/problems?status=open", n: count("open"), label: "open" },
@@ -43,7 +46,7 @@ export default async function HomePage() {
         ))}
       </nav>
 
-      <Form action="/problems" role="search" className="mt-4 flex gap-2">
+      <Form action="/problems" role="search" className="mt-8 flex gap-2">
         <label htmlFor="q" className="sr-only">
           Search problems
         </label>
@@ -72,9 +75,11 @@ export default async function HomePage() {
       </ol>
 
       <SectionTitle>II. A random open problem</SectionTitle>
-      <Suspense fallback={<div className="h-48" />}>
-        <RandomOpenProblem />
-      </Suspense>
+      {random ? (
+        <ProblemBox problem={random} link />
+      ) : (
+        <p className="text-ink-muted">No open problems yet.</p>
+      )}
 
       <SectionTitle>III. Recently updated</SectionTitle>
       <ProblemList problems={recent} />
@@ -87,21 +92,6 @@ export default async function HomePage() {
   );
 }
 
-async function RandomOpenProblem() {
-  await connection(); // pick a new one per request instead of freezing one at build time
-  const open = (await getProblems()).filter((p) => p.status === "open");
-  if (!open.length) return <p className="text-ink-muted">No open problems yet.</p>;
-  return <CachedProblemBox id={pickRandom(open).id} />;
-}
-
-/** Only the choice is made per request; each problem's box is rendered once (math included) and reused. */
-async function CachedProblemBox({ id }: { id: string }) {
-  "use cache";
-  cacheLife("max");
-  const problem = await getProblemById(id);
-  return problem ? <ProblemBox problem={problem} link /> : null;
-}
-
-function pickRandom<T>(items: T[]): T {
+function pickRandom<T>(items: T[]): T | undefined {
   return items[Math.floor(Math.random() * items.length)];
 }

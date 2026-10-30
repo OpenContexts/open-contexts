@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { type ReactNode, useState, useTransition } from "react";
 import { Button, Callout, Field, Input } from "@/components/ui";
 import { signUp } from "@/lib/auth/client";
 import { INSTITUTIONAL_EMAIL_MESSAGE } from "@/lib/auth/institutional-messages";
 import { checkInstitutionalEmail } from "../actions";
 import { authErrorMessage, safeNext } from "../shared";
 
-export function SignUpForm({ github }: { github: boolean }) {
+/** `alternative` (e.g. signing up with GitHub) is shown below the form, until the form has been sent. */
+export function SignUpForm({ github, alternative }: { github: boolean; alternative?: ReactNode }) {
   const next = safeNext(useSearchParams().get("next"));
   const [error, setError] = useState<string | null>(null);
   const [emailHint, setEmailHint] = useState<"ok" | "bad" | null>(null);
@@ -59,7 +60,7 @@ export function SignUpForm({ github }: { github: boolean }) {
           label="Institutional email"
           htmlFor="email"
           hint={emailHint === "ok" ? <span className="text-success">✓ Recognized as an institutional address.</span> : "e.g. name@uni-example.edu"}
-          error={emailHint === "bad" ? `${INSTITUTIONAL_EMAIL_MESSAGE}${github ? " Or sign up with GitHub above." : ""}` : undefined}
+          error={emailHint === "bad" ? `${INSTITUTIONAL_EMAIL_MESSAGE}${github ? " Or sign up with GitHub below." : ""}` : undefined}
         >
           <Input
             id="email"
@@ -79,6 +80,7 @@ export function SignUpForm({ github }: { github: boolean }) {
           {pending ? "Creating account…" : "Create account"}
         </Button>
       </form>
+      {alternative}
       <p className="mt-6 border-t border-rule pt-4 text-center text-[0.95rem]">
         Already have an account?{" "}
         <Link href="/sign-in" className="text-brand hover:underline">

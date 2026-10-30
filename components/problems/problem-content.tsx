@@ -3,15 +3,16 @@ import Link from "next/link";
 import { cacheLife, cacheTag } from "next/cache";
 import type { ReactNode } from "react";
 import { MarkdownContent, MarkdownInline } from "@/components/markdown/markdown";
-import { ContributionsSection, DiscussionSection, RelatedSection } from "@/components/problems/community-sections";
-import { HistoryKindTag } from "@/components/problems/kind-tag";
+import { ContributionsSection, DiscussionSection } from "@/components/problems/community-sections";
+import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { Chip, ChipList, ExpandableList, PartTitle } from "@/components/ui";
+import { Chip, ChipList, ExpandableList, PartTitle, toneColors } from "@/components/ui";
 import { getArea } from "@/lib/areas";
-import { communityTag, getApprovedComments, getApprovedContributions, getApprovedLinks } from "@/lib/data/community";
-import { getProblemById, getProblems, problemLabel, statusSince } from "@/lib/data/problems";
+import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { getProblemById, statusSince } from "@/lib/data/problems";
+import { cn } from "@/lib/cn";
 import { formatDate, formatNames } from "@/lib/format";
 
 /**
@@ -24,17 +25,10 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   cacheLife("max");
   cacheTag(communityTag(id), "community");
 
-  const [problem, all, contributions, links, comments] = await Promise.all([
-    getProblemById(id),
-    getProblems(),
-    getApprovedContributions(id),
-    getApprovedLinks(id),
-    getApprovedComments(id),
-  ]);
+  const [problem, contributions, comments] = await Promise.all([getProblemById(id), getApprovedContributions(id), getApprovedComments(id)]);
   // The page checked that the problem exists just before; this only covers a deletion in between.
   if (!problem) return null;
 
-  const others = new Map(all.map((p) => [p.id, { slug: p.slug, label: problemLabel(p) }]));
   const areas = problem.areas.map(getArea).filter((a) => a !== undefined);
   const history = problem.history.toSorted((a, b) => b.date.localeCompare(a.date));
 
@@ -42,30 +36,30 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
     <article>
       <ProblemBox problem={problem} heading />
 
-      <div className="mb-5 flex flex-wrap items-baseline justify-center gap-x-5 gap-y-1.5 text-[0.95rem] text-ink-muted">
-        <span>
-          <StatusBadge status={problem.status} /> <span className="text-sm">since {formatDate(statusSince(problem))}</span>
-        </span>
-        <span>
-          <b className="text-ink">Area{areas.length === 1 ? "" : "s"}:</b>{" "}
-          {areas.map((a, i) => (
-            <span key={a.id}>
-              {i > 0 && ", "}
-              <Link href={`/problems?area=${a.id}`} className="text-brand hover:underline">
-                {a.numeral}. {a.title}
-              </Link>
-            </span>
+      {/* Status, areas and the last update in one row; the people who posed it get the full width below. */}
+      <dl className="mb-10 grid grid-cols-2 gap-x-10 gap-y-4 border-b border-rule pb-5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+        <Fact label="Status">
+          <StatusBadge status={problem.status} className="relative -top-px" />{" "}
+          <span className="text-[0.95rem] text-ink-subtle">since {formatDate(statusSince(problem))}</span>
+        </Fact>
+        <Fact label={areas.length === 1 ? "Area" : "Areas"} className="max-sm:order-1 max-sm:col-span-2">
+          {areas.map((a) => (
+            <Link key={a.id} href={`/problems?area=${a.id}`} className="block text-brand hover:underline">
+              {a.numeral}. {a.title}
+            </Link>
           ))}
-        </span>
-        {problem.posedBy.length > 0 && (
-          <span>
-            <b className="text-ink">Posed by:</b> {formatNames(problem.posedBy)}
+        </Fact>
+        <Fact label="Updated" className="text-right">
+          {formatDate(problem.updated)}
+        </Fact>
+        <Fact label={problem.posedBy.length > 0 ? "Posed by" : "Posed"} className="col-span-full max-sm:order-2">
+          {problem.posedBy.length > 0 && formatNames(problem.posedBy)}
+          <span className="text-ink-subtle">
+            {problem.posedBy.length > 0 && ", "}
+            {formatDate(problem.posed)}
           </span>
-        )}
-        <span>
-          <b className="text-ink">Updated:</b> {formatDate(problem.updated)}
-        </span>
-      </div>
+        </Fact>
+      </dl>
 
       <MarkdownContent source={problem.body} className="lettered" />
 
@@ -79,7 +73,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
 
       {problem.references.length > 0 && (
         <>
-          <PartTitle count={problem.references.length}>References</PartTitle>
+          <PartTitle>References</PartTitle>
           <ExpandableList limit={10} noun={["reference", "references"]} ordered className="list-decimal pl-6">
             {problem.references.map((r) => (
               <li key={r.text} className="my-1.5">
@@ -96,21 +90,24 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </>
       )}
 
-      <RelatedSection problemId={problem.id} links={links} others={others} />
-
       <PartTitle>Progress and history</PartTitle>
       {history.length ? (
-        <ul>
-          {history.map((h, i) => (
-            <li key={i} className="grid grid-cols-[6.4rem_minmax(0,1fr)] gap-x-4 border-t border-dotted border-rule-strong py-2 last:border-b max-sm:grid-cols-1">
-              <span className="text-[0.95rem] text-ink-subtle tabular-nums">{formatDate(h.date)}</span>
-              <span>
-                <HistoryKindTag entry={h} className="relative -top-px mr-2" />
-                <MarkdownInline source={h.text} />
-              </span>
-            </li>
-          ))}
-        </ul>
+        <ol>
+          {history.map((h, i) => {
+            const look = historyLook(h);
+            return (
+              <li key={i} className="grid grid-cols-[6.6rem_minmax(0,1fr)] gap-x-5 max-sm:grid-cols-[4.8rem_minmax(0,1fr)] max-sm:gap-x-3">
+                <span className="pt-3 text-right text-[0.95rem] text-ink-subtle tabular-nums max-sm:text-sm">{formatDate(h.date)}</span>
+                {/* A timeline: one line down the entries, with a marker in the colour of each entry's kind. */}
+                <div className="relative border-l-2 border-rule py-3 pl-5 max-sm:pl-4">
+                  <span aria-hidden className={cn("absolute top-[1.15rem] -left-[7px] size-3 rounded-full ring-3 ring-paper", toneColors[look.tone].bg)} />
+                  <KindTag look={look} className="relative -top-px mr-2" />
+                  <MarkdownInline source={h.text} />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       ) : (
         <p className="text-ink-muted">No entries yet.</p>
       )}
@@ -128,5 +125,14 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
 
       <DiscussionSection comments={comments} commentBox={commentBox} />
     </article>
+  );
+}
+
+function Fact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={cn("min-w-0", className)}>
+      <dt className="font-sans text-[0.7rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">{label}</dt>
+      <dd className="mt-1 text-[0.98rem]">{children}</dd>
+    </div>
   );
 }

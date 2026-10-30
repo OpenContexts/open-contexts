@@ -3,27 +3,45 @@ import { type LogAction, type ModerationStatus, ROLE_LABELS, type Role } from "@
 import { cn } from "@/lib/cn";
 
 const tones = {
-  neutral: "bg-zinc-100 text-zinc-700",
-  amber: "bg-amber-50 text-amber-800 ring-amber-200",
-  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  red: "bg-red-50 text-red-700 ring-red-200",
-  blue: "bg-sky-50 text-sky-700 ring-sky-200",
-  dark: "bg-zinc-900 text-white",
+  neutral: { pill: "bg-zinc-100 text-zinc-700 ring-zinc-200", dot: "bg-zinc-400" },
+  amber: { pill: "bg-amber-50 text-amber-800 ring-amber-200", dot: "bg-amber-500" },
+  green: { pill: "bg-emerald-50 text-emerald-800 ring-emerald-200", dot: "bg-emerald-500" },
+  red: { pill: "bg-red-50 text-red-700 ring-red-200", dot: "bg-red-500" },
+  blue: { pill: "bg-sky-50 text-sky-800 ring-sky-200", dot: "bg-sky-500" },
+  violet: { pill: "bg-violet-50 text-violet-800 ring-violet-200", dot: "bg-violet-500" },
+  dark: { pill: "bg-zinc-900 text-white ring-zinc-900", dot: "bg-white" },
 } as const;
 
-export function Pill({ tone = "neutral", children, className }: { tone?: keyof typeof tones; children: ReactNode; className?: string }) {
-  return <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ring-transparent", tones[tone], className)}>{children}</span>;
+export type PillTone = keyof typeof tones;
+
+/** A small label. `dot` puts a coloured dot in front, for states (pending, approved, …). */
+export function Pill({ tone = "neutral", dot, children, className }: { tone?: PillTone; dot?: boolean; children: ReactNode; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset", tones[tone].pill, className)}>
+      {dot && <span aria-hidden className={cn("size-1.5 rounded-full", tones[tone].dot)} />}
+      {children}
+    </span>
+  );
 }
 
-const statusTone = { pending: "amber", approved: "green", rejected: "red" } as const;
+const statusLook = { pending: ["amber", "Pending"], approved: ["green", "Approved"], rejected: ["red", "Rejected"] } as const;
 export function StatusPill({ status }: { status: ModerationStatus }) {
-  return <Pill tone={statusTone[status]}>{status}</Pill>;
+  const [tone, label] = statusLook[status];
+  return (
+    <Pill tone={tone} dot>
+      {label}
+    </Pill>
+  );
 }
 
 const actionTone = { approve: "green", reject: "red", reopen: "blue", create: "green", update: "blue", delete: "red" } as const;
-const actionLabel = { approve: "approved", reject: "rejected", reopen: "reopened", create: "created", update: "edited", delete: "deleted" } as const;
+const actionLabel = { approve: "Approved", reject: "Rejected", reopen: "Reopened", create: "Created", update: "Edited", delete: "Deleted" } as const;
 export function ActionPill({ action }: { action: LogAction }) {
-  return <Pill tone={actionTone[action]}>{actionLabel[action]}</Pill>;
+  return (
+    <Pill tone={actionTone[action]} dot>
+      {actionLabel[action]}
+    </Pill>
+  );
 }
 
 const roleTone = { user: "neutral", moderator: "blue", admin: "dark" } as const;

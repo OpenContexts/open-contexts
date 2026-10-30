@@ -1,12 +1,11 @@
 // The body of the review page: what was submitted, shown the way it will look on the site
 // (serif preview) or, for edits, as a diff against the published version.
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { Card, Pill } from "@/components/admin/ui";
+import { Card, Notice, Pill } from "@/components/admin/ui";
 import { MarkdownContent } from "@/components/markdown/markdown";
 import { FramedBox } from "@/components/ui";
 import { getArea } from "@/lib/areas";
-import { AI_USE_LABELS, CONTRIBUTION_KIND_LABELS, LINK_RELATION_LABELS, PROBLEM_STATUS_LABELS } from "@/lib/constants";
+import { AI_USE_LABELS, PROBLEM_STATUS_LABELS } from "@/lib/constants";
 import type { Problem } from "@/lib/data/problems";
 import type { Submission } from "@/lib/data/moderation";
 import { formatNames } from "@/lib/format";
@@ -17,19 +16,12 @@ function SitePreview({ children }: { children: ReactNode }) {
   return <div className="font-serif text-[17px]/normal text-ink">{children}</div>;
 }
 
-function Warning({ children }: { children: ReactNode }) {
-  return <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-amber-900 ring-1 ring-amber-200 ring-inset">{children}</p>;
-}
-
-function ProblemRef({ id, problems }: { id: string | null; problems: Map<string, Problem> }) {
-  if (!id) return <span className="text-zinc-400">—</span>;
-  const p = problems.get(id);
-  return p ? (
-    <Link href={`/problems/${p.slug}`} className="text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:decoration-zinc-900" target="_blank">
-      Problem {p.number}: {p.title}
-    </Link>
-  ) : (
-    <span className="text-red-600">a problem that no longer exists</span>
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-medium text-zinc-500">{label}</dt>
+      <dd className="mt-0.5 text-zinc-900">{children}</dd>
+    </div>
   );
 }
 
@@ -38,7 +30,7 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
   switch (submission.type) {
     case "comment":
       return (
-        <Card title="Comment">
+        <Card>
           <SitePreview>
             <MarkdownContent source={submission.row.body} untrusted />
           </SitePreview>
@@ -47,33 +39,26 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
 
     case "contribution": {
       const c = submission.row;
+      // Only worth showing when someone else is credited than the person who sent it.
+      const credit = c.credit.trim() !== c.author.name.trim() ? c.credit : undefined;
       return (
-        <Card title={c.title} action={<Pill>{CONTRIBUTION_KIND_LABELS[c.kind]}</Pill>}>
-          <div className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-zinc-500">
-            <span>Credit: <span className="text-zinc-900">{c.credit}</span></span>
-            <span>{AI_USE_LABELS[c.aiUse]}</span>
-            {c.url && (
-              <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" className="text-zinc-900 underline decoration-zinc-300 underline-offset-2">
-                {c.url}
-              </a>
-            )}
+        <Card>
+          <h2 className="text-lg font-semibold text-zinc-900">{c.title}</h2>
+          {c.url && (
+            <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" className="mt-0.5 block truncate text-sm text-sky-700 hover:underline">
+              ↗ {c.url}
+            </a>
+          )}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Pill>{AI_USE_LABELS[c.aiUse].replace(/^./, (ch) => ch.toUpperCase())}</Pill>
+            {credit && <Pill>Credit: {credit}</Pill>}
           </div>
-          <SitePreview>
-            <MarkdownContent source={c.summary} untrusted />
-          </SitePreview>
-        </Card>
-      );
-    }
-
-    case "link": {
-      const l = submission.row;
-      return (
-        <Card title="Related link">
-          <p className="text-[15px] leading-relaxed">
-            <ProblemRef id={l.fromProblemId} problems={problems} /> <span className="text-zinc-500">{LINK_RELATION_LABELS[l.relation]}</span>{" "}
-            {l.toProblemId ? <ProblemRef id={l.toProblemId} problems={problems} /> : l.url}
-          </p>
-          {l.note && <p className="mt-3 text-zinc-600">“{l.note}”</p>}
+          <div className="mt-4 border-t border-zinc-100 pt-4">
+            <SitePreview>
+              <MarkdownContent source={c.summary} untrusted />
+            </SitePreview>
+          </div>
+          {c.kind === "reference" && c.url && <Notice className="mt-4">Approving also adds this reference to the problem&apos;s reference list.</Notice>}
         </Card>
       );
     }
@@ -81,14 +66,17 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
     case "revision": {
       const r = submission.row;
       const current = problems.get(r.problemId);
-      if (!current) return <Warning>The problem this edit belongs to no longer exists.</Warning>;
+      if (!current) return <Notice tone="warning">The problem this edit belongs to no longer exists.</Notice>;
       const outdated = r.status === "pending" && r.baseVersion !== current.version;
       return (
         <div className="space-y-4">
-          {outdated && <Warning>The problem has changed since this edit was written. The diff compares against the current version; approving replaces title, statement and text with this edit.</Warning>}
-          {r.status === "approved" && <Warning>This edit has been applied. The diff compares it with the problem as it is now.</Warning>}
+          {outdated && <Notice tone="warning">The problem has changed since this edit was written. The diff compares against the current version; approving replaces title, statement and text with this edit.</Notice>}
+          {r.status === "approved" && <Notice tone="warning">This edit has been applied. The diff compares it with the problem as it is now.</Notice>}
           <Card title="What changed">
-            <p className="mb-4 text-zinc-700">“{r.changeSummary}”</p>
+            <p className="mb-5 rounded-lg bg-zinc-50 px-4 py-3 text-zinc-700 ring-1 ring-zinc-100 ring-inset">
+              <span className="mb-0.5 block text-xs font-medium text-zinc-500">Summary of the change</span>
+              {r.changeSummary}
+            </p>
             <div className="space-y-5">
               {[
                 { label: "Title", before: current.title, after: r.title },
@@ -123,22 +111,10 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
         <div className="space-y-4">
           <Card title="Details">
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs text-zinc-500">Areas</dt>
-                <dd>{p.areas.map((a) => getArea(a)?.title ?? a).join(", ")}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-zinc-500">Posed by</dt>
-                <dd>{formatNames(p.posedBy)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-zinc-500">Tags</dt>
-                <dd>{p.tags.length ? p.tags.join(", ") : <span className="text-zinc-400">none</span>}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-zinc-500">AI use</dt>
-                <dd>{AI_USE_LABELS[p.aiUse]}</dd>
-              </div>
+              <Fact label="Areas">{p.areas.map((a) => getArea(a)?.title ?? a).join(", ")}</Fact>
+              <Fact label="Posed by">{formatNames(p.posedBy)}</Fact>
+              <Fact label="Tags">{p.tags.length ? p.tags.join(", ") : <span className="text-zinc-400">none</span>}</Fact>
+              <Fact label="AI use">{AI_USE_LABELS[p.aiUse].replace(/^./, (ch) => ch.toUpperCase())}</Fact>
             </dl>
           </Card>
           <Card title="Preview">

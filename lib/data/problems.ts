@@ -75,21 +75,6 @@ export async function getProblemById(id: string): Promise<Problem | undefined> {
   return (await getProblems()).find((p) => p.id === id);
 }
 
-/**
- * "Problem 7: Title" for page metadata. Separate from getProblems() on purpose: metadata is part of a
- * page's prerender, and a prerendered page resumes with the cache entries it recorded at prerender
- * time. If getProblems() were recorded there, the article would get that copy (stale after an edit)
- * instead of the freshly invalidated one.
- */
-export async function getProblemTitle(slug: string): Promise<string | undefined> {
-  "use cache";
-  cacheLife("max");
-  cacheTag("problems");
-  if (!isDbConfigured()) return undefined;
-  const row = await db.query.problem.findFirst({ where: eq(problem.slug, slug), columns: { number: true, title: true } });
-  return row && problemLabel(row);
-}
-
 /** Uncached, for checks inside server actions. */
 export async function readProblem(id: string): Promise<Problem | undefined> {
   const row = await db.query.problem.findFirst({ where: eq(problem.id, id) });

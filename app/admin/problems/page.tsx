@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { ProblemActions } from "@/components/admin/problem-controls";
-import { AdminButton, AdminButtonLink, AdminInput, Card, EmptyState, PageHeader, Pill } from "@/components/admin/ui";
+import { AdminButton, AdminButtonLink, AdminInput, Card, EmptyState, PageHeader, Pill, type PillTone, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
 import { getArea } from "@/lib/areas";
 import { requireModerator } from "@/lib/auth/session";
 import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
@@ -12,7 +11,8 @@ import { formatDate, plural } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Problems" };
 
-const statusTone = { open: "neutral", "under-revision": "amber", solved: "green" } as const satisfies Record<ProblemStatus, string>;
+// Open is the normal state, so it stays grey; under revision and solved stand out.
+const statusTone = { open: "neutral", "under-revision": "blue", solved: "green" } as const satisfies Record<ProblemStatus, PillTone>;
 
 export default function ProblemsAdminPage({ searchParams }: PageProps<"/admin/problems">) {
   return (
@@ -26,20 +26,22 @@ export default function ProblemsAdminPage({ searchParams }: PageProps<"/admin/pr
           </AdminButtonLink>
         }
       />
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-zinc-100" />}>
-        <Problems searchParams={searchParams} />
-      </Suspense>
+      <Problems searchParams={searchParams} />
     </>
   );
 }
 
 function Activity({ a }: { a?: ProblemActivity }) {
   if (!a) return <span className="text-zinc-300">—</span>;
-  const parts = [a.comments && plural(a.comments, "comment"), a.contributions && plural(a.contributions, "result"), a.links && plural(a.links, "link")].filter(Boolean);
+  const parts = [a.comments && plural(a.comments, "comment"), a.contributions && plural(a.contributions, "result")].filter(Boolean);
   return (
     <span className="text-zinc-500">
       {parts.join(" · ") || "—"}
-      {a.pending > 0 && <Pill tone="amber" className="ml-2">{a.pending} pending</Pill>}
+      {a.pending > 0 && (
+        <Pill tone="amber" dot className="ml-2">
+          {a.pending} pending
+        </Pill>
+      )}
     </span>
   );
 }
@@ -60,48 +62,48 @@ async function Problems({ searchParams }: Pick<PageProps<"/admin/problems">, "se
       </form>
       {problems.length ? (
         <Card padded={false}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="border-b border-zinc-100 text-xs text-zinc-500">
-                <tr>
-                  <th className="w-12 px-5 py-2.5 text-right font-medium">No.</th>
-                  <th className="px-3 py-2.5 font-medium">Problem</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
-                  <th className="px-3 py-2.5 font-medium">Activity</th>
-                  <th className="px-3 py-2.5 font-medium">Updated</th>
-                  <th className="w-12 px-3 py-2.5">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {problems.map((p) => (
-                  <tr key={p.id}>
-                    <td className="px-5 py-3 text-right text-zinc-500 tabular-nums">{p.number}</td>
-                    <td className="max-w-96 px-3 py-3">
-                      <Link href={`/admin/problems/${p.id}`} className="font-medium text-zinc-900 hover:underline">
-                        {p.title}
-                      </Link>
-                      <p className="truncate text-xs text-zinc-500">
-                        {p.areas.map((a) => getArea(a)?.title ?? a).join(", ")} · /problems/{p.slug}
-                      </p>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Pill tone={statusTone[p.status]}>{PROBLEM_STATUS_LABELS[p.status]}</Pill>
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      <Activity a={activity.get(p.id)} />
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-zinc-600">{formatDate(p.updated)}</td>
-                    <td className="px-3 py-2 text-right">
-                      <ProblemActions problem={{ id: p.id, number: p.number, title: p.title, slug: p.slug }} activity={activity.get(p.id)} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <footer className="border-t border-zinc-100 px-5 py-3 text-zinc-500">
+          <Table>
+            <THead>
+              <tr>
+                <Th className="w-14 text-right">No.</Th>
+                <Th>Problem</Th>
+                <Th>Status</Th>
+                <Th>Activity</Th>
+                <Th>Updated</Th>
+                <Th className="w-12">
+                  <span className="sr-only">Actions</span>
+                </Th>
+              </tr>
+            </THead>
+            <TBody>
+              {problems.map((p) => (
+                <Tr key={p.id}>
+                  <Td className="text-right font-medium text-zinc-400 tabular-nums">{p.number}</Td>
+                  <Td className="max-w-[28rem]">
+                    <Link href={`/admin/problems/${p.id}`} className="font-medium text-zinc-900 hover:underline">
+                      {p.title}
+                    </Link>
+                    <p className="mt-0.5 truncate text-xs text-zinc-500">
+                      <span title={p.areas.map((a) => getArea(a)?.title ?? a).join(", ")}>Area {p.areas.map((a) => getArea(a)?.numeral ?? a).join(", ")}</span> · /problems/{p.slug}
+                    </p>
+                  </Td>
+                  <Td>
+                    <Pill tone={statusTone[p.status]} dot>
+                      {PROBLEM_STATUS_LABELS[p.status].replace(/^./, (c) => c.toUpperCase())}
+                    </Pill>
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    <Activity a={activity.get(p.id)} />
+                  </Td>
+                  <Td className="whitespace-nowrap text-zinc-600">{formatDate(p.updated)}</Td>
+                  <Td className="py-2 text-right">
+                    <ProblemActions problem={{ id: p.id, number: p.number, title: p.title, slug: p.slug }} activity={activity.get(p.id)} />
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <footer className="border-t border-zinc-100 px-5 py-3 text-xs text-zinc-500">
             {query ? `${problems.length} of ${all.length} problems` : `${all.length} problems`}
           </footer>
         </Card>

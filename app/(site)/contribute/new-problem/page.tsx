@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { ProposalForm } from "@/components/submissions/proposal-form";
 import { SubmissionPage } from "@/components/submissions/submission-page";
 import { requireUser } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Propose a new problem", robots: { index: false } };
 
-export default function NewProblemPage() {
-  return (
-    <Suspense>
-      <Content />
-    </Suspense>
-  );
-}
-
-async function Content() {
+export default async function NewProblemPage() {
   const user = await requireUser("/contribute/new-problem");
   return (
     <SubmissionPage

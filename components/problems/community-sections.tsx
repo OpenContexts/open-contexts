@@ -1,50 +1,55 @@
-// The parts of a problem page that users add to: contributions, related problems and the discussion.
+// The parts of a problem page that users add to: contributions and the discussion.
 // They render data passed in by ProblemContent, which caches them; only CommentBox reads the session.
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MarkdownContent } from "@/components/markdown/markdown";
-import { ContributionKindTag } from "@/components/problems/kind-tag";
+import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { CommentForm } from "@/components/submissions/comment-form";
-import { Clamped, ExpandableList, PartTitle } from "@/components/ui";
-import { AI_USE_LABELS, LINK_RELATION_LABELS } from "@/lib/constants";
+import { Clamped, ExpandableList, PartTitle, toneColors } from "@/components/ui";
+import { AI_USE_LABELS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth/session";
-import type { getApprovedComments, getApprovedContributions, getApprovedLinks } from "@/lib/data/community";
+import type { getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 
 type Contribution = Awaited<ReturnType<typeof getApprovedContributions>>[number];
-type ProblemLink = Awaited<ReturnType<typeof getApprovedLinks>>[number];
 type Comment = Awaited<ReturnType<typeof getApprovedComments>>[number];
 
 /** "https://www.arxiv.org/abs/2401.1234" → "arxiv.org/abs/2401.1234" */
 const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
+/** Newest first. Each entry is edged in the colour of its kind, so the kinds can be told apart at a glance. */
 export function ContributionsSection({ items }: { items: Contribution[] }) {
   return (
     <>
-      <PartTitle count={items.length}>Contributions</PartTitle>
+      <PartTitle>Contributions</PartTitle>
       {items.length ? (
-        <ExpandableList limit={5} noun={["contribution", "contributions"]}>
-          {items.map((c) => (
-            <li key={c.id} className="border-t border-dotted border-rule-strong py-3.5 last:border-b">
-              <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                <ContributionKindTag kind={c.kind} className="relative -top-px" />
-                <span className="font-bold">{c.title}</span>
-              </p>
-              <p className="mt-0.5 text-sm text-ink-subtle">
-                {c.credit} · {AI_USE_LABELS[c.aiUse]} · {formatDate(c.createdAt)}
-              </p>
-              {c.url && (
-                <p className="mt-0.5 truncate text-sm">
-                  <a href={c.url} rel="nofollow ugc noopener noreferrer" className="text-brand hover:underline">
-                    ↗ {displayUrl(c.url)}
-                  </a>
+        <ExpandableList limit={5} noun={["contribution", "contributions"]} className="space-y-6">
+          {items.map((c) => {
+            const look = contributionLook(c.kind);
+            return (
+              <li key={c.id} className={cn("border-l-[3px] py-0.5 pl-4", toneColors[look.tone].border)}>
+                <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <KindTag look={look} />
+                  <span className="text-sm text-ink-subtle">{formatDate(c.createdAt)}</span>
                 </p>
-              )}
-              <Clamped lines={5} className="mt-1.5">
-                <MarkdownContent source={c.summary} untrusted className="text-[0.98rem]" />
-              </Clamped>
-            </li>
-          ))}
+                <h3 className="mt-1.5 text-[1.08rem] font-bold">{c.title}</h3>
+                <Clamped lines={5} className="mt-1">
+                  <MarkdownContent source={c.summary} untrusted className="text-[0.98rem]" />
+                </Clamped>
+                <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-ink-subtle">
+                  <span>
+                    by {c.credit} · {AI_USE_LABELS[c.aiUse]}
+                  </span>
+                  {c.url && (
+                    <a href={c.url} rel="nofollow ugc noopener noreferrer" className="max-w-full truncate text-brand hover:underline">
+                      ↗ {displayUrl(c.url)}
+                    </a>
+                  )}
+                </p>
+              </li>
+            );
+          })}
         </ExpandableList>
       ) : (
         <p className="text-ink-muted">No contributions recorded yet.</p>
@@ -53,49 +58,25 @@ export function ContributionsSection({ items }: { items: Contribution[] }) {
   );
 }
 
-/** `others` maps problem ids to their slug and label. Renders nothing without links. */
-export function RelatedSection({ problemId, links, others }: { problemId: string; links: ProblemLink[]; others: Map<string, { slug: string; label: string }> }) {
-  if (!links.length) return null;
-  return (
-    <>
-      <PartTitle>Related problems</PartTitle>
-      <ul className="prose-oc list-disc pl-6">
-        {links.map((l) => {
-          const outgoing = l.fromProblemId === problemId;
-          const other = others.get((outgoing ? l.toProblemId : l.fromProblemId) ?? "");
-          return (
-            <li key={l.id}>
-              {outgoing ? `This problem ${LINK_RELATION_LABELS[l.relation]} ` : `Linked from `}
-              {other ? (
-                <Link href={`/problems/${other.slug}`}>{other.label}</Link>
-              ) : (
-                l.url && <a href={l.url} rel="nofollow ugc noopener noreferrer">{l.label ?? l.url}</a>
-              )}
-              {l.note && <span className="text-ink-muted"> — {l.note}</span>}
-            </li>
-          );
-        })}
-      </ul>
-    </>
-  );
-}
-
 /** The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. */
 export function DiscussionSection({ comments, commentBox }: { comments: Comment[]; commentBox: ReactNode }) {
   return (
     <>
-      <PartTitle id="discussion" count={comments.length}>
+      <PartTitle id="discussion">
         Discussion
       </PartTitle>
       {commentBox}
       {comments.length ? (
-        <ExpandableList limit={10} noun={["older comment", "older comments"]} className="mt-6">
+        <ExpandableList limit={10} noun={["older comment", "older comments"]} className="mt-6 border-b border-rule">
           {comments.map((c) => (
-            <li key={c.id} className="border-t border-rule py-3 last:border-b">
-              <p className="mb-1 text-sm text-ink-subtle">
-                <strong className="text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
-              </p>
-              <MarkdownContent source={c.body} untrusted className="text-[0.98rem]" />
+            <li key={c.id} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3.5 border-t border-rule py-4">
+              <Initials name={c.author.name} />
+              <div className="min-w-0">
+                <p className="text-sm text-ink-subtle">
+                  <strong className="text-[0.95rem] text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
+                </p>
+                <MarkdownContent source={c.body} untrusted className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
+              </div>
             </li>
           ))}
         </ExpandableList>
@@ -106,14 +87,22 @@ export function DiscussionSection({ comments, commentBox }: { comments: Comment[
   );
 }
 
-/** The comment form, or a sign-in link. Reads the session, so render it inside <Suspense>. */
+function Initials({ name }: { name: string }) {
+  const letters = name.split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+  return (
+    <span aria-hidden className="flex size-9 items-center justify-center rounded-full bg-surface font-sans text-[0.8rem] font-bold text-ink-muted ring-1 ring-rule-strong">
+      {letters}
+    </span>
+  );
+}
+
+/** The comment form, or a sign-in link. Reads the session. */
 export async function CommentBox({ slug }: { slug: string }) {
   if (await getCurrentUser()) return <CommentForm problemSlug={slug} />;
   return <SignInToComment slug={slug} />;
 }
 
-/** Also the <Suspense> fallback of CommentBox: most visitors are signed out, so nothing moves for them. */
-export function SignInToComment({ slug }: { slug: string }) {
+function SignInToComment({ slug }: { slug: string }) {
   return (
     <p className="text-[0.95rem]">
       <Link href={`/sign-in?next=${encodeURIComponent(`/problems/${slug}#discussion`)}`} className="text-brand hover:underline">

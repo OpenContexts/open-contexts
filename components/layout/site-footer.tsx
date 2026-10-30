@@ -4,7 +4,7 @@ import { NAV, SITE } from "@/lib/site";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-14 border-t border-ink pt-5 pb-9 text-[0.92rem] text-ink-muted">
+    <footer className="mt-20 border-t border-ink pt-5 pb-9 text-[0.92rem] text-ink-muted">
       <Container>
         <div className="flex flex-wrap justify-between gap-x-8 gap-y-3">
           <div className="text-ink">

@@ -13,12 +13,11 @@ export const MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 
 /** Everything a user can submit. Each kind has its own table and passes the same moderation queue. */
-export const SUBMISSION_TYPES = ["comment", "contribution", "link", "revision", "proposal"] as const;
+export const SUBMISSION_TYPES = ["comment", "contribution", "revision", "proposal"] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   comment: "Comments",
   contribution: "Results",
-  link: "Related links",
   revision: "Edits",
   proposal: "New problems",
 };
@@ -26,13 +25,12 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
 export const SUBMISSION_TYPE_NOUNS: Record<SubmissionType, string> = {
   comment: "comment",
   contribution: "result",
-  link: "related link",
   revision: "suggested edit",
   proposal: "problem proposal",
 };
 
 /** Simple enough to approve or reject straight from the queue. Edits and new problems need the review page. */
-export const QUICK_DECISION_TYPES: readonly SubmissionType[] = ["comment", "contribution", "link"];
+export const QUICK_DECISION_TYPES: readonly SubmissionType[] = ["comment", "contribution"];
 
 /** Decisions on submissions. */
 export const MODERATION_ACTIONS = ["approve", "reject", "reopen"] as const;
@@ -104,29 +102,6 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   reference: "Relevant literature not yet cited on the page.",
 };
 
-export const LINK_RELATIONS = [
-  "related",
-  "generalizes",
-  "special-case",
-  "depends-on",
-  "equivalent",
-] as const;
-export type LinkRelation = (typeof LINK_RELATIONS)[number];
-export const LINK_RELATION_DESCRIPTIONS: Record<LinkRelation, string> = {
-  related: "Shares methods, motivation or context.",
-  generalizes: "This problem contains the other as a special case.",
-  "special-case": "This problem is a special case of the other.",
-  "depends-on": "Progress here needs progress there first.",
-  equivalent: "Solving one solves the other.",
-};
-export const LINK_RELATION_LABELS: Record<LinkRelation, string> = {
-  related: "related to",
-  generalizes: "generalizes",
-  "special-case": "is a special case of",
-  "depends-on": "depends on",
-  equivalent: "is equivalent to",
-};
-
 /** Roles stored on `user.role` (Better Auth admin plugin). */
 export const ROLES = ["user", "moderator", "admin"] as const;
 export type Role = (typeof ROLES)[number];
@@ -134,6 +109,6 @@ export const MODERATOR_ROLES: readonly Role[] = ["moderator", "admin"];
 export const ROLE_LABELS: Record<Role, string> = { user: "User", moderator: "Moderator", admin: "Admin" };
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   user: "Can comment and submit contributions.",
-  moderator: "Can also approve and reject submissions.",
+  moderator: "Can also approve and reject submissions, and block users.",
   admin: "Can also manage users and their roles.",
 };

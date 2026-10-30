@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser, isModerator } from "@/lib/auth/session";
 
-/** "Edit in dashboard", for moderators only. Reads the session, so render it inside <Suspense>. */
+/** "Edit in dashboard", for moderators only. Reads the session. */
 export async function ModeratorEditLink({ problemId }: { problemId: string }) {
   if (!isModerator(await getCurrentUser())) return null;
   return (

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getCurrentUser, isModerator } from "@/lib/auth/session";
 import { AccountMenu } from "./account-menu";
 
-/** Reads the session, so render it inside <Suspense> (see SiteHeader). */
 export async function UserMenu() {
   const user = await getCurrentUser();
   if (!user) {

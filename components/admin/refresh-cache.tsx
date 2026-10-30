@@ -20,7 +20,7 @@ export function RefreshCacheButton() {
       >
         {pending ? "Refreshing…" : "Refresh the site"}
       </AdminButton>
-      {done && !pending && <span className="text-xs text-zinc-500">Done. Every page is rebuilt on its next visit.</span>}
+      {done && !pending && <span className="text-xs text-zinc-500">Done. Every page shows fresh data on its next visit.</span>}
     </div>
   );
 }

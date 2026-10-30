@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 /** A row of link tabs (state lives in the URL, so they work without JavaScript). */
 export function Tabs({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
-    <nav aria-label={label} className={cn("mt-4 mb-1.5 flex flex-wrap gap-x-5 gap-y-0.5 border-b border-rule-strong", className)}>
+    <nav aria-label={label} className={cn("mt-7 mb-1.5 flex flex-wrap gap-x-5 gap-y-0.5 border-b border-rule-strong", className)}>
       {children}
     </nav>
   );

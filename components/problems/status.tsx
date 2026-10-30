@@ -1,4 +1,4 @@
-import { AppleIcon, type AppleVariant, Badge, type BadgeTone } from "@/components/ui";
+import { AppleIcon, type AppleVariant, Tag, type TagTone } from "@/components/ui";
 import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 
 const appleFor: Record<ProblemStatus, AppleVariant> = {
@@ -7,8 +7,9 @@ const appleFor: Record<ProblemStatus, AppleVariant> = {
   solved: "grey",
 };
 
-const toneFor: Record<ProblemStatus, BadgeTone> = {
-  open: "neutral",
+// The same colours as the progress chart: red open, blue under revision, green solved.
+const toneFor: Record<ProblemStatus, TagTone> = {
+  open: "danger",
   "under-revision": "info",
   solved: "success",
 };
@@ -17,6 +18,10 @@ export function StatusIcon({ status, className }: { status: ProblemStatus; class
   return <AppleIcon variant={appleFor[status]} className={className} />;
 }
 
-export function StatusBadge({ status }: { status: ProblemStatus }) {
-  return <Badge tone={toneFor[status]}>{PROBLEM_STATUS_LABELS[status]}</Badge>;
+export function StatusBadge({ status, className }: { status: ProblemStatus; className?: string }) {
+  return (
+    <Tag tone={toneFor[status]} className={className}>
+      {PROBLEM_STATUS_LABELS[status]}
+    </Tag>
+  );
 }

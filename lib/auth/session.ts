@@ -15,7 +15,7 @@ export type CurrentUser = {
 };
 
 /**
- * The signed-in user, or null. Reads request headers, so call it inside a <Suspense> boundary.
+ * The signed-in user, or null.
  * Visitors without a session cookie cost no database query; signed-in ones cost one session lookup.
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -55,4 +55,13 @@ export async function requireAdmin(): Promise<CurrentUser> {
   const user = await requireModerator();
   if (!isAdmin(user)) notFound();
   return user;
+}
+
+/** Why `actor` may not block `target`, or undefined if they may. Shared by the block action and the UI. */
+export function blockRefusal(actor: CurrentUser, target: { id: string; role: string | null } | undefined): string | undefined {
+  if (!target) return "This user no longer exists.";
+  if (target.id === actor.id) return "You cannot block yourself.";
+  if (target.role === "admin") return "Admins cannot be blocked.";
+  if (target.role === "moderator" && !isAdmin(actor)) return "Only admins can block moderators.";
+  return undefined;
 }

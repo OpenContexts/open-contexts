@@ -1,7 +1,7 @@
 # OpenContext
 
 A community-curated, moderated database of open problems in theoretical physics. Problems, comments,
-contributions, related links and suggested edits are stored in Postgres. Moderators manage the problems in
+contributions and suggested edits are stored in Postgres. Moderators manage the problems in
 the dashboard; nothing users submit appears on the site until a moderator approves it.
 
 The design follows the static prototype at <https://rafunds3d.github.io/OpenContext/>. The product plan and
@@ -44,10 +44,11 @@ pnpm dev
 | Role | Can |
 | ---- | --- |
 | `user` | comment and submit contributions |
-| `moderator` | also approve and reject submissions (`/admin`, except **Users**) |
-| `admin` | also manage users: change roles, block and unblock accounts (`/admin/users`) |
+| `moderator` | also approve and reject submissions (`/admin`, except **Users**), and block regular users from a submission's review page |
+| `admin` | also manage users: change roles, block (moderators too) and unblock accounts (`/admin/users`) |
 
-Blocked accounts are signed out at once and cannot sign in again until they are unblocked. Their earlier
+Blocked accounts are signed out at once and cannot sign in again until an admin unblocks them. Admins cannot
+be blocked, and nobody can block themselves. Their earlier
 submissions stay as they are.
 
 ### Who can sign up
@@ -131,8 +132,8 @@ Put basic, domain-agnostic elements in `components/ui`. Feature-specific compone
 ## Problems
 
 Problems live in the `problem` table: number, URL name (slug), title, status, areas, tags, who posed it and
-when, the boxed statement and the body as markdown, the history and the references. Comments, results,
-related links and suggested edits point at a problem by its id, so renaming a problem's URL keeps them.
+when, the boxed statement and the body as markdown, the history and the references. Comments, results
+and suggested edits point at a problem by its id, so renaming a problem's URL keeps them.
 
 - **Moderators manage problems** under **Problems** in the dashboard: create (from scratch or from an
   uploaded `.md` file), edit (with a markdown preview), delete, and download any problem as a `.md` file
@@ -144,7 +145,7 @@ related links and suggested edits point at a problem by its id, so renaming a pr
 - **Editing conflicts**: each problem has a `version`. Saving a form that was opened before someone else's
   change is refused instead of silently overwriting it, and edits suggested against an older version are
   flagged in the review.
-- **Deleting** a problem also deletes its comments, results, links and suggested edits.
+- **Deleting** a problem also deletes its comments, results and suggested edits.
 - **Initial content**: migration `0003` creates the table with thirteen problems, so a new database shows
   a populated site.
 
@@ -155,29 +156,32 @@ Each `##` heading in the body becomes a lettered section (A., B., …) on the pr
 - **Why markdown and not MDX?** Problem texts are written and edited through the site, partly by users.
   MDX executes JavaScript, so it can't safely render that text. Markdown with KaTeX (`trust: false`) and no
   raw HTML can.
-- **Caching**: pages are rendered once and reused until something on them changes. Reading costs no
-  database query; only the account menu, the comment box and the moderator link are rendered per visitor.
+- **Rendering and caching**: every page is rendered in full on the server before it is sent, with no
+  loading states (`export const instant = false` in `app/layout.tsx`). The data and the expensive parts are
+  cached with `"use cache"`, so a page view costs no database query unless something changed. Only the
+  session (account menu, comment box, moderator link) is read per visitor, and that costs a query only for
+  signed-in visitors.
   - The problem list is cached under the `problems` tag. Every change to a problem (editor, approved edit,
     approved proposal, deletion) calls `updateTag("problems")`.
-  - A problem page's content (`ProblemContent`) is also cached under `community:<problem id>`. Moderation
-    decisions invalidate it only when they change what the page shows: approving a comment, result or
-    link, or reopening an approved one. Posting, and rejecting what was never shown, re-render nothing.
-  - The page itself is still looked up per request (`connection()`), which keeps a just-published or
-    just-edited problem correct on its very first view; the content then comes from the cache.
-  - The home page's random problem is picked per request, but each problem's box is rendered only once.
-  - The problem list is a static page with every row rendered on the server; status, area and sort filters
-    run in the browser over those rows (`components/problems/problem-browser.tsx`). A search asks the
-    server for the matching ids (`lib/actions/search.ts`, cached per query). Before the page is interactive
-    it shows the full list. The progress page is rebuilt daily.
-  - The cache lives in the server's memory (self-hosted). On serverless hosting, entries are not shared
-    between instances; see the `use cache: remote` directive if that matters.
-  - Regenerated pages are kept on disk (`.next/server/route-cache`) and survive a restart. If you change
-    data directly in the database (e.g. `pnpm db:studio`), press **Refresh the site** on the dashboard's
-    overview (admins only) so the pages pick it up.
+  - A problem page's content (`ProblemContent`, math included) is also cached under `community:<problem id>`.
+    Moderation decisions invalidate it only when they change what the page shows: approving a comment or
+    result, or reopening an approved one. Posting, and rejecting what was never shown, re-render nothing.
+  - The counts in the problem lists ("3 contributions · 5 comments") are cached under `community-counts`;
+    the same moderation decisions that change a problem page invalidate them.
+  - `/problems` filters, searches and sorts on the server, from the cached list. Each combination of
+    filters is rendered once and cached under `problems` too. The progress page is recomputed daily.
+  - The cache lives in the server's memory (self-hosted), so a restart starts empty. On serverless hosting,
+    entries are not shared between instances; see the `use cache: remote` directive if that matters.
+  - If you change data directly in the database (e.g. `pnpm db:studio`), press **Refresh the site** on the
+    dashboard's overview (admins only) so the pages pick it up.
+  - `experimental.instantInsights` in `next.config.ts` limits the dev checks for instant navigations to
+    segments that ask for them; otherwise `next dev` flags every page for not streaming.
 - **KaTeX version**: `rehype-katex` renders math with its own `katex` dependency, while the stylesheet comes
   from ours. `pnpm-workspace.yaml` overrides both to one version; mismatched versions break the sizing of
   subscripts and superscripts.
 - **Accepted edits and new problems** stay published if their author's account is deleted.
+- **Reference contributions** with a link are also cited on the problem: approving one appends its text and link to the
+  problem's references (unless the same text or link is already there); reopening it removes the entry again.
 - **Transactions**: the Neon HTTP driver has no interactive transactions. Use `db.batch([...])` for atomic
   multi-statement writes, as the moderation action does.
 - **Schema changes**: edit `lib/db/schema/*`, run `pnpm db:generate`, review the SQL in `drizzle/`, then run

@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { EditForm } from "@/components/submissions/edit-form";
 import { SubmissionPage } from "@/components/submissions/submission-page";
 import { loadContributionContext } from "../context";
 
 export const metadata: Metadata = { title: "Suggest an edit", robots: { index: false } };
 
-export default function Page({ params }: PageProps<"/problems/[slug]/contribute/edit">) {
-  return (
-    <Suspense>
-      <Content params={params} />
-    </Suspense>
-  );
-}
-
-async function Content({ params }: { params: PageProps<"/problems/[slug]/contribute/edit">["params"] }) {
+export default async function Page({ params }: PageProps<"/problems/[slug]/contribute/edit">) {
   const { problem, back } = await loadContributionContext(params, "edit");
   const { slug, title, statement, body, version } = problem;
   return (

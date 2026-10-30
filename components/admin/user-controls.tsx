@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { blockUser, setUserRole, unblockUser, type UserActionResult } from "@/app/admin/users/actions";
-import { AdminButton, AdminDialog, AdminTextarea, DialogActions, RowMenu, type RowMenuItem } from "@/components/admin/ui";
+import { AdminButton, AdminDialog, AdminTextarea, DialogActions, Pill, RowMenu, type RowMenuItem } from "@/components/admin/ui";
 import { ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS, type Role } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
@@ -54,6 +54,45 @@ export function UserActions({ user }: { user: Target }) {
   );
 }
 
+/**
+ * Block (or, for admins, unblock) one person outside the users list, e.g. the author on a review page.
+ * `refusal` says why the viewer may not block them; the button is then greyed out with that as its tooltip.
+ */
+export function BlockUserButton({ user, refusal, canUnblock }: { user: Target; refusal?: string; canUnblock: boolean }) {
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  if (user.banned) {
+    return (
+      <span className="flex items-center gap-2">
+        <Pill tone="red" dot>
+          Blocked
+        </Pill>
+        {canUnblock && (
+          <AdminButton size="sm" onClick={() => setOpen(true)}>
+            Unblock
+          </AdminButton>
+        )}
+        <AdminDialog open={open} onClose={close} title={`Unblock ${user.name}?`}>
+          <UnblockForm user={user} onDone={close} />
+        </AdminDialog>
+      </span>
+    );
+  }
+  return (
+    <>
+      {/* The title sits on a wrapper: a disabled button gets no pointer events, so it shows no tooltip itself. */}
+      <span title={refusal}>
+        <AdminButton size="sm" variant="danger" disabled={!!refusal} onClick={() => setOpen(true)}>
+          Block user
+        </AdminButton>
+      </span>
+      <AdminDialog open={open} onClose={close} title={`Block ${user.name}?`}>
+        <BlockForm user={user} onDone={close} />
+      </AdminDialog>
+    </>
+  );
+}
+
 function RoleForm({ user, onDone }: { user: Target; onDone: () => void }) {
   const [role, setRole] = useState(user.role);
   const { pending, error, run } = useUserAction(onDone);
@@ -97,7 +136,7 @@ function BlockForm({ user, onDone }: { user: Target; onDone: () => void }) {
   return (
     <form action={(formData) => run(() => blockUser({ userId: user.id, reason: String(formData.get("reason") ?? "") }))}>
       <p className="mt-1.5 text-zinc-600">
-        They are signed out immediately and can no longer sign in or submit anything. Their earlier submissions stay as they are. You can unblock them at any time.
+        They are signed out immediately and can no longer sign in or submit anything. Their earlier submissions stay as they are. An admin can unblock them at any time.
       </p>
       <label htmlFor={`reason-${user.id}`} className="mt-4 mb-1 block text-xs text-zinc-500">
         Reason <span className="text-zinc-400">(optional, only visible to admins)</span>

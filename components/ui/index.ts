@@ -15,5 +15,5 @@ export { PageTitle, PartTitle, SectionTitle, SubTitle } from "./heading";
 export { Input, Select, Textarea } from "./input";
 export { Kbd } from "./kbd";
 export { SubmitButton } from "./submit-button";
-export { Tag, type TagTone } from "./tag";
+export { Tag, type TagTone, toneColors } from "./tag";
 export { TabLink, Tabs } from "./tabs";

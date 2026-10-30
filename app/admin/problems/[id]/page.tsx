@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { z } from "zod";
 import { DeleteProblemButton } from "@/components/admin/problem-controls";
 import { ProblemForm } from "@/components/admin/problem-form";
@@ -14,17 +13,9 @@ import { referencesToText } from "@/lib/validation/problems";
 
 export const metadata: Metadata = { title: "Edit problem" };
 
-export default function EditProblemPage({ params, searchParams }: PageProps<"/admin/problems/[id]">) {
-  return (
-    <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-zinc-100" />}>
-      <EditProblem params={params} searchParams={searchParams} />
-    </Suspense>
-  );
-}
-
 const SAVED = { created: "The problem has been published.", updated: "Your changes have been saved." } as const;
 
-async function EditProblem({ params, searchParams }: Pick<PageProps<"/admin/problems/[id]">, "params" | "searchParams">) {
+export default async function EditProblemPage({ params, searchParams }: PageProps<"/admin/problems/[id]">) {
   await requireModerator();
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
@@ -67,7 +58,6 @@ async function EditProblem({ params, searchParams }: Pick<PageProps<"/admin/prob
         key={problem.version}
         id={problem.id}
         version={problem.version}
-        published={{ number: problem.number, slug: problem.slug }}
         initial={{
           title: problem.title,
           status: problem.status,

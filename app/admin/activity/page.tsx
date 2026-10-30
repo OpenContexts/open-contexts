@@ -1,18 +1,15 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { ActionPill, Card, EmptyState, PageHeader } from "@/components/admin/ui";
+import { ActionPill, Avatar, Card, EmptyState, PageHeader, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
 import { LOG_TARGET_NOUNS } from "@/lib/constants";
 import { getRecentDecisions, logTargetHref } from "@/lib/data/moderation";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatRelative } from "@/lib/format";
 
 export default function ActivityPage() {
   return (
     <>
       <PageHeader title="Activity log" description="Every moderation decision and every change to a problem, newest first." />
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-zinc-100" />}>
-        <Activity />
-      </Suspense>
+      <Activity />
     </>
   );
 }
@@ -23,32 +20,45 @@ async function Activity() {
   if (!decisions.length) return <EmptyState title="No decisions yet" />;
   return (
     <Card padded={false}>
-      <table className="w-full text-left">
-        <thead className="border-b border-zinc-100 text-xs text-zinc-500">
+      <Table>
+        <THead>
           <tr>
-            <th className="px-5 py-2.5 font-medium">When</th>
-            <th className="px-3 py-2.5 font-medium">Action</th>
-            <th className="px-3 py-2.5 font-medium">On</th>
-            <th className="px-3 py-2.5 font-medium">Moderator</th>
-            <th className="px-5 py-2.5 font-medium">Note</th>
+            <Th>When</Th>
+            <Th>Action</Th>
+            <Th>On</Th>
+            <Th>Moderator</Th>
+            <Th>Note</Th>
           </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100">
+        </THead>
+        <TBody>
           {decisions.map((d) => (
-            <tr key={d.id} className="align-top">
-              <td className="px-5 py-2.5 whitespace-nowrap text-zinc-500 tabular-nums">{formatDate(d.createdAt)}</td>
-              <td className="px-3 py-2.5"><ActionPill action={d.action} /></td>
-              <td className="px-3 py-2.5">
-                <Link href={logTargetHref(d.targetType, d.targetId)} className="hover:underline">
-                  {LOG_TARGET_NOUNS[d.targetType]}
+            <Tr key={d.id}>
+              <Td className="whitespace-nowrap text-zinc-500 tabular-nums" title={formatRelative(d.createdAt)}>
+                {formatDate(d.createdAt)}
+              </Td>
+              <Td>
+                <ActionPill action={d.action} />
+              </Td>
+              <Td>
+                <Link href={logTargetHref(d.targetType, d.targetId)} className="font-medium text-zinc-900 hover:underline">
+                  {LOG_TARGET_NOUNS[d.targetType].replace(/^./, (c) => c.toUpperCase())}
                 </Link>
-              </td>
-              <td className="px-3 py-2.5 text-zinc-700">{d.moderator?.name ?? "deleted user"}</td>
-              <td className="px-5 py-2.5 text-zinc-500">{d.note}</td>
-            </tr>
+              </Td>
+              <Td>
+                {d.moderator ? (
+                  <span className="flex items-center gap-2 whitespace-nowrap text-zinc-700">
+                    <Avatar name={d.moderator.name} className="size-6 text-[10px]" />
+                    {d.moderator.name}
+                  </span>
+                ) : (
+                  <span className="text-zinc-400">deleted user</span>
+                )}
+              </Td>
+              <Td className="max-w-md text-zinc-500">{d.note}</Td>
+            </Tr>
           ))}
-        </tbody>
-      </table>
+        </TBody>
+      </Table>
     </Card>
   );
 }

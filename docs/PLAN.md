@@ -12,8 +12,6 @@ layer on top:
   reformulations, computational evidence, independent verifications, expositions, challenges,
   questions, references). Each submission records its title, the type of material, how much AI was used,
   and the humans who take responsibility for it.
-- **Connect**: problems are linked to each other ("generalizes", "depends on", …). Users no longer submit links
-  (the form was dropped as unnecessary); existing links still show and can still be moderated.
 - **Improve**: users suggest edits to a problem's title, statement or text. Only moderators change the status (in the dashboard).
 - **Moderate**: nothing user-submitted appears until a moderator approves it. Every decision is logged.
 
@@ -30,11 +28,10 @@ sections.
 | Problem status | frontmatter / revision | `open` → `under-revision` (a solution has been claimed) → `solved`. |
 | Comment | `comment` table | Markdown + math. Optional `parentId` for replies. |
 | Contribution | `contribution` table | `kind`, `title`, `summary`, `url`, `aiUse`, `credit`. |
-| Related link | `problem_link` table | Problem → problem (`toSlug`) or problem → URL, with a `relation`. |
 | Revision | `problem_revision` table | Full snapshot of title, statement and body, plus a change summary and the version it started from. Approval writes it into the problem. `problem_status` is only set on edits from before the status became moderator-only. |
 | Proposal | `problem_proposal` table | A suggested new problem. Approval creates a `problem` row. |
 | Moderation log | `moderation_log` table | Append-only: decisions on submissions and direct changes to problems (who, what, when, why). |
-| Roles | `user.role` | `user`, `moderator` (reviews the queue), `admin` (also manages users: roles, blocking). |
+| Roles | `user.role` | `user`, `moderator` (reviews the queue, can block regular users), `admin` (also manages users: roles, blocking, unblocking). |
 
 Every community table has the same moderation columns: `status` (`pending` | `approved` | `rejected`),
 `reviewedById`, `reviewedAt` and `reviewNote`. Public reads (`lib/data/community.ts`) only ever return
@@ -48,21 +45,21 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
                     └──(moderator rejects, with a note)──▶ rejected ──▶ the author sees the note
 ```
 
-- One queue at `/admin` with a tab per submission type, oldest first. Comments, results and related links
+- One queue at `/admin` with a tab per submission type, oldest first. Comments and results
   can be approved or rejected straight from the list; edits and new problems are decided on the review page.
 - Approve and reject run in one server action that updates the row and writes `moderation_log` in a single
   transaction (`db.batch`). It re-checks `requireModerator()` itself and never trusts the UI.
 - Approving a revision invalidates the `problems` cache tag, so the new text appears immediately. Approving
-  (or reopening an approved) comment, result or link invalidates only that problem page (`community:<id>`).
+  (or reopening an approved) comment or result invalidates only that problem page (`community:<id>`).
 - Planned: bulk actions, per-user history, and email notifications to authors.
 
 ## 4. Routes
 
 | Route | Prototype equivalent | State |
 | ----- | -------------------- | ----- |
-| `/` | home | done: masthead, counts, search, areas, random open problem, recently updated |
-| `/problems` | `#/problems` | done: search, status tabs, area filter, sort |
-| `/problems/[slug]` | `#/problem/n` | done: statement, meta, lettered sections, tags; then references (10, expandable), related problems, history, contributions (5 newest, expandable, long texts clamped), the contribute options and the discussion (comment box first, 10 newest, expandable) |
+| `/` | home | done: masthead, counts, search, areas, recently updated |
+| `/problems` | `#/problems` | done: search, status tabs, area filter, sort (all on the server) |
+| `/problems/[slug]` | `#/problem/n` | done: statement, meta, lettered sections, tags; then references (10, expandable), history, contributions (5 newest, expandable, long texts clamped), the contribute options and the discussion (comment box first, 10 newest, expandable) |
 | `/areas` | `#/agenda`, `#/tags` | done (basic) |
 | `/guidelines`, `/about`, `/contribute` | same | placeholders |
 | `/sign-in`, `/sign-up` | — | done: institutional email and password, or GitHub (any email) |
@@ -94,12 +91,12 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 - [x] Limit of 20 pending submissions per user
 
 ### Phase 2: moderation (mostly done)
-- [x] Approve or reject comments, results and links straight from the queue
+- [x] Approve or reject comments and results straight from the queue
 - [x] Separate admin design: overview, queue per type (pending/approved/rejected), review page, activity log
 - [x] Word-level diff for edits, preview of new problems in site typography
 - [x] Approve, reject with a note to the author, reopen; every decision logged
 - [ ] Email authors when their submission is decided
-- [x] User management for admins: search, roles, block and unblock; moderators only review
+- [x] User management for admins: search, roles, block and unblock; moderators review and can block regular users
 - [ ] Log role changes and blocks (who, when, why)
 - [ ] Bulk actions; filter by problem and author
 

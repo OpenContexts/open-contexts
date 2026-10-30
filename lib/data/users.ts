@@ -4,7 +4,7 @@ import { and, count, desc, eq, ilike, inArray, or, type SQL, sql } from "drizzle
 import { connection } from "next/server";
 import type { Role } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { account, comment, contribution, problemLink, problemProposal, problemRevision, user } from "@/lib/db/schema";
+import { account, comment, contribution, problemProposal, problemRevision, user } from "@/lib/db/schema";
 
 export const USER_FILTERS = ["all", "staff", "blocked"] as const;
 export type UserFilter = (typeof USER_FILTERS)[number];
@@ -46,11 +46,10 @@ function filterWhere(filter: UserFilter, query: string): SQL | undefined {
  */
 const userId = sql`${user}.${sql.identifier(user.id.name)}`;
 
-/** All submissions by one user, across the five submission tables. */
+/** All submissions by one user, across the four submission tables. */
 const submissionCount = sql<number>`(
   (select count(*) from ${comment} where ${comment.authorId} = ${userId}) +
   (select count(*) from ${contribution} where ${contribution.authorId} = ${userId}) +
-  (select count(*) from ${problemLink} where ${problemLink.proposedById} = ${userId}) +
   (select count(*) from ${problemRevision} where ${problemRevision.authorId} = ${userId}) +
   (select count(*) from ${problemProposal} where ${problemProposal.authorId} = ${userId})
 )::int`;

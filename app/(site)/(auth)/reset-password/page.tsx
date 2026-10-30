@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PageTitle } from "@/components/ui";
 import { ResetPasswordForm } from "./reset-password-form";
 
@@ -10,9 +9,7 @@ export default function ResetPasswordPage() {
     <>
       <PageTitle>Choose a new password</PageTitle>
       {/* The token arrives as ?token= from the link in the email. */}
-      <Suspense>
-        <ResetPasswordForm />
-      </Suspense>
+      <ResetPasswordForm />
     </>
   );
 }

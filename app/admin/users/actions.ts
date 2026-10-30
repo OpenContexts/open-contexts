@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth/session";
+import { blockRefusal, requireAdmin, requireModerator } from "@/lib/auth/session";
 import { ROLES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { session, user } from "@/lib/db/schema";
@@ -32,12 +32,16 @@ export async function setUserRole(input: z.input<typeof roleSchema>): Promise<Us
 
 const blockSchema = z.object({ userId: z.string().min(1), reason: z.string().trim().max(500).optional() });
 
-/** Blocked users cannot sign in (Better Auth admin plugin) and are signed out everywhere at once. */
+/**
+ * Blocked users cannot sign in (Better Auth admin plugin) and are signed out everywhere at once.
+ * Moderators may block regular users (e.g. a spammer they find in the queue); admins may also block
+ * moderators. Admins cannot be blocked, and nobody blocks themselves. Unblocking is for admins only.
+ */
 export async function blockUser(input: z.input<typeof blockSchema>): Promise<UserActionResult> {
   const { userId, reason } = blockSchema.parse(input);
-  const t = await target(userId);
-  if ("error" in t) return { error: t.error };
-  if (t.row.role === "admin") return { error: "Admins cannot be blocked. Change their role first." };
+  const actor = await requireModerator();
+  const refusal = blockRefusal(actor, await db.query.user.findFirst({ where: eq(user.id, userId), columns: { id: true, role: true } }));
+  if (refusal) return { error: refusal };
   await db.batch([
     db.update(user).set({ banned: true, banReason: reason || null, banExpires: null }).where(eq(user.id, userId)),
     db.delete(session).where(eq(session.userId, userId)),

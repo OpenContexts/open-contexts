@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { NewProblemEditor } from "@/components/admin/new-problem-editor";
 import { PageHeader } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
@@ -11,9 +10,7 @@ export default function NewProblemPage() {
   return (
     <>
       <PageHeader back={{ href: "/admin/problems", label: "Problems" }} title="New problem" description="Published as soon as you save it. Users can then comment, contribute and suggest edits." />
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-zinc-100" />}>
-        <NewProblem />
-      </Suspense>
+      <NewProblem />
     </>
   );
 }

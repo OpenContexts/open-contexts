@@ -33,6 +33,11 @@ const mono = localFont({
   weight: "500",
 });
 
+// Every page is rendered in full on the server before it is sent, instead of a prerendered shell with
+// loading states that stream in. The data behind the pages is cached ("use cache" in lib/data and the
+// problem page), so a render costs no database query unless something changed.
+export const instant = false;
+
 export const metadata: Metadata = {
   title: { default: SITE.name, template: `%s · ${SITE.name}` },
   description: SITE.description,

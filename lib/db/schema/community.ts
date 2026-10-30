@@ -15,7 +15,6 @@ import {
 import {
   AI_USE,
   CONTRIBUTION_KINDS,
-  LINK_RELATIONS,
   LOG_ACTIONS,
   LOG_TARGET_TYPES,
   MODERATION_STATUSES,
@@ -29,7 +28,6 @@ export const logAction = pgEnum("moderation_action", LOG_ACTIONS);
 export const logTargetType = pgEnum("submission_type", LOG_TARGET_TYPES);
 export const contributionKind = pgEnum("contribution_kind", CONTRIBUTION_KINDS);
 export const aiUse = pgEnum("ai_use", AI_USE);
-export const linkRelation = pgEnum("link_relation", LINK_RELATIONS);
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -95,32 +93,6 @@ export const contribution = pgTable(
   (t) => [
     index("contribution_problem_status_idx").on(t.problemId, t.status),
     index("contribution_status_created_idx").on(t.status, t.createdAt),
-  ],
-);
-
-/** A link from a problem to another problem (toProblemId) or to an external resource (url). */
-export const problemLink = pgTable(
-  "problem_link",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    fromProblemId: uuid("from_problem_id")
-      .notNull()
-      .references(() => problem.id, { onDelete: "cascade" }),
-    toProblemId: uuid("to_problem_id").references(() => problem.id, { onDelete: "cascade" }),
-    url: text("url"),
-    label: text("label"),
-    relation: linkRelation("relation").default("related").notNull(),
-    note: text("note"),
-    proposedById: text("proposed_by_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    ...moderation(),
-    ...timestamps(),
-  },
-  (t) => [
-    index("problem_link_from_status_idx").on(t.fromProblemId, t.status),
-    index("problem_link_to_status_idx").on(t.toProblemId, t.status),
-    index("problem_link_status_created_idx").on(t.status, t.createdAt),
   ],
 );
 
@@ -210,12 +182,6 @@ export const commentRelations = relations(comment, ({ one, many }) => ({
 export const contributionRelations = relations(contribution, ({ one }) => ({
   author: one(user, { fields: [contribution.authorId], references: [user.id] }),
   problem: one(problem, { fields: [contribution.problemId], references: [problem.id] }),
-}));
-
-export const problemLinkRelations = relations(problemLink, ({ one }) => ({
-  proposedBy: one(user, { fields: [problemLink.proposedById], references: [user.id] }),
-  from: one(problem, { fields: [problemLink.fromProblemId], references: [problem.id] }),
-  to: one(problem, { fields: [problemLink.toProblemId], references: [problem.id] }),
 }));
 
 export const problemRevisionRelations = relations(problemRevision, ({ one }) => ({

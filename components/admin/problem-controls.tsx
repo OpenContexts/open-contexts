@@ -57,7 +57,6 @@ function DeleteForm({ problem, activity, onCancel }: { problem: Target; activity
   const attached = activity && [
     activity.comments && plural(activity.comments, "comment"),
     activity.contributions && plural(activity.contributions, "contribution"),
-    activity.links && plural(activity.links, "related link"),
     activity.edits && plural(activity.edits, "suggested edit"),
   ].filter(Boolean);
 

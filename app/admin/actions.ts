@@ -6,11 +6,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
 import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
-import { communityTag } from "@/lib/data/community";
+import { COUNTS_TAG, communityTag } from "@/lib/data/community";
 import { changeEntries, nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, moderationLog, problem, problemLink, problemProposal, problemRevision } from "@/lib/db/schema";
+import { comment, contribution, moderationLog, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 
 const decisionSchema = z.object({
   type: z.enum(SUBMISSION_TYPES),
@@ -32,8 +32,6 @@ function reviewQuery(type: SubmissionType, id: string, review: Review & { proble
       return db.update(comment).set(review).where(eq(comment.id, id));
     case "contribution":
       return db.update(contribution).set(review).where(eq(contribution.id, id));
-    case "link":
-      return db.update(problemLink).set(review).where(eq(problemLink.id, id));
     case "revision":
       return db.update(problemRevision).set(review).where(eq(problemRevision.id, id));
     case "proposal":
@@ -68,6 +66,26 @@ async function applyRevision(id: string) {
   };
 }
 
+/**
+ * A reference contribution with a link is also cited on the problem itself: approving it adds it to the problem's
+ * references (unless the same text or link is already there), reopening it removes it again.
+ * Returns undefined when the references stay as they are. The query is wrapped so that returning it from
+ * this async function does not run it: it runs in the decision's batch.
+ */
+async function citeReference(problemId: string, ref: Reference, change: "add" | "remove") {
+  const current = await readProblem(problemId);
+  if (!current) return undefined;
+  const references =
+    change === "add"
+      ? current.references.some((r) => r.text === ref.text || (ref.url && r.url === ref.url))
+        ? undefined
+        : [...current.references, ref]
+      : current.references.some((r) => r.text === ref.text && r.url === ref.url)
+        ? current.references.filter((r) => !(r.text === ref.text && r.url === ref.url))
+        : undefined;
+  return references && { query: db.update(problem).set({ references, updatedAt: new Date() }).where(eq(problem.id, problemId)) };
+}
+
 /** Approving a proposal creates the problem, with the next free number. */
 async function publishProposal(id: string, problemId: string) {
   const proposal = await db.query.problemProposal.findFirst({ where: eq(problemProposal.id, id) });
@@ -92,7 +110,8 @@ async function publishProposal(id: string, problemId: string) {
 }
 
 /** The submission's status, and the problem pages it appears on once approved. */
-async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[] } | undefined> {
+/** `pages`: the problem pages that show the submission. `reference`: what an approved reference adds to its problem. */
+async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; reference?: Reference } | undefined> {
   const columns = { status: true } as const;
   switch (type) {
     case "comment": {
@@ -100,12 +119,10 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
       return row && { status: row.status, pages: [row.problemId] };
     }
     case "contribution": {
-      const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true } });
-      return row && { status: row.status, pages: [row.problemId] };
-    }
-    case "link": {
-      const row = await db.query.problemLink.findFirst({ where: eq(problemLink.id, id), columns: { ...columns, fromProblemId: true, toProblemId: true } });
-      return row && { status: row.status, pages: [row.fromProblemId, row.toProblemId].filter((p) => p !== null) };
+      const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true, kind: true, title: true, url: true } });
+      // Only references with a link are cited on the problem; without one they stay a contribution.
+      const reference = row?.kind === "reference" && row.url ? { text: row.title, url: row.url } : undefined;
+      return row && { status: row.status, pages: [row.problemId], reference };
     }
     // Edits and proposals change the problems themselves, which are cached under the "problems" tag.
     case "revision": {
@@ -141,16 +158,22 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   const problemId = type === "proposal" && action === "approve" ? crypto.randomUUID() : undefined;
   const publish = action !== "approve" ? undefined : type === "revision" ? await applyRevision(id) : problemId ? await publishProposal(id, problemId) : undefined;
 
+  const referenceChange = action === "approve" ? "add" : current.status === "approved" ? "remove" : undefined;
+  const cite = current.reference && referenceChange ? await citeReference(current.pages[0], current.reference, referenceChange) : undefined;
+
   const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }) });
   const log = db.insert(moderationLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
   // Publishing runs first: the proposal's problem_id must point at an existing problem.
-  await (publish ? db.batch([publish.query, update, log]) : db.batch([update, log]));
+  // An approved edit or proposal changes the problem, and so may an approved reference (never both at once).
+  const change = publish?.query ?? cite?.query;
+  await (change ? db.batch([change, update, log]) : db.batch([update, log]));
 
   // Problem pages are cached until something on them changes: an approval adds to them, reopening an
   // approved submission takes it off again. Rejecting a pending one changes nothing that is public.
   if (action === "approve" || current.status === "approved") {
-    if (type === "revision" || type === "proposal") updateTag("problems");
+    if (type === "revision" || type === "proposal" || cite) updateTag("problems");
     for (const problemId of current.pages) updateTag(communityTag(problemId));
+    if (current.pages.length) updateTag(COUNTS_TAG); // the counts in the problem lists
   }
   return { type, action, applied: true };
 }

@@ -9,7 +9,7 @@ export default function GuidelinesPage() {
       <PageTitle>Guidelines</PageTitle>
       <SectionTitle>Moderation</SectionTitle>
       <p>
-        Every comment, contribution, related link and suggested edit is reviewed by a moderator before it
+        Every comment, contribution and suggested edit is reviewed by a moderator before it
         appears on the site. Moderators can accept or reject a submission and may leave a note explaining the
         decision. Each decision is logged.
       </p>

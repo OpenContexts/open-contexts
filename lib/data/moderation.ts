@@ -2,26 +2,27 @@
 import "server-only";
 import { asc, count, desc, eq, sql } from "drizzle-orm";
 import { connection } from "next/server";
-import { AI_USE_LABELS, CONTRIBUTION_KIND_LABELS, LINK_RELATION_LABELS, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
+import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, moderationLog, problemLink, problemProposal, problemRevision } from "@/lib/db/schema";
+import { comment, contribution, moderationLog, problemProposal, problemRevision } from "@/lib/db/schema";
 
 export async function getPendingCounts(): Promise<Record<SubmissionType, number>> {
   await connection();
-  const [[c], [k], [l], [r], [p]] = await db.batch([
+  const [[c], [k], [r], [p]] = await db.batch([
     db.select({ n: count() }).from(comment).where(eq(comment.status, "pending")),
     db.select({ n: count() }).from(contribution).where(eq(contribution.status, "pending")),
-    db.select({ n: count() }).from(problemLink).where(eq(problemLink.status, "pending")),
     db.select({ n: count() }).from(problemRevision).where(eq(problemRevision.status, "pending")),
     db.select({ n: count() }).from(problemProposal).where(eq(problemProposal.status, "pending")),
   ]);
-  return { comment: c.n, contribution: k.n, link: l.n, revision: r.n, proposal: p.n };
+  return { comment: c.n, contribution: k.n, revision: r.n, proposal: p.n };
 }
 
-const author = { columns: { name: true, email: true } } as const;
+// id, role and banned let an admin block the author from the review page.
+const author = { columns: { id: true, name: true, email: true, role: true, banned: true } } as const;
+type Author = { id: string | null; name: string; email: string; role: string | null; banned: boolean | null };
 /** Edits and proposals outlive their author's account (author_id is set to null). */
-const DELETED_AUTHOR = { name: "Deleted account", email: "—" };
+const DELETED_AUTHOR: Author = { id: null, name: "Deleted account", email: "—", role: null, banned: null };
 
 /** Full rows with their author, per submission type. */
 async function findMany(type: SubmissionType, status: ModerationStatus, limit: number) {
@@ -32,8 +33,6 @@ async function findMany(type: SubmissionType, status: ModerationStatus, limit: n
       return { type, rows: await db.query.comment.findMany({ where: eq(comment.status, status), with: { author }, orderBy: order(comment.createdAt), limit }) };
     case "contribution":
       return { type, rows: await db.query.contribution.findMany({ where: eq(contribution.status, status), with: { author }, orderBy: order(contribution.createdAt), limit }) };
-    case "link":
-      return { type, rows: await db.query.problemLink.findMany({ where: eq(problemLink.status, status), with: { proposedBy: author }, orderBy: order(problemLink.createdAt), limit }) };
     case "revision":
       return { type, rows: await db.query.problemRevision.findMany({ where: eq(problemRevision.status, status), with: { author }, orderBy: order(problemRevision.createdAt), limit }) };
     case "proposal":
@@ -47,11 +46,15 @@ export type QueueItem = {
   excerpt?: string;
   /** Full markdown text, for deciding straight from the list. */
   body?: string;
-  details?: string[];
+  /** Contributions: what kind of material, how much AI was used, and who is credited. */
+  kind?: ContributionKind;
+  aiUse?: AiUse;
+  credit?: string;
   url?: string;
   problemId: string | null;
   /** "Problem 2: Black hole information". */
   problemLabel: string | null;
+  problemSlug: string | null;
   author: { name: string; email: string };
   createdAt: Date;
 };
@@ -66,8 +69,10 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
   await connection();
   const [result, problems] = await Promise.all([findMany(type, status, limit), getProblems()]);
   const byId = new Map(problems.map((p) => [p.id, p]));
-  const shortTitle = (id: string | null) => (id && byId.get(id)?.title) ?? "a deleted problem";
-  const problem = (id: string | null) => ({ problemId: id, problemLabel: id && byId.has(id) ? problemLabel(byId.get(id)!) : null });
+  const problem = (id: string | null) => {
+    const p = id ? byId.get(id) : undefined;
+    return { problemId: id, problemLabel: p ? problemLabel(p) : null, problemSlug: p?.slug ?? null };
+  };
 
   switch (result.type) {
     case "comment":
@@ -86,26 +91,14 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
         title: r.title,
         excerpt: excerpt(r.summary),
         body: r.summary,
-        details: [CONTRIBUTION_KIND_LABELS[r.kind], AI_USE_LABELS[r.aiUse], `credit: ${r.credit}`],
+        kind: r.kind,
+        aiUse: r.aiUse,
+        credit: r.credit,
         url: r.url ?? undefined,
         ...problem(r.problemId),
         author: r.author,
         createdAt: r.createdAt,
       }));
-    case "link":
-      return result.rows.map((r) => {
-        const target = r.toProblemId ? shortTitle(r.toProblemId) : (r.label ?? r.url ?? "");
-        return {
-          id: r.id,
-          title: `${shortTitle(r.fromProblemId)} ${LINK_RELATION_LABELS[r.relation]} ${target}`,
-          excerpt: r.note ?? undefined,
-          body: r.note ?? undefined,
-          url: r.url ?? undefined,
-          ...problem(r.fromProblemId),
-          author: r.proposedBy,
-          createdAt: r.createdAt,
-        };
-      });
     case "revision":
       return result.rows.map((r) => ({ id: r.id, title: r.changeSummary, excerpt: r.title, ...problem(r.problemId), author: r.author ?? DELETED_AUTHOR, createdAt: r.createdAt }));
     case "proposal":
@@ -124,10 +117,6 @@ export async function getSubmission(type: SubmissionType, id: string) {
     case "contribution": {
       const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), with: { author } });
       return row && { type, row };
-    }
-    case "link": {
-      const row = await db.query.problemLink.findFirst({ where: eq(problemLink.id, id), with: { proposedBy: author } });
-      return row && { type, row: { ...row, author: row.proposedBy } };
     }
     case "revision": {
       const row = await db.query.problemRevision.findFirst({ where: eq(problemRevision.id, id), with: { author } });
@@ -163,24 +152,22 @@ export async function getDecisionsFor(type: LogTargetType, id: string) {
   });
 }
 
-export type ProblemActivity = { comments: number; contributions: number; links: number; edits: number; pending: number };
+export type ProblemActivity = { comments: number; contributions: number; edits: number; pending: number };
 
 /** Per problem: how much is attached to it (what deleting it would remove), and how much awaits review. */
 export async function getProblemActivity(): Promise<Map<string, ProblemActivity>> {
   await connection();
   const pending = sql<number>`count(*) filter (where status = 'pending')::int`;
-  const [comments, contributions, linksFrom, linksTo, edits] = await db.batch([
+  const [comments, contributions, edits] = await db.batch([
     db.select({ id: comment.problemId, n: count(), pending }).from(comment).groupBy(comment.problemId),
     db.select({ id: contribution.problemId, n: count(), pending }).from(contribution).groupBy(contribution.problemId),
-    db.select({ id: problemLink.fromProblemId, n: count(), pending }).from(problemLink).groupBy(problemLink.fromProblemId),
-    db.select({ id: problemLink.toProblemId, n: count(), pending: sql<number>`0` }).from(problemLink).groupBy(problemLink.toProblemId),
     db.select({ id: problemRevision.problemId, n: count(), pending }).from(problemRevision).groupBy(problemRevision.problemId),
   ]);
   const activity = new Map<string, ProblemActivity>();
   const add = (rows: { id: string | null; n: number; pending: number }[], key: Exclude<keyof ProblemActivity, "pending">) => {
     for (const { id, n, pending } of rows) {
       if (!id) continue;
-      const a = activity.get(id) ?? { comments: 0, contributions: 0, links: 0, edits: 0, pending: 0 };
+      const a = activity.get(id) ?? { comments: 0, contributions: 0, edits: 0, pending: 0 };
       a[key] += n;
       a.pending += Number(pending);
       activity.set(id, a);
@@ -188,8 +175,6 @@ export async function getProblemActivity(): Promise<Map<string, ProblemActivity>
   };
   add(comments, "comments");
   add(contributions, "contributions");
-  add(linksFrom, "links");
-  add(linksTo, "links");
   add(edits, "edits");
   return activity;
 }

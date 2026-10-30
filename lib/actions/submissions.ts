@@ -6,7 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth/session";
 import { getProblem, type Problem, readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, problemLink, problemProposal, problemRevision } from "@/lib/db/schema";
+import { comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
 import {
   commentSchema,
   proposalSchema,
@@ -23,7 +23,6 @@ async function pendingCount(userId: string): Promise<number> {
   const counts = await db.batch([
     db.select({ n: count() }).from(comment).where(and(eq(comment.authorId, userId), eq(comment.status, "pending"))),
     db.select({ n: count() }).from(contribution).where(and(eq(contribution.authorId, userId), eq(contribution.status, "pending"))),
-    db.select({ n: count() }).from(problemLink).where(and(eq(problemLink.proposedById, userId), eq(problemLink.status, "pending"))),
     db.select({ n: count() }).from(problemRevision).where(and(eq(problemRevision.authorId, userId), eq(problemRevision.status, "pending"))),
     db.select({ n: count() }).from(problemProposal).where(and(eq(problemProposal.authorId, userId), eq(problemProposal.status, "pending"))),
   ]);
