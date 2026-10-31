@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppleIcon, Container } from "@/components/ui";
+import { AppleIcon, Container, ThemeToggle } from "@/components/ui";
 import { SITE } from "@/lib/site";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
@@ -20,7 +20,8 @@ export function SiteHeader() {
         <nav aria-label="Main" className="ml-auto flex gap-x-6 text-base max-[880px]:hidden">
           <NavLinks />
         </nav>
-        <div className="w-24 text-right text-base whitespace-nowrap max-[880px]:ml-auto min-[880px]:border-l min-[880px]:border-rule min-[880px]:pl-4">
+        <ThemeToggle className="-mx-3 max-[880px]:ml-auto" />
+        <div className="w-24 text-right text-base whitespace-nowrap min-[880px]:border-l min-[880px]:border-rule min-[880px]:pl-4">
           <UserMenu />
         </div>
       </Container>

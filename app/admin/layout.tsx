@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { AppleIcon } from "@/components/ui";
+import { AppleIcon, ThemeToggle } from "@/components/ui";
 import { getCurrentUser, isAdmin, isModerator } from "@/lib/auth/session";
 import { ROLE_LABELS } from "@/lib/constants";
 import { getPendingCounts } from "@/lib/data/moderation";
@@ -12,12 +12,13 @@ export const metadata: Metadata = { title: { default: "Admin", template: "%s · 
 // reviewing submissions, requireAdmin for user management.
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="min-h-screen bg-zinc-50 font-ui text-sm text-zinc-900 antialiased lg:flex">
+    <div className="admin-ui min-h-screen bg-zinc-50 font-ui text-sm text-zinc-900 antialiased lg:flex">
       <aside className="border-b border-zinc-200 bg-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-60 lg:flex-none lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex h-14 items-center gap-2 px-5">
           <AppleIcon className="size-4" />
           <span className="font-semibold tracking-tight">OpenContext</span>
           <span className="rounded bg-zinc-100 px-1.5 py-0.5 text-[11px] font-medium text-zinc-500">Admin</span>
+          <ThemeToggle className="-mr-2 ml-auto rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" />
         </div>
         <div className="lg:flex-1 lg:overflow-y-auto lg:pt-2">
           <NavWithCounts />

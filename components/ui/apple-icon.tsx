@@ -1,10 +1,10 @@
 import { cn } from "@/lib/cn";
 
 // The site's mark. Its colour encodes state: red = open, outline = under revision,
-// grey = solved, gold = research area, white = on a red background.
+// grey = solved, gold = research area, white = on a red background. The outline apple is filled with the page colour.
 const palettes = {
   red: { body: "#c00808", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "none" },
-  outline: { body: "#ffffff", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "#c00808" },
+  outline: { body: "var(--color-paper)", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "#c00808" },
   grey: { body: "#bdbdbd", leaf: "#9c9c9c", stem: "#8a8a8a", stroke: "none" },
   gold: { body: "#e6b422", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "none" },
   white: { body: "#ffffff", leaf: "#ffffff", stem: "#ffffff", stroke: "none" },
@@ -23,7 +23,7 @@ export function AppleIcon({ variant = "red", className, label }: { variant?: App
       aria-hidden={label ? undefined : true}
     >
       <path
-        fill={c.body}
+        style={{ fill: c.body }} // a style, not the attribute: attributes can't read CSS variables
         stroke={c.stroke}
         strokeWidth={1.6}
         strokeLinejoin="round"

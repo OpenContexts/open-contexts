@@ -74,20 +74,6 @@ export const CONTRIBUTION_KIND_LABELS: Record<ContributionKind, string> = {
   question: "question about the statement",
   reference: "relevant reference",
 };
-
-export const AI_USE = ["none", "partial", "full"] as const;
-export type AiUse = (typeof AI_USE)[number];
-export const AI_USE_LABELS: Record<AiUse, string> = {
-  none: "no AI assistance",
-  partial: "partially AI-assisted",
-  full: "fully AI-generated",
-};
-export const AI_USE_DESCRIPTIONS: Record<AiUse, string> = {
-  none: "Written and worked out without AI tools.",
-  partial: "AI tools helped (several human–AI iterations), and you checked the result.",
-  full: "Essentially the output of an AI tool.",
-};
-
 export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = {
   claim: "You believe you have solved the problem.",
   partial: "A special case, a bound, or a step towards a solution.",
@@ -100,6 +86,19 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   challenge: "A gap or error in a claimed solution.",
   question: "Something unclear or ambiguous in the statement.",
   reference: "Relevant literature not yet cited on the page.",
+};
+
+export const AI_USE = ["none", "partial", "full"] as const;
+export type AiUse = (typeof AI_USE)[number];
+export const AI_USE_LABELS: Record<AiUse, string> = {
+  none: "no AI assistance",
+  partial: "partially AI-assisted",
+  full: "fully AI-generated",
+};
+export const AI_USE_DESCRIPTIONS: Record<AiUse, string> = {
+  none: "Written and worked out without AI tools.",
+  partial: "AI tools helped (several human–AI iterations), and you checked the result.",
+  full: "Essentially the output of an AI tool.",
 };
 
 /** Roles stored on `user.role` (Better Auth admin plugin). */

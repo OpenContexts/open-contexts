@@ -108,7 +108,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 - [ ] Approved results appear in the history too
 - [ ] Credit lines like the prototype's ("advanced by", "verified by", "explained by"), derived from contributions
 - [x] `/progress` chart of statuses over time (static SVG, `lib/data/progress.ts`)
-- [ ] BibTeX "cite this entry"
+- [x] BibTeX "cite this entry" (problem pages; plain text and BibTeX for the whole database on About)
 
 ### Phase 4: polish and launch
 - [ ] Better search (Postgres full-text search once problems are in the DB, or a prebuilt index)

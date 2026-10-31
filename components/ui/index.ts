@@ -17,3 +17,4 @@ export { Kbd } from "./kbd";
 export { SubmitButton } from "./submit-button";
 export { Tag, type TagTone, toneColors } from "./tag";
 export { TabLink, Tabs } from "./tabs";
+export { ThemeToggle } from "./theme-toggle";

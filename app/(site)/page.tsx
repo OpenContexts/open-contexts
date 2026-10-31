@@ -32,6 +32,17 @@ export default async function HomePage() {
         </p>
       </section>
 
+      <section className="mx-auto max-w-160">
+        <div className="flex items-start w-full text-sm gap-4">
+          <strong>Companion paper:</strong>
+          <Link href="#" className="text-brand hover:underline flex-wrap flex-1">
+            <p className="">
+              <span className="italic">Accelerating research through skilled humans collaborating with AI agents: A case study in quantum foundations</span>, Wagner et al. (2026).
+            </p>
+          </Link>
+        </div>
+      </section>
+
       <nav aria-label="Counts" className="my-8 flex flex-wrap justify-center gap-x-10 gap-y-2 border-y border-rule-strong py-3">
         {[
           { href: "/problems", n: problems.length, label: problems.length === 1 ? "problem" : "problems" },
@@ -46,7 +57,7 @@ export default async function HomePage() {
         ))}
       </nav>
 
-      <Form action="/problems" role="search" className="mt-8 flex gap-2">
+      <Form action="/problems" role="search" className="mt-8 flex gap-2 max-w-xl mx-auto">
         <label htmlFor="q" className="sr-only">
           Search problems
         </label>

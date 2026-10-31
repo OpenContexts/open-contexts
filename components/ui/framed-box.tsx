@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 
 const tones = {
   problem: { box: "border-brand-dark bg-brand-tint", tab: "border-brand-dark bg-brand-strong text-white" },
-  criteria: { box: "border-gold-dark bg-gold-tint", tab: "border-gold-dark bg-gold text-ink" },
+  criteria: { box: "border-gold-dark bg-gold-tint", tab: "border-gold-dark bg-gold text-ink dark:text-paper" },
 } as const;
 
 /** The paper's boxed environment: a framed panel with a title tab centred on its top edge. */

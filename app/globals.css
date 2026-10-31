@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
 /* Design tokens, taken from the prototype (https://rafunds3d.github.io/OpenContext/).
-   Use them as utilities: bg-paper, text-ink-muted, border-rule, text-brand, max-w-measure, … */
+   Use them as utilities: bg-paper, text-ink-muted, border-rule, text-brand, max-w-measure, …
+   Each colour is light-dark(light, dark): which one applies follows the page's color-scheme (see below). */
 @theme {
-  --color-paper: #ffffff;
-  --color-ink: #111111;
-  --color-ink-muted: #454545;
-  --color-ink-subtle: #6e6e6e;
-  --color-rule: #d9d9d9;
-  --color-rule-strong: #b9b9b9;
-  --color-surface: #f7f7f7;
+  --color-paper: light-dark(#ffffff, #141414);
+  --color-ink: light-dark(#111111, #e6e4df);
+  --color-ink-muted: light-dark(#454545, #b5b3ae);
+  --color-ink-subtle: light-dark(#6e6e6e, #8d8b87);
+  --color-rule: light-dark(#d9d9d9, #34332f);
+  --color-rule-strong: light-dark(#b9b9b9, #4e4c48);
+  --color-surface: light-dark(#f7f7f7, #1d1d1c);
 
-  /* red: links, open problems, the problem box */
-  --color-brand: #b80808;
-  --color-brand-strong: #c00808;
-  --color-brand-dark: #5a0000;
-  --color-brand-tint: #fdf3f3;
+  /* red: links, open problems, the problem box. brand-strong is a fill under white text, in both modes. */
+  --color-brand: light-dark(#b80808, #f2716b);
+  --color-brand-strong: light-dark(#c00808, #c62828);
+  --color-brand-dark: light-dark(#5a0000, #8a2b2b);
+  --color-brand-tint: light-dark(#fdf3f3, #261616);
 
   /* gold: research areas, criteria boxes, notices */
-  --color-gold: #e0a820;
-  --color-gold-dark: #804000;
-  --color-gold-tint: #fefbf4;
+  --color-gold: light-dark(#e0a820, #d9a12a);
+  --color-gold-dark: light-dark(#804000, #e2b75a);
+  --color-gold-tint: light-dark(#fefbf4, #241e10);
 
-  --color-success: #2e7d32;
-  --color-success-tint: #f4faf4;
-  --color-info: #1a4fa0;
-  --color-info-tint: #f3f6fc;
+  --color-success: light-dark(#2e7d32, #74c27a);
+  --color-success-tint: light-dark(#f4faf4, #15211a);
+  --color-info: light-dark(#1a4fa0, #84aef0);
+  --color-info-tint: light-dark(#f3f6fc, #141c2b);
 
   --container-measure: 64rem;
 }
@@ -38,7 +39,31 @@
   --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
+/*
+ * Light or dark: the system setting, unless the visitor picked one with the theme toggle, which sets
+ * data-theme on <html> (see lib/theme.ts). `dark:` matches whichever way the page ends up dark.
+ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 @layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
   body {
     @apply bg-paper font-serif text-lg/normal font-medium text-ink;
   }
@@ -48,6 +73,83 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand;
   }
+}
+
+/*
+ * The admin dashboard is written in Tailwind's zinc palette with a few colours for status, so its dark
+ * mode remaps those palettes instead of adding dark: to every class. In the dark, zinc runs the other
+ * way (zinc-900 text turns light, zinc-50 backgrounds dark), white is the colour of a card, and a colour's
+ * light tints (50–300) become that colour mixed into the card while its dark shades (600–950) lighten.
+ * Generated from tailwindcss/theme.css, so the light halves are Tailwind's own values.
+ */
+.admin-ui {
+    --color-white: light-dark(#fff, oklch(21% 0.006 285.885));
+    --color-zinc-50: light-dark(oklch(98.5% 0 none), oklch(16.5% 0.005 285.9));
+    --color-zinc-100: light-dark(oklch(96.7% 0.001 286.375), oklch(27.4% 0.006 286.033));
+    --color-zinc-200: light-dark(oklch(92% 0.004 286.32), oklch(31% 0.008 286));
+    --color-zinc-300: light-dark(oklch(87.1% 0.006 286.286), oklch(37% 0.013 285.805));
+    --color-zinc-400: light-dark(oklch(70.5% 0.015 286.067), oklch(55.2% 0.016 285.938));
+    --color-zinc-500: light-dark(oklch(55.2% 0.016 285.938), oklch(70.5% 0.015 286.067));
+    --color-zinc-600: light-dark(oklch(44.2% 0.017 285.786), oklch(78% 0.012 286));
+    --color-zinc-700: light-dark(oklch(37% 0.013 285.805), oklch(87.1% 0.006 286.286));
+    --color-zinc-800: light-dark(oklch(27.4% 0.006 286.033), oklch(92% 0.004 286.32));
+    --color-zinc-900: light-dark(oklch(21% 0.006 285.885), oklch(96.7% 0.001 286.375));
+    --color-zinc-950: light-dark(oklch(14.1% 0.005 285.823), oklch(98.5% 0 none));
+    --color-red-50: light-dark(oklch(97.1% 0.013 17.38), color-mix(in oklab, oklch(63.7% 0.237 25.331) 12%, oklch(21% 0.006 285.885)));
+    --color-red-100: light-dark(oklch(93.6% 0.032 17.717), color-mix(in oklab, oklch(63.7% 0.237 25.331) 20%, oklch(21% 0.006 285.885)));
+    --color-red-200: light-dark(oklch(88.5% 0.062 18.334), color-mix(in oklab, oklch(63.7% 0.237 25.331) 32%, oklch(21% 0.006 285.885)));
+    --color-red-300: light-dark(oklch(80.8% 0.114 19.571), color-mix(in oklab, oklch(63.7% 0.237 25.331) 50%, oklch(21% 0.006 285.885)));
+    --color-red-400: light-dark(oklch(70.4% 0.191 22.216), oklch(70.4% 0.191 22.216));
+    --color-red-500: light-dark(oklch(63.7% 0.237 25.331), oklch(63.7% 0.237 25.331));
+    --color-red-600: light-dark(oklch(57.7% 0.245 27.325), oklch(70.4% 0.191 22.216));
+    --color-red-700: light-dark(oklch(50.5% 0.213 27.518), oklch(80.8% 0.114 19.571));
+    --color-red-800: light-dark(oklch(44.4% 0.177 26.899), oklch(88.5% 0.062 18.334));
+    --color-red-900: light-dark(oklch(39.6% 0.141 25.723), oklch(93.6% 0.032 17.717));
+    --color-red-950: light-dark(oklch(25.8% 0.092 26.042), oklch(97.1% 0.013 17.38));
+    --color-emerald-50: light-dark(oklch(97.9% 0.021 166.113), color-mix(in oklab, oklch(69.6% 0.17 162.48) 12%, oklch(21% 0.006 285.885)));
+    --color-emerald-100: light-dark(oklch(95% 0.052 163.051), color-mix(in oklab, oklch(69.6% 0.17 162.48) 20%, oklch(21% 0.006 285.885)));
+    --color-emerald-200: light-dark(oklch(90.5% 0.093 164.15), color-mix(in oklab, oklch(69.6% 0.17 162.48) 32%, oklch(21% 0.006 285.885)));
+    --color-emerald-300: light-dark(oklch(84.5% 0.143 164.978), color-mix(in oklab, oklch(69.6% 0.17 162.48) 50%, oklch(21% 0.006 285.885)));
+    --color-emerald-400: light-dark(oklch(76.5% 0.177 163.223), oklch(76.5% 0.177 163.223));
+    --color-emerald-500: light-dark(oklch(69.6% 0.17 162.48), oklch(69.6% 0.17 162.48));
+    --color-emerald-600: light-dark(oklch(59.6% 0.145 163.225), oklch(76.5% 0.177 163.223));
+    --color-emerald-700: light-dark(oklch(50.8% 0.118 165.612), oklch(84.5% 0.143 164.978));
+    --color-emerald-800: light-dark(oklch(43.2% 0.095 166.913), oklch(90.5% 0.093 164.15));
+    --color-emerald-900: light-dark(oklch(37.8% 0.077 168.94), oklch(95% 0.052 163.051));
+    --color-emerald-950: light-dark(oklch(26.2% 0.051 172.552), oklch(97.9% 0.021 166.113));
+    --color-amber-50: light-dark(oklch(98.7% 0.022 95.277), color-mix(in oklab, oklch(76.9% 0.188 70.08) 12%, oklch(21% 0.006 285.885)));
+    --color-amber-100: light-dark(oklch(96.2% 0.059 95.617), color-mix(in oklab, oklch(76.9% 0.188 70.08) 20%, oklch(21% 0.006 285.885)));
+    --color-amber-200: light-dark(oklch(92.4% 0.12 95.746), color-mix(in oklab, oklch(76.9% 0.188 70.08) 32%, oklch(21% 0.006 285.885)));
+    --color-amber-300: light-dark(oklch(87.9% 0.169 91.605), color-mix(in oklab, oklch(76.9% 0.188 70.08) 50%, oklch(21% 0.006 285.885)));
+    --color-amber-400: light-dark(oklch(82.8% 0.189 84.429), oklch(82.8% 0.189 84.429));
+    --color-amber-500: light-dark(oklch(76.9% 0.188 70.08), oklch(76.9% 0.188 70.08));
+    --color-amber-600: light-dark(oklch(66.6% 0.179 58.318), oklch(82.8% 0.189 84.429));
+    --color-amber-700: light-dark(oklch(55.5% 0.163 48.998), oklch(87.9% 0.169 91.605));
+    --color-amber-800: light-dark(oklch(47.3% 0.137 46.201), oklch(92.4% 0.12 95.746));
+    --color-amber-900: light-dark(oklch(41.4% 0.112 45.904), oklch(96.2% 0.059 95.617));
+    --color-amber-950: light-dark(oklch(27.9% 0.077 45.635), oklch(98.7% 0.022 95.277));
+    --color-sky-50: light-dark(oklch(97.7% 0.013 236.62), color-mix(in oklab, oklch(68.5% 0.169 237.323) 12%, oklch(21% 0.006 285.885)));
+    --color-sky-100: light-dark(oklch(95.1% 0.026 236.824), color-mix(in oklab, oklch(68.5% 0.169 237.323) 20%, oklch(21% 0.006 285.885)));
+    --color-sky-200: light-dark(oklch(90.1% 0.058 230.902), color-mix(in oklab, oklch(68.5% 0.169 237.323) 32%, oklch(21% 0.006 285.885)));
+    --color-sky-300: light-dark(oklch(82.8% 0.111 230.318), color-mix(in oklab, oklch(68.5% 0.169 237.323) 50%, oklch(21% 0.006 285.885)));
+    --color-sky-400: light-dark(oklch(74.6% 0.16 232.661), oklch(74.6% 0.16 232.661));
+    --color-sky-500: light-dark(oklch(68.5% 0.169 237.323), oklch(68.5% 0.169 237.323));
+    --color-sky-600: light-dark(oklch(58.8% 0.158 241.966), oklch(74.6% 0.16 232.661));
+    --color-sky-700: light-dark(oklch(50% 0.134 242.749), oklch(82.8% 0.111 230.318));
+    --color-sky-800: light-dark(oklch(44.3% 0.11 240.79), oklch(90.1% 0.058 230.902));
+    --color-sky-900: light-dark(oklch(39.1% 0.09 240.876), oklch(95.1% 0.026 236.824));
+    --color-sky-950: light-dark(oklch(29.3% 0.066 243.157), oklch(97.7% 0.013 236.62));
+    --color-violet-50: light-dark(oklch(96.9% 0.016 293.756), color-mix(in oklab, oklch(60.6% 0.25 292.717) 12%, oklch(21% 0.006 285.885)));
+    --color-violet-100: light-dark(oklch(94.3% 0.029 294.588), color-mix(in oklab, oklch(60.6% 0.25 292.717) 20%, oklch(21% 0.006 285.885)));
+    --color-violet-200: light-dark(oklch(89.4% 0.057 293.283), color-mix(in oklab, oklch(60.6% 0.25 292.717) 32%, oklch(21% 0.006 285.885)));
+    --color-violet-300: light-dark(oklch(81.1% 0.111 293.571), color-mix(in oklab, oklch(60.6% 0.25 292.717) 50%, oklch(21% 0.006 285.885)));
+    --color-violet-400: light-dark(oklch(70.2% 0.183 293.541), oklch(70.2% 0.183 293.541));
+    --color-violet-500: light-dark(oklch(60.6% 0.25 292.717), oklch(60.6% 0.25 292.717));
+    --color-violet-600: light-dark(oklch(54.1% 0.281 293.009), oklch(70.2% 0.183 293.541));
+    --color-violet-700: light-dark(oklch(49.1% 0.27 292.581), oklch(81.1% 0.111 293.571));
+    --color-violet-800: light-dark(oklch(43.2% 0.232 292.759), oklch(89.4% 0.057 293.283));
+    --color-violet-900: light-dark(oklch(38% 0.189 293.745), oklch(94.3% 0.029 294.588));
+    --color-violet-950: light-dark(oklch(28.3% 0.141 291.089), oklch(96.9% 0.016 293.756));
 }
 
 /*

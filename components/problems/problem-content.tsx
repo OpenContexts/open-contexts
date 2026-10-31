@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cacheLife, cacheTag } from "next/cache";
 import type { ReactNode } from "react";
 import { MarkdownContent, MarkdownInline } from "@/components/markdown/markdown";
+import { CiteProblem } from "@/components/problems/cite-problem";
 import { ContributionsSection, DiscussionSection } from "@/components/problems/community-sections";
 import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
@@ -10,8 +11,9 @@ import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
 import { Chip, ChipList, ExpandableList, PartTitle, toneColors } from "@/components/ui";
 import { getArea } from "@/lib/areas";
+import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
-import { getProblemById, statusSince } from "@/lib/data/problems";
+import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
 import { formatDate, formatNames } from "@/lib/format";
 
@@ -70,6 +72,8 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
           ))}
         </ChipList>
       )}
+
+      <CiteProblem problem={pick(problem)} origin={siteOrigin()} />
 
       {problem.references.length > 0 && (
         <>
@@ -135,4 +139,9 @@ function Fact({ label, className, children }: { label: string; className?: strin
       <dd className="mt-1 text-[0.98rem]">{children}</dd>
     </div>
   );
+}
+
+/** Only what the citation needs goes to the browser, not the whole text. */
+function pick({ number, slug, title, posedBy, posed, status, updated }: Problem) {
+  return { number, slug, title, posedBy, posed, status, updated };
 }

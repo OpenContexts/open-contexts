@@ -5,7 +5,7 @@ export const SITE = {
   description:
     "A community-curated, moderated database of precisely stated open problems in theoretical physics, with recorded progress, discussion and fine-grained credit.",
   repo: "",
-  contact: "",
+  contact: "rafael.wagner@uni-ulm.de",
 } as const;
 
 export const NAV = [

@@ -15,7 +15,7 @@ export function AdminDialog({ open, onClose, title, children }: { open: boolean;
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-full max-w-md rounded-lg bg-white p-5 text-left font-ui text-sm text-zinc-900 shadow-xl ring-1 ring-zinc-200 backdrop:bg-zinc-900/30"
+      className="m-auto w-full max-w-md rounded-lg bg-white p-5 text-left font-ui text-sm text-zinc-900 shadow-xl ring-1 ring-zinc-200 backdrop:bg-black/40"
     >
       <h2 className="text-base font-semibold">{title}</h2>
       {open && children}

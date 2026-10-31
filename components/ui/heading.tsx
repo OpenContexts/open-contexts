@@ -8,7 +8,7 @@ export function PageTitle({ children, className }: { children: ReactNode; classN
 
 export function SectionTitle({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <h2 id={id} className={cn("mt-14 mb-5 text-center text-base", className)}>
+    <h2 id={id} className={cn("mt-16 mb-5 text-center text-base", className)}>
       {children}
     </h2>
   );

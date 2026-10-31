@@ -12,10 +12,10 @@ const softTones = {
 
 // Filled: for outcomes that matter (a solution, a verification, a refutation, a change of status).
 const strongTones = {
-  neutral: "bg-ink text-white ring-ink",
-  success: "bg-success text-white ring-success",
-  info: "bg-info text-white ring-info",
-  warning: "bg-gold text-ink ring-gold-dark/40",
+  neutral: "bg-ink text-paper ring-ink",
+  success: "bg-success text-white ring-success dark:text-paper",
+  info: "bg-info text-white ring-info dark:text-paper",
+  warning: "bg-gold text-ink ring-gold-dark/40 dark:text-paper",
   danger: "bg-brand-strong text-white ring-brand-strong",
 } as const;
 

@@ -6,13 +6,13 @@ const shapes = {
   /** rounded pill, for topics and tags */
   pill: "rounded-full border-rule-strong px-2 py-px text-sm text-ink-muted hover:border-ink hover:text-ink",
   /** square chip, for short codes such as area numerals */
-  square: "min-w-6 rounded-sm border-ink px-1.5 py-0.5 text-center text-sm font-bold text-ink hover:bg-ink hover:text-white",
+  square: "min-w-6 rounded-sm border-ink px-1.5 py-0.5 text-center text-sm font-bold text-ink hover:bg-ink hover:text-paper",
 } as const;
 
 type ChipProps = { shape?: keyof typeof shapes; active?: boolean; className?: string; children: ReactNode };
 
 function chipStyles({ shape = "pill", active, className }: Omit<ChipProps, "children">) {
-  return cn("inline-block border no-underline", shapes[shape], active && "border-ink bg-ink text-white", className);
+  return cn("inline-block border no-underline", shapes[shape], active && "border-ink bg-ink text-paper", className);
 }
 
 export function Chip({ shape, active, className, children }: ChipProps) {

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { SITE } from "@/lib/site";
+import { THEME_SCRIPT } from "@/lib/theme";
 
 // Computer Modern, the typeface of LaTeX (SIL Open Font License, see app/fonts/OFL.txt).
 const serif = localFont({
@@ -45,7 +46,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
+    // suppressHydrationWarning: THEME_SCRIPT may add data-theme to <html> before React hydrates.
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
