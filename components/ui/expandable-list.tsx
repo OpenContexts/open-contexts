@@ -32,8 +32,9 @@ export function ExpandableList({
         <p className="mt-2.5 flex justify-center gap-4 text-[0.92rem]">
           {hidden > 0 && (
             <button type="button" onClick={() => setShown((s) => s + limit)} className="cursor-pointer text-brand hover:underline">
-              Show {next === hidden && hidden > 1 ? `the remaining ${hidden}` : next} {next === 1 ? noun[0] : noun[1]}
+              Show {next === hidden && hidden > 0 ? `the remaining ${hidden}` : `${next} more`} {next === 1 ? noun[0] : noun[1]}
             </button>
+            
           )}
           {shown > limit && (
             <button type="button" onClick={() => setShown(limit)} className="cursor-pointer text-ink-subtle hover:text-ink hover:underline">

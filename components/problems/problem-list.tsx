@@ -12,7 +12,7 @@ import { StatusBadge, StatusIcon } from "./status";
  * how much the community has added (approved contributions and comments).
  * The whole row opens the problem (the title link covers it); the area chips stay separate links above that.
  */
-export function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: CommunityCounts[string] }) {
+function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: CommunityCounts[string] }) {
   const decided = p.status !== "open" && (p.status === "solved" ? "solved" : "under revision since");
   return (
     <li className="group relative grid grid-cols-[3.8rem_minmax(0,1fr)] gap-x-3 border-t border-rule px-2 py-4 transition-colors hover:bg-surface max-sm:grid-cols-[3rem_minmax(0,1fr)] max-sm:px-0">
@@ -35,9 +35,9 @@ export function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: 
           </div>
           <StatusBadge status={p.status} className="mt-0.5 shrink-0 max-sm:hidden" />
         </div>
-        {/* The statement's first paragraph, cut after two lines; display math is set inline here. */}
-        <div className="mt-1 line-clamp-2 text-[0.95rem] text-ink-muted [&_.katex-display]:my-0 [&_.katex-display]:inline">
-          <MarkdownInline source={p.statement.trim().split(/\n\s*\n/)[0]} />
+        {/* The statement's first paragraph, cut after two lines. */}
+        <div className="mt-1 line-clamp-2 text-[0.95rem] text-ink-muted">
+          <MarkdownInline source={excerpt(p.statement)} />
         </div>
         <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink-subtle">
           <StatusBadge status={p.status} className="sm:hidden" />
@@ -61,6 +61,17 @@ export function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: 
       </div>
     </li>
   );
+}
+
+/**
+ * The statement's first paragraph, with display math ($$ on lines of its own) set inline: a formula block
+ * would sit outside the two-line cut and show in full.
+ */
+function excerpt(statement: string): string {
+  return statement
+    .trim()
+    .split(/\n\s*\n/)[0]
+    .replace(/\s*\$\$\s*([\s\S]*?)\s*\$\$\s*/g, (_, math: string) => ` $$${math}$$ `);
 }
 
 export async function ProblemList({ problems, empty = "Nothing here yet." }: { problems: Problem[]; empty?: React.ReactNode }) {

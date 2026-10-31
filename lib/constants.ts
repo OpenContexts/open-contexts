@@ -57,7 +57,6 @@ export const CONTRIBUTION_KINDS = [
   "verification",
   "exposition",
   "challenge",
-  "question",
   "reference",
 ] as const;
 export type ContributionKind = (typeof CONTRIBUTION_KINDS)[number];
@@ -71,7 +70,6 @@ export const CONTRIBUTION_KIND_LABELS: Record<ContributionKind, string> = {
   verification: "independent verification",
   exposition: "explanatory exposition",
   challenge: "challenge to a solution",
-  question: "question about the statement",
   reference: "relevant reference",
 };
 export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = {
@@ -84,7 +82,6 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   verification: "An independent check of someone else's claimed result.",
   exposition: "A clear explanation of a result, for others to build on.",
   challenge: "A gap or error in a claimed solution.",
-  question: "Something unclear or ambiguous in the statement.",
   reference: "Relevant literature not yet cited on the page.",
 };
 

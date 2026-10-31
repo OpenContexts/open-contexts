@@ -2,7 +2,6 @@
 // starts as `pending` and only `approved` rows are shown on the public site.
 import { relations } from "drizzle-orm";
 import {
-  type AnyPgColumn,
   index,
   integer,
   jsonb,
@@ -20,12 +19,11 @@ import {
   MODERATION_STATUSES,
 } from "../../constants";
 import { user } from "./auth";
-import { problem, problemStatus, type Reference } from "./problems";
+import { problem, type Reference } from "./problems";
 
 export const moderationStatus = pgEnum("moderation_status", MODERATION_STATUSES);
-// The two log enums keep their original database names from when only decisions were logged.
-export const logAction = pgEnum("moderation_action", LOG_ACTIONS);
-export const logTargetType = pgEnum("submission_type", LOG_TARGET_TYPES);
+export const logAction = pgEnum("log_action", LOG_ACTIONS);
+export const logTargetType = pgEnum("log_target_type", LOG_TARGET_TYPES);
 export const contributionKind = pgEnum("contribution_kind", CONTRIBUTION_KINDS);
 export const aiUse = pgEnum("ai_use", AI_USE);
 
@@ -45,7 +43,7 @@ const moderation = () => ({
   reviewNote: text("review_note"),
 });
 
-/** Discussion on a problem. `parentId` allows one level (or more) of replies. */
+/** Discussion on a problem. */
 export const comment = pgTable(
   "comment",
   {
@@ -56,9 +54,6 @@ export const comment = pgTable(
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    parentId: uuid("parent_id").references((): AnyPgColumn => comment.id, {
-      onDelete: "cascade",
-    }),
     body: text("body").notNull(), // markdown + math, rendered without raw HTML
     ...moderation(),
     ...timestamps(),
@@ -107,15 +102,13 @@ export const problemRevision = pgTable(
     problemId: uuid("problem_id")
       .notNull()
       .references(() => problem.id, { onDelete: "cascade" }),
-    /** The problem's `version` when the edit was started; a lower current version means a conflict. */
-    baseVersion: integer("base_version").default(0).notNull(),
+    /** The problem's `version` when the edit was started; a higher current version means a conflict. */
+    baseVersion: integer("base_version").notNull(),
     /** Null once the author's account is deleted; an accepted edit stays published. */
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     statement: text("statement").notNull(),
     body: text("body").notNull(),
-    /** Set only on edits from before the status became moderator-only; null leaves the status as it is. */
-    problemStatus: problemStatus("problem_status"),
     /** What changed and why, shown to moderators and in the problem's history. */
     changeSummary: text("change_summary").notNull(),
     ...moderation(),
@@ -136,7 +129,7 @@ export const problemProposal = pgTable(
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     statement: text("statement").notNull(),
-    /** Background, partial progress and significance, as markdown with `##` sections. */
+    /** The text below the statement, as markdown with `##` sections. */
     body: text("body").notNull(),
     areas: text("areas").array().notNull(),
     tags: text("tags").array().default([]).notNull(),
@@ -153,9 +146,9 @@ export const problemProposal = pgTable(
   ],
 );
 
-/** Append-only audit trail: decisions on submissions, and direct changes to problems. */
-export const moderationLog = pgTable(
-  "moderation_log",
+/** Append-only audit trail ("Activity log"): decisions on submissions, and direct changes to problems. */
+export const activityLog = pgTable(
+  "activity_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     targetType: logTargetType("target_type").notNull(),
@@ -165,18 +158,12 @@ export const moderationLog = pgTable(
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [index("moderation_log_target_idx").on(t.targetType, t.targetId)],
+  (t) => [index("activity_log_target_idx").on(t.targetType, t.targetId)],
 );
 
-export const commentRelations = relations(comment, ({ one, many }) => ({
+export const commentRelations = relations(comment, ({ one }) => ({
   author: one(user, { fields: [comment.authorId], references: [user.id] }),
   problem: one(problem, { fields: [comment.problemId], references: [problem.id] }),
-  parent: one(comment, {
-    fields: [comment.parentId],
-    references: [comment.id],
-    relationName: "replies",
-  }),
-  replies: many(comment, { relationName: "replies" }),
 }));
 
 export const contributionRelations = relations(contribution, ({ one }) => ({
@@ -194,6 +181,6 @@ export const problemProposalRelations = relations(problemProposal, ({ one }) => 
   problem: one(problem, { fields: [problemProposal.problemId], references: [problem.id] }),
 }));
 
-export const moderationLogRelations = relations(moderationLog, ({ one }) => ({
-  moderator: one(user, { fields: [moderationLog.moderatorId], references: [user.id] }),
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  moderator: one(user, { fields: [activityLog.moderatorId], references: [user.id] }),
 }));

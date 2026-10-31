@@ -14,17 +14,3 @@ export function Card({ title, action, children, className, padded = true }: { ti
     </section>
   );
 }
-
-/** Label / value rows inside a card. */
-export function DetailList({ items }: { items: { label: string; value: ReactNode }[] }) {
-  return (
-    <dl className="space-y-3">
-      {items.map((it) => (
-        <div key={it.label}>
-          <dt className="text-xs text-zinc-500">{it.label}</dt>
-          <dd className="mt-0.5 break-words text-zinc-900">{it.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}

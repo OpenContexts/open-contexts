@@ -5,12 +5,12 @@
 OpenContext is a curated list of big open problems in theoretical physics, with a moderated community
 layer on top:
 
-- **Read**: every problem has a precise boxed statement, background, partial progress, significance,
+- **Read**: every problem has a precise boxed statement, a text in sections (background, relevance, significance),
   references, a dated status (open, under revision, solved) and a history.
 - **Discuss**: signed-in users comment on problems.
 - **Contribute**: users submit structured material (claimed solutions, partial or negative results,
   reformulations, computational evidence, independent verifications, expositions, challenges,
-  questions, references). Each submission records its title, the type of material, how much AI was used,
+  references). Questions go to the discussion. Each submission records its title, the type of material, how much AI was used,
   and the humans who take responsibility for it.
 - **Improve**: users suggest edits to a problem's title, statement or text. Only moderators change the status (in the dashboard).
 - **Moderate**: nothing user-submitted appears until a moderator approves it. Every decision is logged.
@@ -24,13 +24,13 @@ sections.
 | Concept | Where it lives | Notes |
 | ------- | -------------- | ----- |
 | Problem | `problem` table | Number, slug, statement and body (markdown), history, references, `version`. Managed in the dashboard. |
-| Area | `lib/areas.ts` | The prototype's "goals". Groups problems; numbered I, II, … |
-| Problem status | frontmatter / revision | `open` → `under-revision` (a solution has been claimed) → `solved`. |
-| Comment | `comment` table | Markdown + math. Optional `parentId` for replies. |
+| Area | `lib/areas.ts` | The research goals of the companion paper (the prototype's "goals"). Groups problems; numbered I, II, III. |
+| Problem status | `problem.status`, set by moderators | `open` → `under-revision` (a solution has been claimed) → `solved`. |
+| Comment | `comment` table | Markdown + math. |
 | Contribution | `contribution` table | `kind`, `title`, `summary`, `url`, `aiUse`, `credit`. |
-| Revision | `problem_revision` table | Full snapshot of title, statement and body, plus a change summary and the version it started from. Approval writes it into the problem. `problem_status` is only set on edits from before the status became moderator-only. |
+| Revision | `problem_revision` table | Full snapshot of title, statement and body, plus a change summary and the version it started from. Approval writes it into the problem. |
 | Proposal | `problem_proposal` table | A suggested new problem. Approval creates a `problem` row. |
-| Moderation log | `moderation_log` table | Append-only: decisions on submissions and direct changes to problems (who, what, when, why). |
+| Activity log | `activity_log` table | Append-only: decisions on submissions and direct changes to problems (who, what, when, why). |
 | Roles | `user.role` | `user`, `moderator` (reviews the queue, can block regular users), `admin` (also manages users: roles, blocking, unblocking). |
 
 Every community table has the same moderation columns: `status` (`pending` | `approved` | `rejected`),
@@ -47,7 +47,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 
 - One queue at `/admin` with a tab per submission type, oldest first. Comments and results
   can be approved or rejected straight from the list; edits and new problems are decided on the review page.
-- Approve and reject run in one server action that updates the row and writes `moderation_log` in a single
+- Approve and reject run in one server action that updates the row and writes `activity_log` in a single
   transaction (`db.batch`). It re-checks `requireModerator()` itself and never trusts the UI.
 - Approving a revision invalidates the `problems` cache tag, so the new text appears immediately. Approving
   (or reopening an approved) comment or result invalidates only that problem page (`community:<id>`).
@@ -77,7 +77,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 
 ### Phase 0: setup (done)
 - [x] Next.js 16 + Tailwind v4 design tokens from the prototype, Computer Modern fonts
-- [x] `components/ui` primitives (Button, Input, Textarea, Select, Field, FramedBox, Callout, Tabs, Badge, Chip, headings, AppleIcon)
+- [x] `components/ui` primitives (Button, Input, Textarea, Select, Field, FramedBox, Callout, Tabs, Tag, Chip, headings, AppleIcon)
 - [x] Problems as validated markdown, cached, with safe math rendering (moved into the database in Phase 3)
 - [x] Neon + Drizzle: client, schema (auth and community tables), first migration, scripts
 - [x] Better Auth: email and password, optional GitHub, roles via the admin plugin, session helpers
@@ -101,7 +101,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 - [ ] Bulk actions; filter by problem and author
 
 ### Phase 3: problems in the database, published revisions and progress
-- [x] Problems in the database; submissions reference them by id; 13 initial problems seeded by migration
+- [x] Problems in the database; submissions reference them by id; the prototype's three problems as initial content
 - [x] Problem editor for moderators: create (also from an uploaded `.md`), edit with preview, delete, download as `.md`; logged
 - [x] Approved edits replace the published text; approved proposals become numbered problems
 - [x] Approved edits (and status changes) appear in "Progress and history"

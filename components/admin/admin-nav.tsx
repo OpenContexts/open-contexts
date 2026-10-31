@@ -32,16 +32,12 @@ function Section({ label, children }: { label?: string; children: React.ReactNod
 
 type NavProps = { counts?: Record<SubmissionType, number>; admin?: boolean };
 
-/** Reads the URL to highlight the current page. */
-export function AdminNav(props: NavProps) {
-  return <AdminNavList pathname={usePathname()} {...props} />;
-}
-
 /**
- * `counts` and `admin` arrive once the session and database have been read; until then the nav
- * renders without them. Admin-only items are hidden for moderators (the pages check again).
+ * The dashboard's links, with the current page highlighted and the number of pending submissions per queue.
+ * Admin-only items are hidden for moderators (the pages check again).
  */
-export function AdminNavList({ pathname = "", counts, admin }: NavProps & { pathname?: string }) {
+export function AdminNav({ counts, admin }: NavProps) {
+  const pathname = usePathname();
   return (
     <nav aria-label="Admin" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0">
       <Section>

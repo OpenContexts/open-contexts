@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui";
-import { type CopyState, CopyBlock, copyText } from "@/components/ui/copy-block";
+import { Button, CopyBlock, type CopyState, copyText } from "@/components/ui";
 import { type CitableProblem, problemBibtex, todayIso } from "@/lib/cite";
 
 /**

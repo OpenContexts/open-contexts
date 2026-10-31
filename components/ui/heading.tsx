@@ -31,7 +31,3 @@ export function PartTitle({ children, className, id }: { children: ReactNode; cl
     </h2>
   );
 }
-
-export function SubTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn("mt-6 mb-2 text-center text-base font-medium italic", className)}>{children}</h3>;
-}

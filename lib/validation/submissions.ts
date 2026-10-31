@@ -10,8 +10,8 @@ export const commentSchema = z.object({
   body: text(2, 10_000, "a comment"),
 });
 
-/** Kinds offered on the "Submit a result" page. References and questions have their own routes. */
-export const RESULT_KINDS = [
+/** Kinds offered on the "Submit a result" page: every kind but references, which have their own page. */
+const RESULT_KINDS = [
   "claim",
   "partial",
   "negative",

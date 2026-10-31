@@ -5,7 +5,7 @@ import { Card, Notice, Pill } from "@/components/admin/ui";
 import { MarkdownContent } from "@/components/markdown/markdown";
 import { FramedBox } from "@/components/ui";
 import { getArea } from "@/lib/areas";
-import { AI_USE_LABELS, PROBLEM_STATUS_LABELS } from "@/lib/constants";
+import { AI_USE_LABELS } from "@/lib/constants";
 import type { Problem } from "@/lib/data/problems";
 import type { Submission } from "@/lib/data/moderation";
 import { formatNames } from "@/lib/format";
@@ -82,7 +82,6 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
                 { label: "Title", before: current.title, after: r.title },
                 { label: "Statement", before: current.statement.trim(), after: r.statement },
                 { label: "Body", before: current.body.trim(), after: r.body },
-                ...(r.problemStatus ? [{ label: "Status", before: PROBLEM_STATUS_LABELS[current.status], after: PROBLEM_STATUS_LABELS[r.problemStatus] }] : []),
               ].map((f) => (
                 <div key={f.label}>
                   <p className="mb-1 text-xs font-medium text-zinc-500">{f.label}</p>

@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, moderationLog, problemProposal, problemRevision } from "@/lib/db/schema";
+import { comment, contribution, activityLog, problemProposal, problemRevision } from "@/lib/db/schema";
 
 export async function getPendingCounts(): Promise<Record<SubmissionType, number>> {
   await connection();
@@ -131,11 +131,12 @@ export async function getSubmission(type: SubmissionType, id: string) {
 
 export type Submission = NonNullable<Awaited<ReturnType<typeof getSubmission>>>;
 
-export async function getRecentDecisions(limit = 50) {
+/** Newest first: decisions on submissions and changes to problems. */
+export async function getRecentActivity(limit = 50) {
   await connection();
-  return db.query.moderationLog.findMany({
+  return db.query.activityLog.findMany({
     with: { moderator: { columns: { name: true } } },
-    orderBy: desc(moderationLog.createdAt),
+    orderBy: desc(activityLog.createdAt),
     limit,
   });
 }
@@ -143,12 +144,12 @@ export async function getRecentDecisions(limit = 50) {
 /** Where an activity-log entry points to in the dashboard. */
 export const logTargetHref = (type: LogTargetType, id: string) => (type === "problem" ? `/admin/problems/${id}` : `/admin/review/${type}/${id}`);
 
-export async function getDecisionsFor(type: LogTargetType, id: string) {
+export async function getActivityFor(type: LogTargetType, id: string) {
   await connection();
-  return db.query.moderationLog.findMany({
+  return db.query.activityLog.findMany({
     where: (log, { and }) => and(eq(log.targetType, type), eq(log.targetId, id)),
     with: { moderator: { columns: { name: true } } },
-    orderBy: desc(moderationLog.createdAt),
+    orderBy: desc(activityLog.createdAt),
   });
 }
 

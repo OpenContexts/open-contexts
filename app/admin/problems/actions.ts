@@ -11,7 +11,7 @@ import { AREA_IDS, type AreaId } from "@/lib/areas";
 import { requireModerator } from "@/lib/auth/session";
 import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { type HistoryEntry, moderationLog, problem } from "@/lib/db/schema";
+import { type HistoryEntry, activityLog, problem } from "@/lib/db/schema";
 import { changeEntries, nextProblemNumber, slugify, uniqueSlug } from "@/lib/data/problem-writes";
 import { problemLabel, readProblem } from "@/lib/data/problems";
 import { type ProblemInput, problemSchema, referencesToText } from "@/lib/validation/problems";
@@ -35,7 +35,7 @@ export async function createProblem(_: FormState, formData: FormData): Promise<F
   try {
     await db.batch([
       db.insert(problem).values({ ...fields(input), id, number, slug, createdById: moderator.id }),
-      db.insert(moderationLog).values({ targetType: "problem", targetId: id, action: "create", moderatorId: moderator.id, note: problemLabel({ number, title: input.title }) }),
+      db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "create", moderatorId: moderator.id, note: problemLabel({ number, title: input.title }) }),
     ]);
   } catch (error) {
     // Most likely someone else published a problem with the same number at the same moment.
@@ -69,20 +69,20 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
       .update(problem)
       .set({ ...fields(input), history, version: sql`${problem.version} + 1`, updatedAt: new Date() })
       .where(eq(problem.id, id)),
-    db.insert(moderationLog).values({ targetType: "problem", targetId: id, action: "update", moderatorId: moderator.id, note: input.changeSummary || problemLabel(current) }),
+    db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "update", moderatorId: moderator.id, note: input.changeSummary || problemLabel(current) }),
   ]);
   updateTag("problems");
   redirect(`/admin/problems/${id}?saved=updated`);
 }
 
-/** Deletes the problem and, through the foreign keys, its comments, results, links and suggested edits. */
+/** Deletes the problem and, through the foreign keys, its comments, contributions and suggested edits. */
 export async function deleteProblem(id: string): Promise<{ error?: string }> {
   const moderator = await requireModerator();
   const current = await readProblem(z.uuid().parse(id));
   if (!current) return { error: "This problem has already been deleted." };
   await db.batch([
     db.delete(problem).where(eq(problem.id, id)),
-    db.insert(moderationLog).values({ targetType: "problem", targetId: id, action: "delete", moderatorId: moderator.id, note: problemLabel(current) }),
+    db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "delete", moderatorId: moderator.id, note: problemLabel(current) }),
   ]);
   updateTag("problems");
   redirect("/admin/problems?deleted=1");

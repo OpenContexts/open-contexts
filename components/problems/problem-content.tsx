@@ -32,7 +32,8 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   if (!problem) return null;
 
   const areas = problem.areas.map(getArea).filter((a) => a !== undefined);
-  const history = problem.history.toSorted((a, b) => b.date.localeCompare(a.date));
+  // Newest first; entries of the same day in reverse order of recording, so the latest is on top.
+  const history = problem.history.map((h, i) => ({ ...h, i })).toSorted((a, b) => b.date.localeCompare(a.date) || b.i - a.i);
 
   return (
     <article>

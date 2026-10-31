@@ -7,10 +7,10 @@ import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
 import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
-import { changeEntries, nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
+import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, moderationLog, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
+import { comment, contribution, activityLog, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 
 const decisionSchema = z.object({
   type: z.enum(SUBMISSION_TYPES),
@@ -41,26 +41,24 @@ function reviewQuery(type: SubmissionType, id: string, review: Review & { proble
   }
 }
 
-// The two helpers below return their query wrapped in an object: awaiting a Drizzle query
-// directly would run it right away, outside the batch.
+// The three helpers below return their query wrapped in an object: returning a Drizzle query from an
+// async function would run it right away, outside the decision's batch.
 
 /** Approving an edit writes its snapshot into the problem and records it in the history. */
 async function applyRevision(id: string) {
   const revision = await db.query.problemRevision.findFirst({ where: eq(problemRevision.id, id) });
   const current = revision && (await readProblem(revision.problemId));
   if (!revision || !current) throw new Error("The edit or its problem no longer exists.");
-  const status = revision.problemStatus ?? current.status;
   return {
     query: db
       .update(problem)
       .set({
-      title: revision.title,
-      statement: revision.statement,
-      body: revision.body,
-      status,
-      history: [...current.history, ...changeEntries({ summary: revision.changeSummary, from: current.status, to: status })],
-      version: sql`${problem.version} + 1`,
-      updatedAt: new Date(),
+        title: revision.title,
+        statement: revision.statement,
+        body: revision.body,
+        history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary }],
+        version: sql`${problem.version} + 1`,
+        updatedAt: new Date(),
       })
       .where(eq(problem.id, current.id)),
   };
@@ -69,8 +67,7 @@ async function applyRevision(id: string) {
 /**
  * A reference contribution with a link is also cited on the problem itself: approving it adds it to the problem's
  * references (unless the same text or link is already there), reopening it removes it again.
- * Returns undefined when the references stay as they are. The query is wrapped so that returning it from
- * this async function does not run it: it runs in the decision's batch.
+ * Returns undefined when the references stay as they are.
  */
 async function citeReference(problemId: string, ref: Reference, change: "add" | "remove") {
   const current = await readProblem(problemId);
@@ -109,8 +106,7 @@ async function publishProposal(id: string, problemId: string) {
   return { query: db.insert(problem).values(values) };
 }
 
-/** The submission's status, and the problem pages it appears on once approved. */
-/** `pages`: the problem pages that show the submission. `reference`: what an approved reference adds to its problem. */
+/** The submission's status; `pages`: the problem pages that show it once approved; `reference`: what an approved reference adds to its problem. */
 async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; reference?: Reference } | undefined> {
   const columns = { status: true } as const;
   switch (type) {
@@ -162,7 +158,7 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   const cite = current.reference && referenceChange ? await citeReference(current.pages[0], current.reference, referenceChange) : undefined;
 
   const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }) });
-  const log = db.insert(moderationLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
+  const log = db.insert(activityLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
   // Publishing runs first: the proposal's problem_id must point at an existing problem.
   // An approved edit or proposal changes the problem, and so may an approved reference (never both at once).
   const change = publish?.query ?? cite?.query;

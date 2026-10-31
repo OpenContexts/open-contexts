@@ -27,7 +27,7 @@ export type Problem = {
   /** Date of the last change, "YYYY-MM-DD". */
   updated: string;
   statement: string;
-  /** Markdown body (Background, Partial progress, Significance, …). */
+  /** Markdown with `##` sections (Background, Relevance, Significance, …). */
   body: string;
   history: HistoryEntry[];
   references: Reference[];

@@ -9,7 +9,7 @@ import { ActionPill, AdminButtonLink, Avatar, Card } from "@/components/admin/ui
 import { blockRefusal, isAdmin, requireModerator } from "@/lib/auth/session";
 import { type Role, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS } from "@/lib/constants";
 import { getProblems } from "@/lib/data/problems";
-import { getDecisionsFor, getSubmission } from "@/lib/data/moderation";
+import { getActivityFor, getSubmission } from "@/lib/data/moderation";
 import { formatDate, formatRelative } from "@/lib/format";
 
 export default async function ReviewPage({ params }: PageProps<"/admin/review/[type]/[id]">) {
@@ -18,7 +18,7 @@ export default async function ReviewPage({ params }: PageProps<"/admin/review/[t
   const type = SUBMISSION_TYPES.find((t) => t === rawType);
   if (!type || !z.uuid().safeParse(id).success) notFound();
 
-  const [submission, problems, decisions] = await Promise.all([getSubmission(type, id), getProblems(), getDecisionsFor(type, id)]);
+  const [submission, problems, decisions] = await Promise.all([getSubmission(type, id), getProblems(), getActivityFor(type, id)]);
   if (!submission) notFound();
   const { row } = submission;
   const byId = new Map(problems.map((p) => [p.id, p]));

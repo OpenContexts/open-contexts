@@ -34,11 +34,12 @@ export async function nextProblemNumber(): Promise<number> {
   return (row?.n ?? 0) + 1;
 }
 
-/** History entries for a change: an `edit` entry with the summary, and a `status` entry if the status changed. */
+/**
+ * The history entry for a saved change, if any: with a new status, one `status` entry that carries the summary
+ * (or says what the status changed to); otherwise an `edit` entry with the summary.
+ */
 export function changeEntries({ summary, from, to }: { summary?: string; from: ProblemStatus; to: ProblemStatus }): HistoryEntry[] {
   const date = today();
-  const entries: HistoryEntry[] = [];
-  if (summary) entries.push({ date, kind: "edit", text: summary });
-  if (from !== to) entries.push({ date, kind: "status", text: `Status changed to ${PROBLEM_STATUS_LABELS[to]}.`, status: to });
-  return entries;
+  if (from !== to) return [{ date, kind: "status", text: summary || `Status changed to ${PROBLEM_STATUS_LABELS[to]}.`, status: to }];
+  return summary ? [{ date, kind: "edit", text: summary }] : [];
 }

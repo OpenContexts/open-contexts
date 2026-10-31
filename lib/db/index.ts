@@ -29,7 +29,7 @@ export const db = new Proxy({} as Db, {
 
 export { schema };
 
-/** False when DATABASE_URL is missing, so pages can show a setup hint instead of crashing. */
+/** False when DATABASE_URL is missing. The cached problem reads then return nothing, so `next build` works without a database. */
 export function isDbConfigured(): boolean {
   return !!process.env.DATABASE_URL;
 }

@@ -3,7 +3,7 @@ import { ActionPill, Card, EmptyState, PageHeader, Pill } from "@/components/adm
 import { RefreshCacheButton } from "@/components/admin/refresh-cache";
 import { isAdmin, requireModerator } from "@/lib/auth/session";
 import { LOG_TARGET_NOUNS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS } from "@/lib/constants";
-import { getPendingCounts, getRecentDecisions, logTargetHref } from "@/lib/data/moderation";
+import { getPendingCounts, getRecentActivity, logTargetHref } from "@/lib/data/moderation";
 import { formatRelative } from "@/lib/format";
 
 export default function AdminOverviewPage() {
@@ -17,7 +17,7 @@ export default function AdminOverviewPage() {
 
 async function Overview() {
   const user = await requireModerator();
-  const [counts, decisions] = await Promise.all([getPendingCounts(), getRecentDecisions(8)]);
+  const [counts, decisions] = await Promise.all([getPendingCounts(), getRecentActivity(8)]);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (

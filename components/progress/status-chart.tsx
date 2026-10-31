@@ -4,7 +4,7 @@ import type { TimelineRow } from "@/lib/data/progress";
 import { formatDate } from "@/lib/format";
 
 /** In list order; the colours match the rest of the site (red open, blue under revision, green solved). */
-export const CHART_SERIES: { status: ProblemStatus; color: string }[] = [
+const CHART_SERIES: { status: ProblemStatus; color: string }[] = [
   { status: "open", color: "var(--color-brand-strong)" },
   { status: "under-revision", color: "var(--color-info)" },
   { status: "solved", color: "var(--color-success)" },

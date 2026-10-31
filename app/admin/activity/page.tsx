@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ActionPill, Avatar, Card, EmptyState, PageHeader, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
 import { LOG_TARGET_NOUNS } from "@/lib/constants";
-import { getRecentDecisions, logTargetHref } from "@/lib/data/moderation";
+import { getRecentActivity, logTargetHref } from "@/lib/data/moderation";
 import { formatDate, formatRelative } from "@/lib/format";
 
 export default function ActivityPage() {
@@ -16,7 +16,7 @@ export default function ActivityPage() {
 
 async function Activity() {
   await requireModerator();
-  const decisions = await getRecentDecisions(200);
+  const decisions = await getRecentActivity(200);
   if (!decisions.length) return <EmptyState title="No decisions yet" />;
   return (
     <Card padded={false}>

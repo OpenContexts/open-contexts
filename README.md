@@ -146,8 +146,8 @@ and suggested edits point at a problem by its id, so renaming a problem's URL ke
   change is refused instead of silently overwriting it, and edits suggested against an older version are
   flagged in the review.
 - **Deleting** a problem also deletes its comments, results and suggested edits.
-- **Initial content**: migration `0003` creates the table with thirteen problems, so a new database shows
-  a populated site.
+- **Initial content**: the database holds the prototype's three problems. A new database starts empty:
+  create problems in the dashboard, or upload `.md` files in the format of "Download .md".
 
 Each `##` heading in the body becomes a lettered section (A., B., …) on the problem page.
 

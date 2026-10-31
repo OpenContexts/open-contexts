@@ -11,7 +11,7 @@ type StatusEvent = { date: string; problemId: string; from: ProblemStatus | null
 const fullDate = (date: string) => `${date}-01-01`.slice(0, 10);
 
 /** Whole days from `a` to `b` (both "YYYY-MM-DD"). */
-export const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
 /**
  * Every problem joins the list on the day it was published, with the status its history had reached by then

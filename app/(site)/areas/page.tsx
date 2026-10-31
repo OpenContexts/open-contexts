@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MarkdownContent } from "@/components/markdown/markdown";
 import { ProblemList } from "@/components/problems/problem-list";
 import { AppleIcon, PageTitle, SectionTitle } from "@/components/ui";
 import { AREAS } from "@/lib/areas";
@@ -18,7 +19,7 @@ export default async function AreasPage() {
             <AppleIcon variant="gold" className="mr-1.5" />
             {area.numeral}. {area.title}
           </SectionTitle>
-          <p className="mb-3 text-justify hyphens-auto">{area.summary}</p>
+          <MarkdownContent source={area.description} className="mb-6" />
           <AreaProblems areaId={area.id} problems={problems.filter((p) => p.areas.some((a) => a === area.id))} />
         </section>
       ))}

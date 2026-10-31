@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { PageTitle, SectionTitle } from "@/components/ui";
-import { CopyBlock } from "@/components/ui/copy-block";
+import { CopyBlock, PageTitle, SectionTitle } from "@/components/ui";
 import { databaseBibtex, databaseCitation, siteOrigin, todayIso } from "@/lib/cite";
 import { SITE } from "@/lib/site";
 

@@ -84,7 +84,6 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
 
         <Card title="Progress and history">
           <HistoryField initial={initial.history} error={error("history")} />
-          {id && <p className="mt-3 text-xs text-zinc-500">Changing the status on the right adds an entry automatically when you save.</p>}
         </Card>
       </div>
 

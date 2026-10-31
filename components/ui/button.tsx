@@ -18,8 +18,7 @@ const sizes: Record<Size, string> = {
   md: "px-3.5 py-1.5 text-sm",
 };
 
-/** Class names for anything that should look like a button (e.g. a link). */
-export function buttonStyles({ variant = "primary", size = "md", className }: ButtonStyleProps = {}) {
+function buttonStyles({ variant = "primary", size = "md", className }: ButtonStyleProps = {}) {
   return cn(
     "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded border-[1.5px] font-sans leading-tight font-bold no-underline transition disabled:cursor-not-allowed disabled:opacity-50",
     variants[variant],

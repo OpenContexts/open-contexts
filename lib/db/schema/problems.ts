@@ -26,7 +26,7 @@ export const problem = pgTable("problem", {
   posed: text("posed").notNull(),
   /** The boxed statement, as markdown with math. */
   statement: text("statement").notNull(),
-  /** Background, partial progress and significance, as markdown with `##` sections. */
+  /** The text below the statement, as markdown with `##` sections (e.g. Background, Relevance, Significance). */
   body: text("body").notNull(),
   history: jsonb("history").$type<HistoryEntry[]>().default([]).notNull(),
   references: jsonb("references").$type<Reference[]>().default([]).notNull(),

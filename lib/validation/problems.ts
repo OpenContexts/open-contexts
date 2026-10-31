@@ -17,25 +17,25 @@ const historyRows = {
 
 export const problemSchema = z
   .object({
-  title: text(3, 200, "a title"),
-  /** New problems only: a preferred URL name, e.g. from an imported file. Made unique if taken. */
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .optional()
-    .transform((v) => (v && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v) ? v.slice(0, 80) : undefined)),
-  status: z.enum(PROBLEM_STATUSES),
-  "areas[]": z.array(z.enum(AREA_IDS)).min(1, "Please choose at least one area."),
-  posed: z.string().trim().regex(PARTIAL_DATE, "Please enter a year, or a date like 1976-11 or 1976-11-15."),
-  posedBy: commaList,
-  tags: commaList,
-  statement: text(10, 10_000, "the statement"),
-  body: text(0, 100_000, "the text"),
-  references: referenceLines,
-  ...historyRows,
-  /** Edits only: added to the history as an `edit` entry. */
-  changeSummary: z.string().trim().max(1_000).optional(),
+    title: text(3, 200, "a title"),
+    /** New problems only: a preferred URL name, e.g. from an imported file. Made unique if taken. */
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .optional()
+      .transform((v) => (v && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(v) ? v.slice(0, 80) : undefined)),
+    status: z.enum(PROBLEM_STATUSES),
+    "areas[]": z.array(z.enum(AREA_IDS)).min(1, "Please choose at least one area."),
+    posed: z.string().trim().regex(PARTIAL_DATE, "Please enter a year, or a date like 1976-11 or 1976-11-15."),
+    posedBy: commaList,
+    tags: commaList,
+    statement: text(10, 10_000, "the statement"),
+    body: text(0, 100_000, "the text"),
+    references: referenceLines,
+    ...historyRows,
+    /** Edits only: added to the history as an `edit` entry. */
+    changeSummary: z.string().trim().max(1_000).optional(),
   })
   .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
@@ -61,4 +61,3 @@ export type ProblemInput = z.infer<typeof problemSchema>;
 /** The inverse of `referenceLines`, to fill the textarea. */
 export const referencesToText = (refs: Reference[]) => refs.map((r) => (r.url ? `${r.text} ${r.url}` : r.text)).join("\n");
 
-export { PARTIAL_DATE };

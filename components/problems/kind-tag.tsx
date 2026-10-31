@@ -15,7 +15,6 @@ const contributionLooks: Record<ContributionKind, KindLook> = {
   reformulation: { label: "Reformulation", tone: "info" },
   decomposition: { label: "Decomposition", tone: "info" },
   exposition: { label: "Exposition", tone: "neutral" },
-  question: { label: "Question", tone: "neutral" },
   reference: { label: "Reference", tone: "neutral" },
 };
 
