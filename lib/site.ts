@@ -1,9 +1,9 @@
 // Site-wide settings. Plain values only, safe to import anywhere.
 export const SITE = {
   name: "OpenContext",
-  subtitle: "Open problems in theoretical physics",
+  subtitle: "Open problems in generalized contextuality",
   description:
-    "A community-curated, moderated database of precisely stated open problems in theoretical physics, with recorded progress, discussion and fine-grained credit.",
+    "A community-curated, moderated database of precisely stated open problems in generalized contextuality, with recorded progress, discussion and fine-grained credit.",
   repo: "",
   contact: "rafael.wagner@uni-ulm.de",
 } as const;

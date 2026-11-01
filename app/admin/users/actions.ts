@@ -1,11 +1,12 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { z } from "zod";
 import { blockRefusal, requireAdmin, requireModerator } from "@/lib/auth/session";
 import { ROLES } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { MODERATORS_TAG } from "@/lib/data/moderators";
 import { session, user } from "@/lib/db/schema";
 
 export type UserActionResult = { error?: string };
@@ -26,6 +27,7 @@ export async function setUserRole(input: z.input<typeof roleSchema>): Promise<Us
   const t = await target(userId);
   if ("error" in t) return { error: t.error };
   await db.update(user).set({ role }).where(eq(user.id, userId));
+  updateTag(MODERATORS_TAG); // the list on the About page
   refresh();
   return {};
 }
@@ -46,6 +48,7 @@ export async function blockUser(input: z.input<typeof blockSchema>): Promise<Use
     db.update(user).set({ banned: true, banReason: reason || null, banExpires: null }).where(eq(user.id, userId)),
     db.delete(session).where(eq(session.userId, userId)),
   ]);
+  updateTag(MODERATORS_TAG); // blocked moderators leave the list on the About page
   refresh();
   return {};
 }
@@ -55,6 +58,7 @@ export async function unblockUser(input: { userId: string }): Promise<UserAction
   const t = await target(userId);
   if ("error" in t) return { error: t.error };
   await db.update(user).set({ banned: false, banReason: null, banExpires: null }).where(eq(user.id, userId));
+  updateTag(MODERATORS_TAG);
   refresh();
   return {};
 }

@@ -3,6 +3,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
+import { revalidateTag } from "next/cache";
+import { MODERATOR_ROLES, type Role } from "@/lib/constants";
+import { MODERATORS_TAG } from "@/lib/data/moderators";
 import { db, schema } from "@/lib/db";
 import { sendEmail } from "@/lib/email/send";
 import ResetPassword from "@/emails/reset-password";
@@ -10,6 +13,10 @@ import VerifyEmail from "@/emails/verify-email";
 import { isGitHubConfigured } from "./github";
 import { isInstitutionalEmail } from "./institutional";
 import { BLOCKED_MESSAGE, INSTITUTIONAL_EMAIL_ERROR, INSTITUTIONAL_EMAIL_MESSAGE } from "./institutional-messages";
+
+const isListedModerator = (u: Record<string, unknown>) => MODERATOR_ROLES.includes(u.role as Role) && !u.banned;
+/** The About page lists the moderators. Not updateTag: these hooks also run in route handlers. */
+const moderatorsChanged = () => revalidateTag(MODERATORS_TAG, { expire: 0 });
 
 const github = isGitHubConfigured()
   ? { clientId: process.env.GITHUB_CLIENT_ID!, clientSecret: process.env.GITHUB_CLIENT_SECRET! }
@@ -35,6 +42,22 @@ export const auth = betterAuth({
     },
   },
   socialProviders: github ? { github } : {},
+  // Changes made through Better Auth itself (its update-user endpoint, the admin plugin's set-role,
+  // ban-user, …) rather than the dashboard's actions, which refresh the list themselves.
+  databaseHooks: {
+    user: {
+      update: {
+        after: async (u, context) => {
+          if (isListedModerator(u) || context?.path?.startsWith("/admin/")) moderatorsChanged();
+        },
+      },
+      delete: {
+        after: async (u) => {
+          if (isListedModerator(u)) moderatorsChanged();
+        },
+      },
+    },
+  },
   user: {
     // New email-and-password accounts need an institutional address. GitHub accounts may use any
     // email: the GitHub account itself identifies the person. Only account creation is checked,

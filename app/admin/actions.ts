@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
 import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
+import { MODERATORS_TAG } from "@/lib/data/moderators";
 import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
@@ -196,4 +197,5 @@ export async function refreshSiteCache() {
   await requireAdmin();
   updateTag("problems");
   updateTag("community");
+  updateTag(MODERATORS_TAG);
 }

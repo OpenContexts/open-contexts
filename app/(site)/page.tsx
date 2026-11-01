@@ -96,7 +96,7 @@ export default async function HomePage() {
       <ProblemList problems={recent} />
       <p className="mt-2 text-right text-sm">
         <Link href="/problems?sort=date" className="text-brand hover:underline">
-          All problems by date →
+          All problems →
         </Link>
       </p>
     </>

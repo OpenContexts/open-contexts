@@ -17,7 +17,7 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
           </Text>
           {children}
           <Hr style={{ borderColor: colors.rule, margin: "32px 0 16px" }} />
-          <Text style={{ fontSize: "13px", color: colors.muted, margin: 0 }}>OpenContext · Open problems in theoretical physics</Text>
+          <Text style={{ fontSize: "13px", color: colors.muted, margin: 0 }}>OpenContext · Open problems in generalized contextuality</Text>
         </Container>
       </Body>
     </Html>
