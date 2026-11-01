@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { AREA_IDS } from "@/lib/areas";
 import { AI_USE } from "@/lib/constants";
-import { commaList, optionalUrl, referenceLines, slug, text } from "./fields";
+import { commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
 export const commentSchema = z.object({
   problemSlug: slug,
@@ -50,13 +50,19 @@ export const revisionSchema = z.object({
   changeSummary: text(10, 1_000, "what you changed"),
 });
 
-export const proposalSchema = z.object({
+export const proposalSchema = z
+  .object({
   title: text(3, 200, "a title"),
   statement: text(40, 10_000, "the statement"),
   body: text(100, 50_000, "the background"),
   "areas[]": z.array(z.enum(AREA_IDS)).min(1, "Please choose at least one area."),
   tags: commaList,
   posedBy: commaList.pipe(z.array(z.string()).min(1, "Please name at least one person.")),
-  references: referenceLines,
+  ...referenceRows,
   aiUse: z.enum(AI_USE, { error: "Please say how much AI was used." }),
-});
+  })
+  .transform(({ "referenceText[]": texts, "referenceUrl[]": urls, ...rest }, ctx) => {
+    const { references, errors } = toReferences(texts, urls);
+    if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: texts });
+    return { ...rest, references };
+  });

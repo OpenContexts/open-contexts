@@ -25,15 +25,12 @@ export default async function HomePage() {
         <h1 className="mb-1 text-[2rem] max-sm:text-[1.7rem]">{SITE.name}</h1>
         <p className="mb-4 text-[1.3rem] font-bold">{SITE.subtitle}</p>
         <p className="mx-auto mb-4 max-w-160 text-justify text-base hyphens-auto max-sm:text-left">
-          A curated list of precisely stated open problems in theoretical physics. Each entry carries a live
-          status, a record of partial progress, and the names of everyone who posed, advanced, verified or
-          explained it. Anyone can comment, submit contributions and suggest edits. Every submission is reviewed
-          by a moderator before it appears.
+          This is a curated list of <strong>original</strong>, well-posed, near-term problems in the subfield of quantum foundations concerned with generalized contextuality. Every question on it is an addition to the existing literature. Each problem is stated precisely enough to be attacked by skilled researchers working with or without AI assistance, motivated within the existing literature, traceable to at least one long-term goal of our starting research agenda, and selected because its resolution would meaningfully advance that goal. Entries carry a live status, a record of partial progress, and the names of everyone who posed, advanced, verified, or explained them.
         </p>
       </section>
 
       <section className="mx-auto max-w-160">
-        <div className="flex items-start w-full text-sm gap-4">
+        <div className="md:flex items-start w-full text-sm gap-4">
           <strong>Companion paper:</strong>
           <Link href="#" className="text-brand hover:underline flex-wrap flex-1">
             <p className="">
@@ -65,7 +62,10 @@ export default async function HomePage() {
         <Button type="submit">Search</Button>
       </Form>
 
-      <SectionTitle>I. Research areas</SectionTitle>
+      <SectionTitle>I. Organizing research goals</SectionTitle>
+      <p className="mx-auto mb-4 -mt-4 max-w-160 text-justify text-base hyphens-auto max-sm:text-left">
+          For this first cycle (OpenContext I) three long-term goals organize the list. We remark that the division into broad goals is a matter of motivation and organization, rather than a fixed verdict on what is worth pursuing. Within this organization scheme, every problem traces back to one goal. Golden apples mark the broad goals motivated in our companion paper for OpenContext I. Red apples mark, instead, the near-term problems that grow from them. Later cycles may be organized around other broad directions, which anyone can propose on the future broad goals page. 
+        </p>
       <ol className="border-b border-rule">
         {AREAS.map((area) => {
           const n = problems.filter((p) => p.areas.some((a) => a === area.id)).length;
@@ -78,7 +78,7 @@ export default async function HomePage() {
               <Link href={`/problems?area=${area.id}`} className="font-bold text-ink hover:text-brand">
                 {area.title}
               </Link>
-              <span className="text-sm whitespace-nowrap text-ink-subtle">{plural(n, "problem")}</span>
+              <span className="text-sm whitespace-nowrap text-ink-subtle hidden md:block">{plural(n, "problem")}</span>
               <p className="col-start-2 text-[0.98rem] text-ink-muted">{area.summary}</p>
             </li>
           );

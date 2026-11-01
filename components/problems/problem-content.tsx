@@ -9,7 +9,7 @@ import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { Chip, ChipList, ExpandableList, PartTitle, toneColors } from "@/components/ui";
+import { Chip, ChipList, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getArea } from "@/lib/areas";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
@@ -72,6 +72,12 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
             <Chip key={t}>{t}</Chip>
           ))}
         </ChipList>
+      )}
+
+      {problem.note.trim() && (
+        <FramedBox title="Note" tone="info" className="mt-10">
+          <MarkdownContent source={problem.note} />
+        </FramedBox>
       )}
 
       <CiteProblem problem={pick(problem)} origin={siteOrigin()} />

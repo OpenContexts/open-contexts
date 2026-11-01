@@ -31,6 +31,8 @@ export type Problem = {
   body: string;
   history: HistoryEntry[];
   references: Reference[];
+  /** Markdown, set by moderators; "" when there is none. */
+  note: string;
   version: number;
 };
 
@@ -53,6 +55,7 @@ function toProblem(r: typeof problem.$inferSelect): Problem {
     body: r.body,
     history: r.history,
     references: r.references,
+    note: r.note,
     version: r.version,
   };
 }
@@ -119,5 +122,6 @@ export function problemToMarkdown(p: Problem): string {
     statement: p.statement.trim(),
     history,
     references,
+    ...(p.note.trim() && { note: p.note.trim() }),
   }, yaml);
 }

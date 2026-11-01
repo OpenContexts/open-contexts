@@ -23,7 +23,7 @@ sections.
 
 | Concept | Where it lives | Notes |
 | ------- | -------------- | ----- |
-| Problem | `problem` table | Number, slug, statement and body (markdown), history, references, `version`. Managed in the dashboard. |
+| Problem | `problem` table | Number, slug, statement and body (markdown), history, references, an optional note (markdown, moderators only), `version`. Managed in the dashboard. |
 | Area | `lib/areas.ts` | The research goals of the companion paper (the prototype's "goals"). Groups problems; numbered I, II, III. |
 | Problem status | `problem.status`, set by moderators | `open` → `under-revision` (a solution has been claimed) → `solved`. |
 | Comment | `comment` table | Markdown + math. |
@@ -59,7 +59,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 | ----- | -------------------- | ----- |
 | `/` | home | done: masthead, counts, search, areas, recently updated |
 | `/problems` | `#/problems` | done: search, status tabs, area filter, sort (all on the server) |
-| `/problems/[slug]` | `#/problem/n` | done: statement, meta, lettered sections, tags; then references (10, expandable), history, contributions (5 newest, expandable, long texts clamped), the contribute options and the discussion (comment box first, 10 newest, expandable) |
+| `/problems/[slug]` | `#/problem/n` | done: statement, meta, lettered sections, tags, the optional blue note box, the citation button; then references (10, expandable), history, contributions (5 newest, expandable, long texts clamped), the contribute options and the discussion (comment box first, 10 newest, expandable) |
 | `/areas` | `#/agenda`, `#/tags` | done (basic) |
 | `/guidelines`, `/about`, `/contribute` | same | placeholders |
 | `/sign-in`, `/sign-up` | — | done: institutional email and password, or GitHub (any email) |

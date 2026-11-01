@@ -132,7 +132,8 @@ Put basic, domain-agnostic elements in `components/ui`. Feature-specific compone
 ## Problems
 
 Problems live in the `problem` table: number, URL name (slug), title, status, areas, tags, who posed it and
-when, the boxed statement and the body as markdown, the history and the references. Comments, results
+when, the boxed statement and the body as markdown, the history, the references and an optional note
+(markdown, set by moderators only, shown in a blue box). Comments, results
 and suggested edits point at a problem by its id, so renaming a problem's URL keeps them.
 
 - **Moderators manage problems** under **Problems** in the dashboard: create (from scratch or from an

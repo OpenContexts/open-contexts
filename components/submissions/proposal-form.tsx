@@ -2,24 +2,25 @@
 
 import { useActionState } from "react";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
-import { ChoiceCards, Field, Input, SubmitButton, Textarea } from "@/components/ui";
+import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
 import { AREAS } from "@/lib/areas";
 import { errorOf, initialFormState, valueOf, valuesOf } from "@/lib/actions/form-state";
 import { submitProposal } from "@/lib/actions/submissions";
 import { FormMessage, SubmissionReceived } from "./form-parts";
+import { ReferencesField } from "./references-field";
 import { AI_CHOICES } from "./result-form";
 
 const BODY_TEMPLATE = `## Background
 
-What is known, and why the question is natural.
+What a reader needs to understand the statement, with references.
 
-## Partial progress
+## Relevance
 
-Results so far, including special cases and failed approaches.
+How the problem is motivated within the existing literature, and which research areas it traces to.
 
 ## Significance
 
-What a solution would change.`;
+How its resolution would meaningfully advance those areas.`;
 
 export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
   const [state, action] = useActionState(submitProposal, initialFormState);
@@ -30,14 +31,14 @@ export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
       <FormMessage state={state} />
 
       <h2 className="mt-6 font-sans text-sm font-bold">1. The problem</h2>
-      <Field label="Title" htmlFor="title" error={errorOf(state, "title")} hint="Short and specific, e.g. “The hierarchy problem”.">
+      <Field label="Title" htmlFor="title" error={errorOf(state, "title")} hint="Short and specific problem title”.">
         <Input id="title" name="title" defaultValue={valueOf(state, "title")} required />
       </Field>
       <Field
         label="Statement"
         htmlFor="statement"
         error={errorOf(state, "statement")}
-        hint="The precise question, as it will appear in the red box. Someone skilled should be able to start working from this alone."
+        hint="The precise question, as it will appear in the red box."
       >
         <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement")} invalid={!!errorOf(state, "statement")} />
       </Field>
@@ -52,18 +53,16 @@ export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
       />
 
       <h2 className="mt-7 font-sans text-sm font-bold">2. Context</h2>
-      <Field label="Background, progress and significance" htmlFor="body" error={errorOf(state, "body")} hint="Replace the prompts below. Keep the “##” headings or add your own.">
+      <Field label="Background, relevance and significance" htmlFor="body" error={errorOf(state, "body")} hint="Please keep the recommended structure.">
         <MarkdownEditor id="body" name="body" rows={16} defaultValue={valueOf(state, "body", BODY_TEMPLATE)} invalid={!!errorOf(state, "body")} />
       </Field>
-      <Field label="References" htmlFor="references" error={errorOf(state, "references")} hint="One per line. A link anywhere in the line is picked up automatically.">
-        <Textarea id="references" name="references" rows={5} defaultValue={valueOf(state, "references")} placeholder="S. Weinberg, The cosmological constant problem, Rev. Mod. Phys. 61, 1 (1989) https://doi.org/10.1103/RevModPhys.61.1" />
-      </Field>
-      <Field label="Tags (optional)" htmlFor="tags" error={errorOf(state, "tags")} hint="Comma-separated, e.g. “Naturalness, Higgs boson”.">
+      <ReferencesField error={errorOf(state, "references")} />
+      <Field label="Tags (optional)" htmlFor="tags" error={errorOf(state, "tags")} hint="Comma-separated keywords.">
         <Input id="tags" name="tags" defaultValue={valueOf(state, "tags")} />
       </Field>
 
       <h2 className="mt-7 font-sans text-sm font-bold">3. Credit and transparency</h2>
-      <Field label="Posed by" htmlFor="posedBy" error={errorOf(state, "posedBy")} hint="Comma-separated names. If the problem comes from the literature, name its original authors.">
+      <Field label="Posed by" htmlFor="posedBy" error={errorOf(state, "posedBy")} hint="Comma-separated names of the humans, taking responsibility for the proposal.">
         <Input id="posedBy" name="posedBy" defaultValue={valueOf(state, "posedBy", defaultPosedBy)} required />
       </Field>
       <ChoiceCards name="aiUse" legend="How much AI was used to write this proposal?" choices={AI_CHOICES} columns={1} defaultValue={valueOf(state, "aiUse", "none")} error={errorOf(state, "aiUse")} required />

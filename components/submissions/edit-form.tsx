@@ -33,7 +33,7 @@ export function EditForm({
       <Field label="Statement (the boxed problem)" htmlFor="statement" error={errorOf(state, "statement")}>
         <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement", problem.statement.trim())} invalid={!!errorOf(state, "statement")} />
       </Field>
-      <Field label="Background, progress and significance" htmlFor="body" error={errorOf(state, "body")} hint="Use “## Heading” to start a section.">
+      <Field label="Background, relevance and significance" htmlFor="body" error={errorOf(state, "body")} hint="Use “## Heading” to start a section.">
         <MarkdownEditor id="body" name="body" rows={18} defaultValue={valueOf(state, "body", problem.body.trim())} invalid={!!errorOf(state, "body")} />
       </Field>
       <div className="mt-6">

@@ -14,12 +14,12 @@ import { db } from "@/lib/db";
 import { type HistoryEntry, activityLog, problem } from "@/lib/db/schema";
 import { changeEntries, nextProblemNumber, slugify, uniqueSlug } from "@/lib/data/problem-writes";
 import { problemLabel, readProblem } from "@/lib/data/problems";
-import { type ProblemInput, problemSchema, referencesToText } from "@/lib/validation/problems";
+import { type ProblemInput, problemSchema } from "@/lib/validation/problems";
 
 /** The stored columns that the editor changes. Number and URL name are set once, when a problem is created. */
 function fields(i: ProblemInput) {
-  const { title, status, posed, posedBy, tags, statement, body, references, history } = i;
-  return { title, status, areas: i["areas[]"], posed, posedBy, tags, statement, body, references, history };
+  const { title, status, posed, posedBy, tags, statement, body, references, note, history } = i;
+  return { title, status, areas: i["areas[]"], posed, posedBy, tags, statement, body, references, note, history };
 }
 
 export async function createProblem(_: FormState, formData: FormData): Promise<FormState> {
@@ -128,7 +128,8 @@ export async function parseProblemFile(file: { name: string; text: string }): Pr
       tags: list(data.tags).join(", "),
       statement: String(data.statement ?? "").trim(),
       body: parsed.content.trim(),
-      references: referencesToText(references),
+      references,
+      note: typeof data.note === "string" ? data.note.trim() : "",
       history,
     },
   };

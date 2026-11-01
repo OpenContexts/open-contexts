@@ -54,10 +54,6 @@ export default async function ProgressPage() {
               label={pace.toSolved.count ? `median days from a claimed solution to solved (${plural(pace.toSolved.count, "problem")})` : "days from a claimed solution to solved (none yet)"}
             />
           </div>
-          <p className="mt-3 text-sm text-ink-subtle">
-            Only changes made while a problem was on the list count; a problem solved before it was published adds
-            nothing here.
-          </p>
         </>
       )}
     </>

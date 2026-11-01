@@ -25,7 +25,9 @@ export default function AboutPage() {
           the date it was last updated. To cite the database as a whole:
         </p>
       </div>
-      {/* Outside the prose: its styles for code blocks would frame the blocks a second time. */}
+      
+        <SectionTitle>Moderators</SectionTitle>
+        
       <DatabaseCitation />
     </>
   );

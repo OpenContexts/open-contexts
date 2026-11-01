@@ -30,6 +30,8 @@ export const problem = pgTable("problem", {
   body: text("body").notNull(),
   history: jsonb("history").$type<HistoryEntry[]>().default([]).notNull(),
   references: jsonb("references").$type<Reference[]>().default([]).notNull(),
+  /** Optional markdown shown in a blue box, e.g. links to related problems. Set by moderators only. */
+  note: text("note").default("").notNull(),
   /** Increases with every change. Suggested edits record the version they started from. */
   version: integer("version").default(1).notNull(),
   createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),

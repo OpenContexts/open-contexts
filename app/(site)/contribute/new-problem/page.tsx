@@ -14,8 +14,7 @@ export default async function NewProblemPage() {
       intro={
         <p>
           Describe an open problem the way it would appear on the site: a precise statement in a box, followed by
-          its background. Use the Preview tab to check the formatting and the mathematics. If the moderators
-          accept it, it gets the next problem number.
+          its background. Use the <em>Preview</em> tab to check the formatting and the mathematics.
         </p>
       }
     >

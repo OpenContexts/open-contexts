@@ -5,12 +5,13 @@ import { useFormStatus } from "react-dom";
 import { createProblem, updateProblem } from "@/app/admin/problems/actions";
 import { MarkdownField } from "@/components/admin/markdown-field";
 import { HistoryField } from "@/components/admin/history-field";
+import { ReferencesField } from "@/components/admin/references-field";
 import { TagInput } from "@/components/admin/tag-input";
-import { AdminButton, AdminField, AdminInput, AdminTextarea, Card } from "@/components/admin/ui";
+import { AdminButton, AdminField, AdminInput, Card } from "@/components/admin/ui";
 import { AREAS } from "@/lib/areas";
 import { initialFormState, errorOf, valueOf, valuesOf } from "@/lib/actions/form-state";
 import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
-import type { HistoryEntry } from "@/lib/db/schema";
+import type { HistoryEntry, Reference } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
 const STATUS_DOTS: Record<ProblemStatus, string> = { open: "bg-zinc-400", "under-revision": "bg-sky-500", solved: "bg-emerald-500" };
@@ -27,7 +28,9 @@ export type ProblemFormValues = {
   tags: string;
   statement: string;
   body: string;
-  references: string;
+  references: Reference[];
+  /** Markdown; "" for none. */
+  note: string;
   history: HistoryEntry[];
 };
 
@@ -46,7 +49,7 @@ function SaveButton({ label }: { label: string }) {
  */
 export function ProblemForm({ initial, id, version, nextNumber }: { initial: ProblemFormValues; id?: string; version?: number; nextNumber?: number }) {
   const [state, action] = useActionState(id ? updateProblem : createProblem, initialFormState);
-  const value = (name: Exclude<keyof ProblemFormValues, "history" | "areas">) => valueOf(state, name, String(initial[name] ?? ""));
+  const value = (name: Exclude<keyof ProblemFormValues, "history" | "areas" | "references">) => valueOf(state, name, String(initial[name] ?? ""));
   const error = (name: string) => errorOf(state, name);
   const areas = valuesOf(state, "areas[]", state.values ? [] : initial.areas);
 
@@ -70,15 +73,24 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
             <AdminField label="Statement" htmlFor="statement" error={error("statement")} hint="The precise question, shown in the red box.">
               <MarkdownField id="statement" name="statement" defaultValue={value("statement")} rows={5} invalid={!!error("statement")} />
             </AdminField>
-            <AdminField label="Text" htmlFor="body" error={error("body")} hint="Use ## headings for sections such as Background, Partial progress and Significance.">
+            <AdminField label="Text" htmlFor="body" error={error("body")} hint="Use ## headings for the sections Background, Relevance and Significance.">
               <MarkdownField id="body" name="body" defaultValue={value("body")} rows={18} invalid={!!error("body")} />
             </AdminField>
           </div>
         </Card>
 
         <Card title="References">
-          <AdminField label="One reference per line" htmlFor="references" error={error("references")} hint="A link anywhere in the line becomes the reference's URL.">
-            <AdminTextarea id="references" name="references" rows={5} defaultValue={value("references")} className="font-mono text-[13px]" />
+          <ReferencesField initial={initial.references} error={error("references")} />
+        </Card>
+
+        <Card title="Note (optional)">
+          <AdminField
+            label="Note"
+            htmlFor="note"
+            error={error("note")}
+            hint="Shown in a blue box, e.g. to link related problems. Leave empty for none."
+          >
+            <MarkdownField id="note" name="note" defaultValue={value("note")} rows={4} invalid={!!error("note")} />
           </AdminField>
         </Card>
 

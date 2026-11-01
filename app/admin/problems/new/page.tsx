@@ -29,8 +29,9 @@ async function NewProblem() {
         posedBy: "",
         tags: "",
         statement: "",
-        body: "## Background\n\n\n\n## Partial progress\n\n\n\n## Significance\n\n",
-        references: "",
+        body: "## Background\n\n\n\n## Relevance\n\n\n\n## Significance\n\n",
+        references: [],
+        note: "",
         history: [],
       }}
     />

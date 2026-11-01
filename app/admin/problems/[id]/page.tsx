@@ -9,7 +9,6 @@ import { requireModerator } from "@/lib/auth/session";
 import { getProblemActivity } from "@/lib/data/moderation";
 import { readProblem } from "@/lib/data/problems";
 import { formatDate } from "@/lib/format";
-import { referencesToText } from "@/lib/validation/problems";
 
 export const metadata: Metadata = { title: "Edit problem" };
 
@@ -67,7 +66,8 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
           tags: problem.tags.join(", "),
           statement: problem.statement,
           body: problem.body,
-          references: referencesToText(problem.references),
+          references: problem.references,
+          note: problem.note,
           history: problem.history,
         }}
       />

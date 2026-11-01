@@ -2,8 +2,8 @@
 import { z } from "zod";
 import { AREA_IDS } from "@/lib/areas";
 import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
-import type { HistoryEntry, Reference } from "@/lib/db/schema";
-import { commaList, referenceLines, text } from "./fields";
+import type { HistoryEntry } from "@/lib/db/schema";
+import { commaList, referenceRows, text, toReferences } from "./fields";
 
 const PARTIAL_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 
@@ -32,12 +32,13 @@ export const problemSchema = z
     tags: commaList,
     statement: text(10, 10_000, "the statement"),
     body: text(0, 100_000, "the text"),
-    references: referenceLines,
+    ...referenceRows,
+    note: text(0, 10_000, "the note"),
     ...historyRows,
     /** Edits only: added to the history as an `edit` entry. */
     changeSummary: z.string().trim().max(1_000).optional(),
   })
-  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, ...rest }, ctx) => {
+  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "referenceText[]": refTexts, "referenceUrl[]": refUrls, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
     dates.forEach((date, i) => {
       const kind = kinds[i] as HistoryKind;
@@ -53,11 +54,9 @@ export const problemSchema = z
       if (problem) ctx.issues.push({ code: "custom", path: ["history"], message: `Entry ${i + 1} ${problem}.`, input: date });
       else history.push({ date, kind, text: entryText, ...(status && PROBLEM_STATUSES.includes(status) && { status }) });
     });
-    return { ...rest, history };
+    const { references, errors } = toReferences(refTexts, refUrls);
+    if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: refTexts });
+    return { ...rest, history, references };
   });
 
 export type ProblemInput = z.infer<typeof problemSchema>;
-
-/** The inverse of `referenceLines`, to fill the textarea. */
-export const referencesToText = (refs: Reference[]) => refs.map((r) => (r.url ? `${r.text} ${r.url}` : r.text)).join("\n");
-
