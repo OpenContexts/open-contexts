@@ -41,6 +41,10 @@ export default async function ProgressPage() {
             <Link href="/problems" className="text-brand hover:underline">
               See all problems
             </Link>
+            {" · "}
+            <a href="/progress.json" download="opencontext-progress.json" className="text-brand hover:underline">
+              Download the data (JSON)
+            </a>
           </p>
 
           <SectionTitle>II. Time to resolution</SectionTitle>

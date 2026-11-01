@@ -14,7 +14,7 @@ roadmap are in [docs/PLAN.md](docs/PLAN.md).
 | Framework | Next.js 16 (App Router, Cache Components, Turbopack) |
 | Styling  | Tailwind CSS v4; design tokens in `app/globals.css` |
 | Database | Neon Postgres via `drizzle-orm/neon-http`, migrations with drizzle-kit |
-| Auth     | Better Auth: email + password with verification and reset, optional GitHub, roles via the admin plugin |
+| Auth     | Better Auth: email + password with verification and reset, optional GitHub and ORCID, roles via the admin plugin |
 | Email    | react-email templates (`emails/`), sent with nodemailer over SMTP; printed to the terminal in development without SMTP |
 | Content  | Markdown + YAML frontmatter, rendered with react-markdown + KaTeX |
 | Validation | zod |
@@ -56,6 +56,10 @@ submissions stay as they are.
 There are two ways to create an account:
 
 - **GitHub**: any GitHub account, with any email address.
+- **ORCID** (optional, set `ORCID_CLIENT_ID` and `ORCID_CLIENT_SECRET`; redirect URI
+  `<BETTER_AUTH_URL>/api/auth/callback/orcid`): any ORCID iD. ORCID does not return email addresses, so the
+  account takes the public, verified email on the ORCID record if there is one, and otherwise a placeholder
+  `<orcid-id>@orcid.invalid` to which nothing is ever sent (`lib/auth/orcid.ts`).
 - **Email and password**: the address must belong to a university or research institute and must be
   confirmed. The check (`lib/auth/institutional.ts`) accepts:
 

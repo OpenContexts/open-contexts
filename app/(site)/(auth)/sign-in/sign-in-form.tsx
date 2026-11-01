@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button, Callout, Field, Input } from "@/components/ui";
 import { signIn } from "@/lib/auth/client";
-import { GitHubButton, OrDivider } from "../github-button";
+import { GitHubButton, OrcidButton, OrDivider } from "../github-button";
 import { authErrorMessage, safeNext } from "../shared";
 
-export function SignInForm({ github }: { github: boolean }) {
+export function SignInForm({ github, orcid }: { github: boolean; orcid: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
@@ -51,10 +51,13 @@ export function SignInForm({ github }: { github: boolean }) {
         </Button>
       </form>
 
-      {github && (
+      {(github || orcid) && (
         <>
           <OrDivider />
-          <GitHubButton />
+          <div className="space-y-2.5">
+            {orcid && <OrcidButton />}
+            {github && <GitHubButton />}
+          </div>
         </>
       )}
 

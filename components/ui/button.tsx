@@ -37,6 +37,11 @@ export function Button({
   return <button type={type} className={buttonStyles({ variant, size, className })} {...props} />;
 }
 
+/** For files and other addresses that are not pages (e.g. downloads), which next/link should not handle. */
+export function ButtonAnchor({ variant, size, className, ...props }: ComponentProps<"a"> & ButtonStyleProps) {
+  return <a className={buttonStyles({ variant, size, className })} {...props} />;
+}
+
 export function ButtonLink({
   variant,
   size,

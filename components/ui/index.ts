@@ -1,7 +1,7 @@
 // Basic, reusable, domain-agnostic UI elements. Feature components live in components/<feature>.
 export { ActionCard, ActionCardGrid } from "./action-card";
 export { AppleIcon, type AppleVariant } from "./apple-icon";
-export { Button, ButtonLink } from "./button";
+export { Button, ButtonAnchor, ButtonLink } from "./button";
 export { Callout } from "./callout";
 export { Chip, ChipLink, ChipList } from "./chip";
 export { Clamped } from "./clamped";

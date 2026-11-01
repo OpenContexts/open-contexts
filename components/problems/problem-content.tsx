@@ -9,7 +9,7 @@ import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { Chip, ChipList, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
+import { ButtonAnchor, Chip, ChipList, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getArea } from "@/lib/areas";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
@@ -80,7 +80,9 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </FramedBox>
       )}
 
-      <CiteProblem problem={pick(problem)} origin={siteOrigin()} />
+      <CiteProblem problem={pick(problem)} origin={siteOrigin()}>
+        <DownloadLinks slug={problem.slug} number={problem.number} />
+      </CiteProblem>
 
       {problem.references.length > 0 && (
         <>
@@ -137,6 +139,27 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
       <DiscussionSection comments={comments} commentBox={commentBox} />
     </article>
   );
+}
+
+/** The problem with everything recorded about it, as one file (see lib/data/problem-export.ts). */
+function DownloadLinks({ slug, number }: { slug: string; number: number }) {
+  const formats = [
+    { ext: "md", label: "Markdown", hint: "for reading, or to give to an AI agent" },
+    { ext: "json", label: "JSON", hint: "for programs" },
+  ];
+  return formats.map((f) => (
+    <ButtonAnchor
+      key={f.ext}
+      href={`/problems/${slug}/problem.${f.ext}`}
+      download={`opencontext-problem-${number}.${f.ext}`}
+      variant="quiet"
+      size="sm"
+      title={`The statement, text, references, history, contributions and discussion, ${f.hint}.`}
+    >
+      <span aria-hidden className="text-base/none">↓</span>
+      {f.label}
+    </ButtonAnchor>
+  ));
 }
 
 function Fact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {

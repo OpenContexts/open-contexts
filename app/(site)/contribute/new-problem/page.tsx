@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ProposalForm } from "@/components/submissions/proposal-form";
 import { SubmissionPage } from "@/components/submissions/submission-page";
 import { requireUser } from "@/lib/auth/session";
@@ -14,7 +15,12 @@ export default async function NewProblemPage() {
       intro={
         <p>
           Describe an open problem the way it would appear on the site: a precise statement in a box, followed by
-          its background. Use the <em>Preview</em> tab to check the formatting and the mathematics.
+          its background, relevance, significance and feasibility. Use the <em>Preview</em> tab to check the
+          formatting and the mathematics. Proposals are checked against the{" "}
+          <Link href="/contribute#curation-criteria" className="text-brand hover:underline">
+            curation criteria
+          </Link>
+          . The list for the first cycle is fixed, so new problems are kept for consideration in the next one.
         </p>
       }
     >

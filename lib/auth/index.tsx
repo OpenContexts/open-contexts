@@ -2,7 +2,7 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
+import { admin, genericOAuth } from "better-auth/plugins";
 import { revalidateTag } from "next/cache";
 import { MODERATOR_ROLES, type Role } from "@/lib/constants";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
@@ -12,6 +12,7 @@ import ResetPassword from "@/emails/reset-password";
 import VerifyEmail from "@/emails/verify-email";
 import { isGitHubConfigured } from "./github";
 import { isInstitutionalEmail } from "./institutional";
+import { isOrcidConfigured, isPlaceholderEmail, orcidProvider } from "./orcid";
 import { BLOCKED_MESSAGE, INSTITUTIONAL_EMAIL_ERROR, INSTITUTIONAL_EMAIL_MESSAGE } from "./institutional-messages";
 
 const isListedModerator = (u: Record<string, unknown>) => MODERATOR_ROLES.includes(u.role as Role) && !u.banned;
@@ -30,6 +31,7 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
+      if (isPlaceholderEmail(user.email)) return;
       await sendEmail({ to: user.email, subject: "Reset your OpenContext password", template: <ResetPassword name={user.name} url={url} /> });
     },
   },
@@ -38,6 +40,7 @@ export const auth = betterAuth({
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
+      if (isPlaceholderEmail(user.email)) return;
       await sendEmail({ to: user.email, subject: "Confirm your email for OpenContext", template: <VerifyEmail name={user.name} url={url} /> });
     },
   },
@@ -59,12 +62,12 @@ export const auth = betterAuth({
     },
   },
   user: {
-    // New email-and-password accounts need an institutional address. GitHub accounts may use any
-    // email: the GitHub account itself identifies the person. Only account creation is checked,
-    // so returning sign-ins and linking GitHub to an existing account are not affected.
+    // New email-and-password accounts need an institutional address. GitHub and ORCID accounts may use
+    // any email: the account itself identifies the person. Only account creation is checked, so
+    // returning sign-ins and linking GitHub or ORCID to an existing account are not affected.
     validateUserInfo: ({ user, source }) => {
       if (source.action !== "create-user") return;
-      if (source.method === "oauth" && source.oauth?.providerId === "github") return;
+      if (source.method === "oauth" && (source.oauth?.providerId === "github" || source.oauth?.providerId === "orcid")) return;
       if (!user.email || !isInstitutionalEmail(user.email)) {
         return { error: INSTITUTIONAL_EMAIL_ERROR, errorDescription: INSTITUTIONAL_EMAIL_MESSAGE };
       }
@@ -74,6 +77,8 @@ export const auth = betterAuth({
     // Adds `role`, `banned`, … to the user table and admin endpoints for user management.
     // Blocked users (banned = true) cannot sign in; see app/admin/users.
     admin({ defaultRole: "user", adminRoles: ["admin"], bannedUserMessage: BLOCKED_MESSAGE }),
+    // ORCID sign-in, when configured (lib/auth/orcid.ts).
+    ...(isOrcidConfigured() ? [genericOAuth({ config: [orcidProvider()] })] : []),
     // Must stay last: lets server actions set auth cookies.
     nextCookies(),
   ],

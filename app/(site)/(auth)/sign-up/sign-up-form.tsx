@@ -9,8 +9,11 @@ import { INSTITUTIONAL_EMAIL_MESSAGE } from "@/lib/auth/institutional-messages";
 import { checkInstitutionalEmail } from "../actions";
 import { authErrorMessage, safeNext } from "../shared";
 
-/** `alternative` (e.g. signing up with GitHub) is shown below the form, until the form has been sent. */
-export function SignUpForm({ github, alternative }: { github: boolean; alternative?: ReactNode }) {
+/**
+ * `alternative` (e.g. signing up with ORCID or GitHub) is shown below the form, until the form has been sent;
+ * `alternativeNames` ("ORCID or GitHub") points to it when an address is not recognized.
+ */
+export function SignUpForm({ alternativeNames, alternative }: { alternativeNames?: string; alternative?: ReactNode }) {
   const next = safeNext(useSearchParams().get("next"));
   const [error, setError] = useState<string | null>(null);
   const [emailHint, setEmailHint] = useState<"ok" | "bad" | null>(null);
@@ -60,7 +63,7 @@ export function SignUpForm({ github, alternative }: { github: boolean; alternati
           label="Institutional email"
           htmlFor="email"
           hint={emailHint === "ok" ? <span className="text-success">✓ Recognized as an institutional address.</span> : "e.g. name@uni-example.edu"}
-          error={emailHint === "bad" ? `${INSTITUTIONAL_EMAIL_MESSAGE}${github ? " Or sign up with GitHub below." : ""}` : undefined}
+          error={emailHint === "bad" ? `${INSTITUTIONAL_EMAIL_MESSAGE}${alternativeNames ? ` Or sign up with ${alternativeNames} below.` : ""}` : undefined}
         >
           <Input
             id="email"

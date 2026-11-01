@@ -97,7 +97,7 @@ async function Users({ searchParams }: Pick<PageProps<"/admin/users">, "searchPa
   );
 }
 
-const PROVIDER_LABELS: Record<string, string> = { credential: "Email", github: "GitHub" };
+const PROVIDER_LABELS: Record<string, string> = { credential: "Email", github: "GitHub", orcid: "ORCID" };
 
 function UserTableRow({ user, self }: { user: UserRow; self: boolean }) {
   return (

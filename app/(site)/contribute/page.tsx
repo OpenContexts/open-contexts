@@ -6,7 +6,7 @@ import { ButtonLink, FramedBox, PageTitle, SectionTitle } from "@/components/ui"
 export const metadata: Metadata = { title: "Contribute" };
 
 const STEPS = [
-  { title: "Sign in", text: "with the email address of your university or research institute." },
+  { title: "Sign in", text: "under your own name, with the email address of your university or research institute or with GitHub." },
   { title: "Choose what to add", text: "to an existing problem, or propose a new one. Each kind of contribution has its own short form." },
   { title: "A moderator reviews it", text: "and accepts it, or explains what is missing. You can follow the status under My submissions." },
   { title: "It is published", text: "on the problem page, credited to the people you named." },
@@ -31,11 +31,11 @@ const BEST_PRACTICES = [
   { name: "Avoid single-prompt outputs", text: "Even when a single prompt yields a promising solution, engage with the material in follow-up iterative prompting before submitting it." },
   { name: "Be polite", text: "Agents have no feelings; humans do. A digestion phase is public and every submission carries named humans, so direct polite criticism at the claim or passages, not at the involved researchers." },
   { name: "Avoid duplication", text: "Check whether a claimed solution already exists. If one does, do not rapidly prepare an AI-written revised version merely to reflect \"your own style\" and submit it; make an effort, instead, to ensure that distinct solutions offer distinct insights into the same problem."},
-  { name: "Recognize effort", text: "When preparing an explanatory exposition of an independent manuscript, or any work that benefited from the exchanges shared in Open-Context, acknowledge, and where relevant, cite the contributions you drew on."}
+  { name: "Recognize effort", text: "When preparing an explanatory exposition of an independent manuscript, or any work that benefited from the exchanges shared in OpenContext, acknowledge, and where relevant, cite the contributions you drew on."}
 ];
 
 const PARTS: { name: string; text: ReactNode }[] = [
-  { name: "Statement", text: "The precise question, shown in the red box. Fix the objects and assumptions, so that it is clear what counts as a solution." },
+  { name: "Statement", text: "The precise question, shown in the red box. Fix the objects and assumptions, and make clear what counts as a solution." },
   { name: "Background", text: "What a reader needs to understand the statement, with references." },
   {
     name: "Relevance",
@@ -50,6 +50,7 @@ const PARTS: { name: string; text: ReactNode }[] = [
     ),
   },
   { name: "Significance", text: "How its resolution would meaningfully advance those areas." },
+  { name: "Feasibility", text: "Why the problem can plausibly be tackled with existing techniques and near-term AI assistance, for instance known special cases or a possible line of attack." },
 ];
 
 const WAYS = [
@@ -86,9 +87,15 @@ export default function ContributePage() {
         A problem is added to the list if it meets the four criteria below. They make a problem well-posed enough
         that an AI agent can understand unambiguously what is being asked (Clarity) and search the literature for
         prior attempts and established results (Relevance), for a problem whose resolution would advance the
-        research program (Significance) and that is not obviously out of reach (Feasibility).
+        research program (Significance) and that is not obviously out of reach (Feasibility). Proposals are checked
+        against these criteria, not heavily refereed. For the first cycle, OpenContext I, the list of problems is
+        fixed: new proposals are kept for consideration in the next cycle (see the{" "}
+        <Link href="/guidelines#cycles" className="text-brand hover:underline">
+          guidelines
+        </Link>
+        ).
       </p>
-      <FramedBox title="Best practices" tone="gold">
+      <FramedBox title="Curation criteria" tone="gold" className="scroll-mt-6" id="curation-criteria">
         <dl className="space-y-3">
           {CRITERIA.map((c) => (
             <div key={c.name} className="text-justify hyphens-auto max-sm:text-left">
@@ -100,8 +107,8 @@ export default function ContributePage() {
 
       <h3 className="mt-8 mb-3 font-sans text-sm font-bold">How to write a problem</h3>
       <p className="mb-3 text-justify hyphens-auto max-sm:text-left">
-        Every problem has the same parts. The proposal form starts its text with the three section headings, so you
-        only have to fill them in.
+        A problem has the parts below. The proposal form starts its text with the four section headings after the
+        statement, so you only have to fill them in.
       </p>
       <dl className="mb-6 space-y-2">
         {PARTS.map((part) => (
@@ -133,7 +140,7 @@ export default function ContributePage() {
         ))}
       </ul>
 
-      <FramedBox title="Best practices" tone="gold">
+      <FramedBox title="Best practices" tone="gold" className="scroll-mt-6" id="best-practices">
         <dl className="space-y-3">
           {BEST_PRACTICES.map((c) => (
             <div key={c.name} className="text-justify hyphens-auto max-sm:text-left">

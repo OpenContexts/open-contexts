@@ -8,6 +8,23 @@ import { safeNext } from "./shared";
 
 /** Signs in with GitHub, creating the account on first use. Errors come back to /sign-in as ?error=. */
 export function GitHubButton({ children = "Continue with GitHub" }: { children?: React.ReactNode }) {
+  return (
+    <ProviderButton provider="github" name="GitHub">
+      {children}
+    </ProviderButton>
+  );
+}
+
+/** Signs in with ORCID (lib/auth/orcid.ts), creating the account on first use. */
+export function OrcidButton({ children = "Continue with ORCID" }: { children?: React.ReactNode }) {
+  return (
+    <ProviderButton provider="orcid" name="ORCID">
+      {children}
+    </ProviderButton>
+  );
+}
+
+function ProviderButton({ provider, name, children }: { provider: "github" | "orcid"; name: string; children: React.ReactNode }) {
   const next = safeNext(useSearchParams().get("next"));
   const [pending, startTransition] = useTransition();
   return (
@@ -17,11 +34,11 @@ export function GitHubButton({ children = "Continue with GitHub" }: { children?:
       className="w-full"
       onClick={() =>
         startTransition(async () => {
-          await signIn.social({ provider: "github", callbackURL: next, errorCallbackURL: "/sign-in" });
+          await signIn.social({ provider, callbackURL: next, errorCallbackURL: "/sign-in" });
         })
       }
     >
-      {pending ? "Redirecting to GitHub…" : children}
+      {pending ? `Redirecting to ${name}…` : children}
     </Button>
   );
 }

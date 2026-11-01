@@ -8,7 +8,10 @@ import { getProblem, problemLabel } from "@/lib/data/problems";
 
 export async function generateMetadata({ params }: PageProps<"/problems/[slug]">): Promise<Metadata> {
   const problem = await getProblem((await params).slug);
-  return problem ? { title: problemLabel(problem) } : {};
+  if (!problem) return {};
+  // Points programs and AI agents that read the page to its machine-readable versions.
+  const base = `/problems/${problem.slug}/problem`;
+  return { title: problemLabel(problem), alternates: { types: { "text/markdown": `${base}.md`, "application/json": `${base}.json` } } };
 }
 
 // Rendered per request from the cache: the problem list and the page's content (ProblemContent) are only

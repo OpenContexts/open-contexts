@@ -23,6 +23,11 @@ export function authErrorMessage(error: { code?: string; message?: string } | st
       return "An account with this email address already exists. Sign in instead, or reset your password.";
     case "PASSWORD_TOO_SHORT":
       return "The password must be at least 8 characters long.";
+    case "ACCOUNT_NOT_LINKED":
+      return "An account with this email address already exists. Please sign in the way you signed up.";
+    case "UNABLE_TO_GET_USER_INFO":
+    case "INVALID_CODE":
+      return "The sign-in could not be completed. Please try again.";
     case "INVALID_TOKEN":
       return "This link is invalid or has expired. Please request a new one.";
     default:

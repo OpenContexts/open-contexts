@@ -32,11 +32,16 @@ export default async function HomePage() {
       <section className="mx-auto max-w-160">
         <div className="md:flex items-start w-full text-sm gap-4">
           <strong>Companion paper:</strong>
-          <Link href="#" className="text-brand hover:underline flex-wrap flex-1">
-            <p className="">
-              <span className="italic">Accelerating research through skilled humans collaborating with AI agents: A case study in quantum foundations</span>, Wagner et al. (2026).
-            </p>
-          </Link>
+          <p className="flex-1">
+            {SITE.paper.url ? (
+              <a href={SITE.paper.url} className="text-brand hover:underline">
+                <span className="italic">{SITE.paper.title}</span>
+              </a>
+            ) : (
+              <span className="italic">{SITE.paper.title}</span>
+            )}
+            , {SITE.paper.authors} ({SITE.paper.year}).
+          </p>
         </div>
       </section>
 
@@ -64,7 +69,11 @@ export default async function HomePage() {
 
       <SectionTitle>I. Organizing research goals</SectionTitle>
       <p className="mx-auto mb-4 -mt-4 max-w-160 text-justify text-base hyphens-auto max-sm:text-left">
-          For this first cycle (OpenContext I) three long-term goals organize the list. We remark that the division into broad goals is a matter of motivation and organization, rather than a fixed verdict on what is worth pursuing. Within this organization scheme, every problem traces back to one goal. Golden apples mark the broad goals motivated in our companion paper for OpenContext I. Red apples mark, instead, the near-term problems that grow from them. Later cycles may be organized around other broad directions, which anyone can propose on the future broad goals page. 
+          For this first cycle (OpenContext I) three long-term goals organize the list. The division into broad goals is a matter of motivation and organization, rather than a fixed verdict on what is worth pursuing. Within this scheme, every problem traces back to at least one goal. Golden apples mark the broad goals motivated in our companion paper; red apples mark the near-term problems that grow from them. Later cycles may be organized around other broad directions, and objections to the current goals are welcome: see the{" "}
+          <Link href="/guidelines#cycles" className="text-brand hover:underline">
+            guidelines
+          </Link>
+          .
         </p>
       <ol className="border-b border-rule">
         {AREAS.map((area) => {

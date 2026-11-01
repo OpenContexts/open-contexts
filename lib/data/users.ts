@@ -21,7 +21,7 @@ export type UserRow = {
   banned: boolean;
   banReason: string | null;
   createdAt: Date;
-  /** Sign-in methods: "credential" (email and password), "github". */
+  /** Sign-in methods: "credential" (email and password), "github", "orcid". */
   providers: string[];
   submissions: number;
 };

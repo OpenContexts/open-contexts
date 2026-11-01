@@ -17,15 +17,18 @@ export function FramedBox({
   tone = "brand",
   children,
   className,
+  id,
 }: {
   title: ReactNode;
   titleAs?: "div" | "h1" | "h2" | "h3";
   tone?: keyof typeof TONES;
   children: ReactNode;
   className?: string;
+  /** For links to the box, e.g. /contribute#best-practices. */
+  id?: string;
 }) {
   return (
-    <section className={cn("relative mt-9 mb-5 rounded-[7px] border-[1.5px] px-5 pt-7 pb-4", TONES[tone].box, className)}>
+    <section id={id} className={cn("relative mt-9 mb-5 rounded-[7px] border-[1.5px] px-5 pt-7 pb-4", TONES[tone].box, className)}>
       <Title
         className={cn(
           "absolute -top-4 left-1/2 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 items-center gap-1.5 truncate rounded-[5px] border-[1.5px] px-3.5 py-1 font-sans text-[0.92rem]/tight font-bold",

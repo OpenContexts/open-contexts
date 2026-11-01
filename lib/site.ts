@@ -6,6 +6,13 @@ export const SITE = {
     "A community-curated, moderated database of precisely stated open problems in generalized contextuality, with recorded progress, discussion and fine-grained credit.",
   repo: "",
   contact: "rafael.wagner@uni-ulm.de",
+  /** The companion paper that sets out the methodology. Pages link to it once `url` is set. */
+  paper: {
+    title: "Accelerating research through human-AI collaboration: A case study in quantum foundations",
+    authors: "Wagner et al.",
+    year: "2026",
+    url: "",
+  },
 } as const;
 
 export const NAV = [
