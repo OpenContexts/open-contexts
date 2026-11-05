@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { CiteAutocomplete, useCitations } from "./cite-autocomplete";
 import { MarkdownContent } from "./markdown";
+import { MarkdownHelp } from "./markdown-help";
 
 /**
  * A textarea with a Write / Preview toggle that renders markdown and LaTeX exactly as the
@@ -51,9 +52,7 @@ export function MarkdownEditor({
       <div className="mb-1.5 flex items-center gap-3">
         {tab("write", "Write")}
         {tab("preview", "Preview")}
-        <span className="ml-auto text-right text-xs text-ink-subtle">
-          Markdown · math with $…$ and $$…$${references && <> · cite with \cite{"{…}"}</>}
-        </span>
+        <MarkdownHelp cite={!!references} />
       </div>
       <div className="relative">
         <Textarea

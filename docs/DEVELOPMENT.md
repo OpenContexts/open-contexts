@@ -110,7 +110,7 @@ components/
   submissions/            the contribution forms
   problems/               problem box, list rows, status icon/badge, kind labels, DB-backed page sections
   progress/               the status chart
-  markdown/               safe markdown + math renderer with citations, and an editor with live preview and \cite completion
+  markdown/               safe markdown + math renderer with citations, and an editor with live preview, \cite completion and a formatting summary
   admin/                  dashboard UI: navigation, problem editor, diff view, decision panel, row menus
 lib/
   actions/                server actions for submissions (all create `pending` rows)

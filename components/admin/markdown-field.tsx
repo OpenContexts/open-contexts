@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AdminTextarea } from "@/components/admin/ui";
 import { CiteAutocomplete, useCitations } from "@/components/markdown/cite-autocomplete";
 import { MarkdownContent } from "@/components/markdown/markdown";
+import { MarkdownHelp } from "@/components/markdown/markdown-help";
 import { cn } from "@/lib/cn";
 
 /**
@@ -30,9 +31,7 @@ export function MarkdownField({ id, name, defaultValue, rows, invalid }: { id: s
       <div className="mb-1.5 flex items-center gap-1">
         {tab(false, "Write")}
         {tab(true, "Preview")}
-        <span className="ml-auto text-xs text-zinc-400">
-          Markdown · math with $…$ and $$…$${references && <> · cite with \cite{"{…}"}</>}
-        </span>
+        <MarkdownHelp cite={!!references} admin />
       </div>
       <div className="relative">
         <AdminTextarea
