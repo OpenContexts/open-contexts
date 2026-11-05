@@ -18,6 +18,7 @@ import {
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { getProblem, type Reference, statusSince } from "@/lib/data/problems";
 import { formatDate, formatNames } from "@/lib/format";
+import { citesToText } from "@/lib/references";
 import { SITE } from "@/lib/site";
 
 export type ProblemExport = {
@@ -36,7 +37,7 @@ export type ProblemExport = {
     version: number;
     areas: { id: string; numeral: string; title: string; summary: string }[];
     tags: string[];
-    /** Markdown with $…$ math, as everywhere below. */
+    /** Markdown with $…$ math, as everywhere below. \cite{key} cites the reference with that `key`. */
     statement: string;
     /** Markdown with `##` sections: Background, Relevance, Significance, … */
     body: string;
@@ -136,6 +137,8 @@ function historyLabel(h: ProblemExport["problem"]["history"][number]): string {
  */
 export function problemExportToMarkdown({ source, problem: p, contributions, comments }: ProblemExport, bibtex: string): string {
   const parts: string[] = [];
+  // Citations as the numbers of the reference list below: \cite{key} → [n].
+  const cite = (text: string) => citesToText(text, p.references);
   const add = (...lines: string[]) => parts.push(lines.join("\n"));
 
   add(`# Problem ${p.number}: ${p.title}`);
@@ -149,9 +152,9 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
     ...(p.tags.length ? [`- **Tags:** ${p.tags.join(", ")}`] : []),
   );
 
-  add("## Statement", "", p.statement);
-  if (p.body) add(p.body);
-  if (p.note) add("## Note", "", p.note);
+  add("## Statement", "", cite(p.statement));
+  if (p.body) add(cite(p.body));
+  if (p.note) add("## Note", "", cite(p.note));
 
   if (p.areas.length) {
     add("## Research goals", "", "The long-term goals of the research agenda that this problem traces to.");
@@ -163,7 +166,7 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
   add(
     "## Progress and history",
     "",
-    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${h.text}`).join("\n") : "No entries yet.",
+    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${cite(h.text)}`).join("\n") : "No entries yet.",
   );
 
   add("## Contributions", "", contributions.length ? "Material submitted by researchers and approved by the moderators, oldest first." : "No contributions recorded yet.");
@@ -176,12 +179,12 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
       `- **AI use:** ${c.aiUseLabel}`,
       ...(c.url ? [`- **Link:** ${c.url}`] : []),
       "",
-      c.summary,
+      cite(c.summary),
     );
   });
 
   add("## Discussion", "", comments.length ? "Comments approved by the moderators, oldest first." : "No comments yet.");
-  for (const c of comments) add(`### ${c.author}, ${formatDate(c.date)}`, "", c.body);
+  for (const c of comments) add(`### ${c.author}, ${formatDate(c.date)}`, "", cite(c.body));
 
   add("## How to cite", "", "```bibtex", bibtex, "```");
 

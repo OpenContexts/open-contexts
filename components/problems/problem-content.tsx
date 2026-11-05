@@ -64,7 +64,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </Fact>
       </dl>
 
-      <MarkdownContent source={problem.body} className="lettered" />
+      <MarkdownContent source={problem.body} references={problem.references} className="lettered" />
 
       {problem.tags.length > 0 && (
         <ChipList className="mt-6">
@@ -76,7 +76,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
 
       {problem.note.trim() && (
         <FramedBox title="Note" tone="info" className="mt-10">
-          <MarkdownContent source={problem.note} />
+          <MarkdownContent source={problem.note} references={problem.references} />
         </FramedBox>
       )}
 
@@ -115,7 +115,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
                 <div className="relative border-l-2 border-rule py-3 pl-5 max-sm:pl-4">
                   <span aria-hidden className={cn("absolute top-[1.15rem] -left-[7px] size-3 rounded-full ring-3 ring-paper", toneColors[look.tone].bg)} />
                   <KindTag look={look} className="relative -top-px mr-2" />
-                  <MarkdownInline source={h.text} />
+                  <MarkdownInline source={h.text} references={problem.references} />
                 </div>
               </li>
             );
@@ -125,7 +125,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         <p className="text-ink-muted">No entries yet.</p>
       )}
 
-      <ContributionsSection items={contributions} />
+      <ContributionsSection items={contributions} references={problem.references} />
 
       <section className="mt-8 rounded border border-rule bg-surface px-5 pt-4 pb-3.5">
         <h3 className="mb-3 font-sans text-sm font-bold">Contribute to this problem</h3>
@@ -136,7 +136,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </p>
       </section>
 
-      <DiscussionSection comments={comments} commentBox={commentBox} />
+      <DiscussionSection comments={comments} commentBox={commentBox} references={problem.references} />
     </article>
   );
 }

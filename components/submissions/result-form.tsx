@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
+import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
+import type { CitableReferences } from "@/components/markdown/markdown";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
 import { AI_USE, AI_USE_DESCRIPTIONS, AI_USE_LABELS, CONTRIBUTION_KIND_DESCRIPTIONS, CONTRIBUTION_KIND_LABELS, type ContributionKind } from "@/lib/constants";
@@ -19,7 +21,8 @@ const KIND_GROUPS = [
 
 export const AI_CHOICES = AI_USE.map((a) => ({ value: a, label: AI_USE_LABELS[a].replace(/^./, (c) => c.toUpperCase()), description: AI_USE_DESCRIPTIONS[a] }));
 
-export function ResultForm({ problemSlug, defaultCredit }: { problemSlug: string; defaultCredit: string }) {
+/** `references`: the problem's, which the summary can cite with \cite{key}. */
+export function ResultForm({ problemSlug, references, defaultCredit }: { problemSlug: string; references: CitableReferences; defaultCredit: string }) {
   const [state, action] = useActionState(submitResult, initialFormState);
   if (state.status === "success") return <SubmissionReceived noun="result" back={{ href: `/problems/${problemSlug}`, label: "back to the problem" }} />;
 
@@ -35,7 +38,9 @@ export function ResultForm({ problemSlug, defaultCredit }: { problemSlug: string
         <Input id="title" name="title" defaultValue={valueOf(state, "title")} required />
       </Field>
       <Field label="Summary" htmlFor="summary" error={errorOf(state, "summary")} hint="What is shown, how, and under which assumptions. Readers should understand the claim without opening the link.">
-        <MarkdownEditor id="summary" name="summary" rows={10} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
+        <CitationsProvider references={references}>
+          <MarkdownEditor id="summary" name="summary" rows={10} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
+        </CitationsProvider>
       </Field>
       <Field label="Link to the full work (optional)" htmlFor="url" error={errorOf(state, "url")} hint="arXiv, journal, code repository, notebook…">
         <Input id="url" name="url" type="url" placeholder="https://arxiv.org/abs/…" defaultValue={valueOf(state, "url")} />

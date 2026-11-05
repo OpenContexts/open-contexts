@@ -3,7 +3,7 @@ import { z } from "zod";
 import { AREA_IDS } from "@/lib/areas";
 import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry } from "@/lib/db/schema";
-import { commaList, referenceRows, text, toReferences } from "./fields";
+import { citeIssues, commaList, referenceRows, text, toReferences } from "./fields";
 
 const PARTIAL_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 
@@ -38,7 +38,7 @@ export const problemSchema = z
     /** Edits only: added to the history as an `edit` entry. */
     changeSummary: z.string().trim().max(1_000).optional(),
   })
-  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "referenceText[]": refTexts, "referenceUrl[]": refUrls, ...rest }, ctx) => {
+  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
     dates.forEach((date, i) => {
       const kind = kinds[i] as HistoryKind;
@@ -54,8 +54,9 @@ export const problemSchema = z
       if (problem) ctx.issues.push({ code: "custom", path: ["history"], message: `Entry ${i + 1} ${problem}.`, input: date });
       else history.push({ date, kind, text: entryText, ...(status && PROBLEM_STATUSES.includes(status) && { status }) });
     });
-    const { references, errors } = toReferences(refTexts, refUrls);
+    const { references, errors } = toReferences(refTexts, refUrls, refKeys);
     if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: refTexts });
+    else citeIssues(ctx, { statement: rest.statement, body: rest.body, note: rest.note }, references);
     return { ...rest, history, references };
   });
 

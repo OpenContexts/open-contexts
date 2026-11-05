@@ -30,7 +30,7 @@ export default async function ProblemPage({ params }: PageProps<"/problems/[slug
         <ModeratorEditLink problemId={problem.id} />
       </p>
       {/* The key: the cached content places this slot among its own children, and React needs one there. */}
-      <ProblemContent id={problem.id} commentBox={<CommentBox key="comment-box" slug={problem.slug} />} />
+      <ProblemContent id={problem.id} commentBox={<CommentBox key="comment-box" slug={problem.slug} references={problem.references} />} />
     </>
   );
 }

@@ -2,8 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import { AdminButton, AdminInput, AdminTextarea } from "@/components/admin/ui";
-import { useReferenceRows } from "@/components/ui/use-reference-rows";
-import type { Reference } from "@/lib/db/schema";
+import type { ReferenceRows } from "@/components/ui/use-reference-rows";
 import { cn } from "@/lib/cn";
 import { oneLine, type ReferenceDraft } from "@/lib/references";
 
@@ -48,16 +47,16 @@ function ReferenceInputs({
         aria-label={`${label}: link`}
         className="w-44 flex-none max-md:w-36"
       />
+      <input type="hidden" name="referenceKey[]" value={reference.key ?? ""} />
     </>
   );
 }
 
 /**
  * The references as a numbered list, in the order shown on the site. Each stays editable and can be moved;
- * the row at the bottom adds a new one (button or Enter).
+ * the row at the bottom adds a new one (button or Enter). Each shows the key the text cites it by. `refs` from useReferenceRows.
  */
-export function ReferencesField({ initial, error }: { initial: Reference[]; error?: string }) {
-  const refs = useReferenceRows(initial);
+export function ReferencesField({ refs, error }: { refs: ReferenceRows; error?: string }) {
   // Enter adds the reference instead of submitting the whole form.
   const addOnEnter = (e: KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -71,23 +70,28 @@ export function ReferencesField({ initial, error }: { initial: Reference[]; erro
       {refs.rows.length > 0 ? (
         <ol className="mb-3 space-y-2">
           {refs.rows.map((row, i) => (
-            <li key={row.key} className="flex items-start gap-2">
+            <li key={row.rowId} className="flex items-start gap-2">
               <span className="w-6 flex-none pt-2.5 text-right text-xs text-zinc-400 tabular-nums">{i + 1}.</span>
-              <ReferenceInputs
-                reference={row}
-                onChange={(patch) => refs.update(row.key, patch)}
-                onBlur={() => refs.tidy(row.key)}
-                onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
-                label={`Reference ${i + 1}`}
-              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start gap-2">
+                  <ReferenceInputs
+                    reference={row}
+                    onChange={(patch) => refs.update(row.rowId, patch)}
+                    onBlur={() => refs.tidy(row.rowId)}
+                    onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+                    label={`Reference ${i + 1}`}
+                  />
+                </div>
+                <p className="mt-0.5 font-mono text-[11px] text-zinc-400">\cite{`{${row.key}}`}</p>
+              </div>
               <div className="flex flex-none pt-0.5">
-                <button type="button" onClick={() => refs.move(row.key, -1)} disabled={i === 0} aria-label={`Move reference ${i + 1} up`} className={iconButton}>
+                <button type="button" onClick={() => refs.move(row.rowId, -1)} disabled={i === 0} aria-label={`Move reference ${i + 1} up`} className={iconButton}>
                   ↑
                 </button>
-                <button type="button" onClick={() => refs.move(row.key, 1)} disabled={i === refs.rows.length - 1} aria-label={`Move reference ${i + 1} down`} className={iconButton}>
+                <button type="button" onClick={() => refs.move(row.rowId, 1)} disabled={i === refs.rows.length - 1} aria-label={`Move reference ${i + 1} down`} className={iconButton}>
                   ↓
                 </button>
-                <button type="button" onClick={() => refs.remove(row.key)} aria-label={`Remove reference ${i + 1}`} className={cn(iconButton, "hover:bg-red-50 hover:text-red-600")}>
+                <button type="button" onClick={() => refs.remove(row.rowId)} aria-label={`Remove reference ${i + 1}`} className={cn(iconButton, "hover:bg-red-50 hover:text-red-600")}>
                   ×
                 </button>
               </div>
@@ -106,7 +110,7 @@ export function ReferencesField({ initial, error }: { initial: Reference[]; erro
       {error ? (
         <p className="mt-1.5 text-xs text-red-600">{error}</p>
       ) : (
-        <p className="mt-1.5 text-xs text-zinc-500">The link is optional. A link pasted into the citation is moved to the link field.</p>
+        <p className="mt-1.5 text-xs text-zinc-500">The link is optional. A link pasted into the citation is moved to the link field. Cite a reference in the texts by typing \cite{"{"}.</p>
       )}
     </div>
   );

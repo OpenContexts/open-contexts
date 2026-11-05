@@ -15,6 +15,7 @@ import {
   type SubmissionType,
 } from "@/lib/constants";
 import { listSubmissions, type QueueItem } from "@/lib/data/moderation";
+import { getProblems, type Problem } from "@/lib/data/problems";
 import { formatRelative, plural } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -35,7 +36,8 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
   if (!type) notFound();
   const raw = (await searchParams).status;
   const status: ModerationStatus = MODERATION_STATUSES.find((s) => s === raw) ?? "pending";
-  const items = await listSubmissions(type, status);
+  const [items, problems] = await Promise.all([listSubmissions(type, status), getProblems()]);
+  const references = new Map(problems.map((p) => [p.id, p.references]));
   const quick = status === "pending" && QUICK_DECISION_TYPES.includes(type);
 
   return (
@@ -56,7 +58,7 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
       {items.length ? (
         <ul className="space-y-3">
           {items.map((item) => (
-            <QueueCard key={item.id} type={type} item={item} quick={quick} />
+            <QueueCard key={item.id} type={type} item={item} quick={quick} references={item.problemId ? references.get(item.problemId) : undefined} />
           ))}
         </ul>
       ) : (
@@ -74,7 +76,7 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
  * the site's typography, then who sent it next to the actions. Comments and results can be decided right
  * here; edits and proposals open the review page.
  */
-function QueueCard({ type, item, quick }: { type: SubmissionType; item: QueueItem; quick: boolean }) {
+function QueueCard({ type, item, quick, references }: { type: SubmissionType; item: QueueItem; quick: boolean; references?: Problem["references"] }) {
   const long = (item.body?.length ?? 0) > LONG_TEXT;
   const review = `/admin/review/${type}/${item.id}`;
   // Only worth showing when someone else is credited than the person who sent it.
@@ -110,7 +112,7 @@ function QueueCard({ type, item, quick }: { type: SubmissionType; item: QueueIte
         )}
         {(item.body ?? item.excerpt) && (
           <div className={cn("mt-3 font-serif text-[16px]/normal text-ink", long && "max-h-44 overflow-hidden [mask-image:linear-gradient(to_bottom,black_60%,transparent)]")}>
-            {item.body ? <MarkdownContent source={item.body} untrusted /> : <p className="text-zinc-600">{item.excerpt}</p>}
+            {item.body ? <MarkdownContent source={item.body} untrusted references={references} /> : <p className="text-zinc-600">{item.excerpt}</p>}
           </div>
         )}
       </div>

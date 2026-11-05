@@ -110,7 +110,7 @@ components/
   submissions/            the contribution forms
   problems/               problem box, list rows, status icon/badge, kind labels, DB-backed page sections
   progress/               the status chart
-  markdown/               safe markdown + math renderer, and an editor with live preview
+  markdown/               safe markdown + math renderer with citations, and an editor with live preview and \cite completion
   admin/                  dashboard UI: navigation, problem editor, diff view, decision panel, row menus
 lib/
   actions/                server actions for submissions (all create `pending` rows)
@@ -154,6 +154,14 @@ and suggested edits point at a problem by its id, so renaming a problem's URL ke
   in the format of "Download .md".
 
 Each `##` heading in the body becomes a lettered section (A., B., …) on the problem page.
+
+**Citations.** Each reference has a key (`erdos1959`, made from the first author and the year when it is
+added, and kept when the citation is edited). The statement, body, note, history, results and comments cite
+the problem's references with `\cite{key}` or `\cite{a, b}`; they render as `[1, 2]`, and each number shows
+its reference in a card on hover or tap. In the editors, typing `\cite{` opens a list of the references
+that filters as you type (`CitationsProvider` and `CiteAutocomplete` in `components/markdown`). Keys that
+match no reference are refused when a form is submitted. References stored before keys existed get theirs on
+reading (`withKeys` in `lib/references.ts`); the Markdown download writes citations as `[n]`.
 
 ## Notes
 

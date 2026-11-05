@@ -27,12 +27,14 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 /** `problems` is keyed by id. */
 export function SubmissionContent({ submission, problems }: { submission: Submission; problems: Map<string, Problem> }) {
+  // What comments, results and edits cite: the references of their problem.
+  const references = submission.row.problemId ? problems.get(submission.row.problemId)?.references : undefined;
   switch (submission.type) {
     case "comment":
       return (
         <Card>
           <SitePreview>
-            <MarkdownContent source={submission.row.body} untrusted />
+            <MarkdownContent source={submission.row.body} untrusted references={references} />
           </SitePreview>
         </Card>
       );
@@ -55,7 +57,7 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
           </div>
           <div className="mt-4 border-t border-zinc-100 pt-4">
             <SitePreview>
-              <MarkdownContent source={c.summary} untrusted />
+              <MarkdownContent source={c.summary} untrusted references={references} />
             </SitePreview>
           </div>
           {c.kind === "reference" && c.url && <Notice className="mt-4">Approving also adds this reference to the problem&apos;s reference list.</Notice>}
@@ -95,9 +97,9 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
           <Card title="Preview of the edited problem">
             <SitePreview>
               <FramedBox title={`Problem ${current.number}: ${r.title}`} className="mt-4">
-                <MarkdownContent source={r.statement} untrusted />
+                <MarkdownContent source={r.statement} untrusted references={references} />
               </FramedBox>
-              <MarkdownContent source={r.body} untrusted />
+              <MarkdownContent source={r.body} untrusted references={references} />
             </SitePreview>
           </Card>
         </div>
@@ -119,9 +121,9 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
           <Card title="Preview">
             <SitePreview>
               <FramedBox title={`New problem: ${p.title}`} className="mt-4">
-                <MarkdownContent source={p.statement} untrusted />
+                <MarkdownContent source={p.statement} untrusted references={p.references} />
               </FramedBox>
-              <MarkdownContent source={p.body} untrusted />
+              <MarkdownContent source={p.body} untrusted references={p.references} />
               {p.references.length > 0 && (
                 <ol className="mt-6 list-decimal pl-6 text-[15px]">
                   {p.references.map((ref, i) => (

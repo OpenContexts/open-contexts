@@ -8,6 +8,7 @@ import type { AreaId } from "@/lib/areas";
 import type { ProblemStatus } from "@/lib/constants";
 import { db, isDbConfigured } from "@/lib/db";
 import { type HistoryEntry, problem, type Reference } from "@/lib/db/schema";
+import { withKeys } from "@/lib/references";
 
 export type { HistoryEntry, Reference };
 
@@ -30,7 +31,8 @@ export type Problem = {
   /** Markdown with `##` sections (Background, Relevance, Significance, …). */
   body: string;
   history: HistoryEntry[];
-  references: Reference[];
+  /** Each with its `key`, so \cite{key} in the texts can be resolved. */
+  references: (Reference & { key: string })[];
   /** Markdown, set by moderators; "" when there is none. */
   note: string;
   version: number;
@@ -54,7 +56,7 @@ function toProblem(r: typeof problem.$inferSelect): Problem {
     statement: r.statement,
     body: r.body,
     history: r.history,
-    references: r.references,
+    references: withKeys(r.references),
     note: r.note,
     version: r.version,
   };

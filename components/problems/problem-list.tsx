@@ -5,6 +5,7 @@ import { getArea } from "@/lib/areas";
 import { type CommunityCounts, getCommunityCounts } from "@/lib/data/community";
 import { type Problem, statusSince } from "@/lib/data/problems";
 import { formatDate, formatNames, plural } from "@/lib/format";
+import { citesToText } from "@/lib/references";
 import { StatusBadge, StatusIcon } from "./status";
 
 /**
@@ -35,9 +36,9 @@ function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: Communi
           </div>
           <StatusBadge status={p.status} className="mt-0.5 shrink-0 max-sm:hidden" />
         </div>
-        {/* The statement's first paragraph, cut after two lines. */}
+        {/* The statement's first paragraph, cut after two lines. Citations as plain "[n]": the whole entry is a link. */}
         <div className="mt-1 line-clamp-2 text-[0.95rem] text-ink-muted">
-          <MarkdownInline source={excerpt(p.statement)} />
+          <MarkdownInline source={excerpt(citesToText(p.statement, p.references))} />
         </div>
         <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink-subtle">
           <StatusBadge status={p.status} className="sm:hidden" />

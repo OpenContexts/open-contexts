@@ -19,7 +19,7 @@ export default async function Page({ params }: PageProps<"/problems/[slug]/contr
         </p>
       }
     >
-      <ResultForm problemSlug={problem.slug} defaultCredit={user.name} />
+      <ResultForm problemSlug={problem.slug} references={problem.references} defaultCredit={user.name} />
     </SubmissionPage>
   );
 }

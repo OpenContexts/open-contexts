@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { AREA_IDS } from "@/lib/areas";
 import { AI_USE } from "@/lib/constants";
-import { commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
+import { citeIssues, commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
 export const commentSchema = z.object({
   problemSlug: slug,
@@ -61,8 +61,10 @@ export const proposalSchema = z
   ...referenceRows,
   aiUse: z.enum(AI_USE, { error: "Please say how much AI was used." }),
   })
-  .transform(({ "referenceText[]": texts, "referenceUrl[]": urls, ...rest }, ctx) => {
-    const { references, errors } = toReferences(texts, urls);
+  .transform(({ "referenceText[]": texts, "referenceUrl[]": urls, "referenceKey[]": keys, ...rest }, ctx) => {
+    const { references, errors } = toReferences(texts, urls, keys);
     if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: texts });
+    // Only when the references themselves are fine: otherwise a citation may just point at the row in error.
+    else citeIssues(ctx, { statement: rest.statement, body: rest.body }, references);
     return { ...rest, references };
   });

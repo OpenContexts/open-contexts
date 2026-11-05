@@ -7,7 +7,8 @@ import { user } from "./auth";
 
 export const problemStatus = pgEnum("problem_status", PROBLEM_STATUSES);
 
-export type Reference = { text: string; url?: string };
+/** `key` is what the text cites it by, \cite{key}; references stored before keys existed get one on reading (withKeys). */
+export type Reference = { key?: string; text: string; url?: string };
 export type HistoryEntry = { date: string; kind: HistoryKind; text: string; status?: ProblemStatus };
 
 export const problem = pgTable("problem", {

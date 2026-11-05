@@ -2,11 +2,10 @@
 
 import type { KeyboardEvent } from "react";
 import { Button, Input, Textarea } from "@/components/ui";
-import { useReferenceRows } from "@/components/ui/use-reference-rows";
-import type { Reference } from "@/lib/db/schema";
+import type { ReferenceRows } from "@/components/ui/use-reference-rows";
 import { oneLine, type ReferenceDraft } from "@/lib/references";
 
-/** Citation and link of one reference; side by side on wide screens. */
+/** Citation and link of one reference; side by side on wide screens. Below them, how the text cites it. */
 function ReferenceInputs({
   reference,
   onChange,
@@ -46,13 +45,14 @@ function ReferenceInputs({
         placeholder="https://… (optional)"
         aria-label={`${label}: link`}
       />
+      <input type="hidden" name="referenceKey[]" value={reference.key ?? ""} />
+      {reference.key && <span className="-mt-1 font-mono text-xs text-ink-subtle sm:col-span-2">\cite{`{${reference.key}}`}</span>}
     </div>
   );
 }
 
-/** The proposal's references: a numbered list, and a row below it for the next one. */
-export function ReferencesField({ initial = [], error }: { initial?: Reference[]; error?: string }) {
-  const refs = useReferenceRows(initial);
+/** The proposal's references: a numbered list, and a row below it for the next one. `refs` from useReferenceRows. */
+export function ReferencesField({ refs, error }: { refs: ReferenceRows; error?: string }) {
   const addOnEnter = (e: KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -66,18 +66,18 @@ export function ReferencesField({ initial = [], error }: { initial?: Reference[]
       {refs.rows.length > 0 && (
         <ol className="mb-2 space-y-2">
           {refs.rows.map((row, i) => (
-            <li key={row.key} className="flex items-start gap-2">
+            <li key={row.rowId} className="flex items-start gap-2">
               <span className="w-6 flex-none pt-1.5 text-right text-sm text-ink-subtle tabular-nums">{i + 1}.</span>
               <ReferenceInputs
                 reference={row}
-                onChange={(patch) => refs.update(row.key, patch)}
-                onBlur={() => refs.tidy(row.key)}
+                onChange={(patch) => refs.update(row.rowId, patch)}
+                onBlur={() => refs.tidy(row.rowId)}
                 onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                 label={`Reference ${i + 1}`}
               />
               <button
                 type="button"
-                onClick={() => refs.remove(row.key)}
+                onClick={() => refs.remove(row.rowId)}
                 aria-label={`Remove reference ${i + 1}`}
                 className="flex-none cursor-pointer px-1.5 pt-1 text-lg/tight text-ink-subtle hover:text-brand"
               >
@@ -96,7 +96,7 @@ export function ReferencesField({ initial = [], error }: { initial?: Reference[]
       {error ? (
         <p className="mt-1 text-sm text-brand">{error}</p>
       ) : (
-        <p className="mt-1 text-sm text-ink-subtle">Add them one at a time, in the order they should be numbered. The link, e.g. a DOI or arXiv page, is optional.</p>
+        <p className="mt-1 text-sm text-ink-subtle">Add them one at a time, in the order they should be numbered. The link, e.g. a DOI or arXiv page, is optional. Cite them in the text by typing \cite{"{"}.</p>
       )}
     </fieldset>
   );

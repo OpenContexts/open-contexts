@@ -114,7 +114,7 @@ export async function parseProblemFile(file: { name: string; text: string }): Pr
     ...(PROBLEM_STATUSES.includes(h.status as ProblemStatus) && { status: h.status as ProblemStatus }),
   }));
   const references = (Array.isArray(data.references) ? data.references : []).map((r: Record<string, unknown> | string) =>
-    typeof r === "string" ? { text: r } : { text: String(r.text ?? ""), ...(typeof r.url === "string" && { url: r.url }) },
+    typeof r === "string" ? { text: r } : { ...(typeof r.key === "string" && { key: r.key }), text: String(r.text ?? ""), ...(typeof r.url === "string" && { url: r.url }) },
   );
 
   return {

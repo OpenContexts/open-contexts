@@ -12,6 +12,7 @@ import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/proble
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { comment, contribution, activityLog, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
+import { withKeys } from "@/lib/references";
 
 const decisionSchema = z.object({
   type: z.enum(SUBMISSION_TYPES),
@@ -77,7 +78,7 @@ async function citeReference(problemId: string, ref: Reference, change: "add" | 
     change === "add"
       ? current.references.some((r) => r.text === ref.text || (ref.url && r.url === ref.url))
         ? undefined
-        : [...current.references, ref]
+        : withKeys([...current.references, ref])
       : current.references.some((r) => r.text === ref.text && r.url === ref.url)
         ? current.references.filter((r) => !(r.text === ref.text && r.url === ref.url))
         : undefined;
@@ -101,7 +102,7 @@ async function publishProposal(id: string, problemId: string) {
     statement: proposal.statement,
     body: proposal.body,
     history: [{ date: today(), kind: "posed", text: "Proposed by the community and accepted by the moderators." }],
-    references: proposal.references,
+    references: withKeys(proposal.references),
     createdById: proposal.authorId,
   } satisfies typeof problem.$inferInsert;
   return { query: db.insert(problem).values(values) };

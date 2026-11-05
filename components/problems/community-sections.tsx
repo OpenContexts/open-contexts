@@ -2,7 +2,7 @@
 // They render data passed in by ProblemContent, which caches them; only CommentBox reads the session.
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { MarkdownContent } from "@/components/markdown/markdown";
+import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { CommentForm } from "@/components/submissions/comment-form";
 import { Clamped, ExpandableList, PartTitle, toneColors } from "@/components/ui";
@@ -18,8 +18,11 @@ type Comment = Awaited<ReturnType<typeof getApprovedComments>>[number];
 /** "https://www.arxiv.org/abs/2401.1234" → "arxiv.org/abs/2401.1234" */
 const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
-/** Newest first. Each entry is edged in the colour of its kind, so the kinds can be told apart at a glance. */
-export function ContributionsSection({ items }: { items: Contribution[] }) {
+/**
+ * Newest first. Each entry is edged in the colour of its kind, so the kinds can be told apart at a glance.
+ * `references`: the problem's, which the summaries cite with \cite{key}.
+ */
+export function ContributionsSection({ items, references }: { items: Contribution[]; references: CitableReferences }) {
   return (
     <>
       <PartTitle>Contributions</PartTitle>
@@ -35,7 +38,7 @@ export function ContributionsSection({ items }: { items: Contribution[] }) {
                 </p>
                 <h3 className="mt-1.5 text-[1.08rem] font-bold">{c.title}</h3>
                 <Clamped lines={5} className="mt-1">
-                  <MarkdownContent source={c.summary} untrusted className="text-[0.98rem]" />
+                  <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem]" />
                 </Clamped>
                 <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-ink-subtle">
                   <span>
@@ -58,8 +61,8 @@ export function ContributionsSection({ items }: { items: Contribution[] }) {
   );
 }
 
-/** The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. */
-export function DiscussionSection({ comments, commentBox }: { comments: Comment[]; commentBox: ReactNode }) {
+/** The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. They cite the problem's `references`. */
+export function DiscussionSection({ comments, commentBox, references }: { comments: Comment[]; commentBox: ReactNode; references: CitableReferences }) {
   return (
     <>
       <PartTitle id="discussion">
@@ -75,7 +78,7 @@ export function DiscussionSection({ comments, commentBox }: { comments: Comment[
                 <p className="text-sm text-ink-subtle">
                   <strong className="text-[0.95rem] text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
                 </p>
-                <MarkdownContent source={c.body} untrusted className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
+                <MarkdownContent source={c.body} untrusted references={references} className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
               </div>
             </li>
           ))}
@@ -97,8 +100,8 @@ function Initials({ name }: { name: string }) {
 }
 
 /** The comment form, or a sign-in link. Reads the session. */
-export async function CommentBox({ slug }: { slug: string }) {
-  if (await getCurrentUser()) return <CommentForm problemSlug={slug} />;
+export async function CommentBox({ slug, references }: { slug: string; references: CitableReferences }) {
+  if (await getCurrentUser()) return <CommentForm problemSlug={slug} references={references} />;
   return <SignInToComment slug={slug} />;
 }
 

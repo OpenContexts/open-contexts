@@ -6,6 +6,7 @@ import { and, count, eq } from "drizzle-orm";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth/session";
 import { getProblem, type Problem, readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
+import { unknownCitesError } from "@/lib/references";
 import { comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
 import {
   commentSchema,
@@ -59,6 +60,17 @@ async function guardProblem(
 
 const success: FormState = { status: "success" };
 
+/** An error for the fields that cite keys (\cite{key}) not among the problem's references, or undefined. */
+function citeErrors(values: FormState["values"], problem: Pick<Problem, "references">, fields: Record<string, string>): FormState | undefined {
+  const errors: NonNullable<FormState["errors"]> = {};
+  for (const [name, value] of Object.entries(fields)) {
+    const message = unknownCitesError(value, problem.references);
+    if (message) errors[name] = [message];
+  }
+  if (!Object.keys(errors).length) return undefined;
+  return { status: "error", message: "Please check the highlighted fields.", errors, values };
+}
+
 /** Runs the insert; a database failure becomes a message in the form instead of an error page. */
 async function save(values: FormState["values"], insert: () => Promise<unknown>): Promise<FormState> {
   try {
@@ -76,6 +88,8 @@ export async function submitComment(_: FormState, formData: FormData): Promise<F
   if (!parsed.success) return invalid(parsed.error, values);
   const { user, problem, error } = await guardProblem(values, parsed.data.problemSlug);
   if (error) return error;
+  const citeError = citeErrors(values, problem, { body: parsed.data.body });
+  if (citeError) return citeError;
 
   return save(values, () => db.insert(comment).values({ body: parsed.data.body, problemId: problem.id, authorId: user.id }));
 }
@@ -88,6 +102,8 @@ export async function submitResult(_: FormState, formData: FormData): Promise<Fo
   if (error) return error;
 
   const { kind, title, summary, url, aiUse, credit } = parsed.data;
+  const citeError = citeErrors(values, problem, { summary });
+  if (citeError) return citeError;
   return save(values, () => db.insert(contribution).values({ kind, title, summary, url, aiUse, credit, problemId: problem.id, authorId: user.id }));
 }
 
@@ -117,6 +133,8 @@ export async function submitRevision(_: FormState, formData: FormData): Promise<
   if (title === current.title && statement === current.statement.trim() && body === current.body.trim()) {
     return { status: "error", message: "You have not changed anything yet.", values };
   }
+  const citeError = citeErrors(values, current, { statement, body });
+  if (citeError) return citeError;
   return save(values, () =>
     db.insert(problemRevision).values({ problemId: problem.id, baseVersion, title, statement, body, changeSummary, authorId: user.id }),
   );

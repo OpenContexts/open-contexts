@@ -15,7 +15,7 @@ export function ProblemBox({ problem, heading, link }: { problem: Problem; headi
         </>
       }
     >
-      <MarkdownContent source={problem.statement} />
+      <MarkdownContent source={problem.statement} references={problem.references} />
       {link && (
         <p className="mt-3.5 text-right text-[0.95rem]">
           <Link href={`/problems/${problem.slug}`} className="text-brand hover:underline">
