@@ -4,12 +4,14 @@
 // moderators do that in app/admin.
 import { and, count, eq } from "drizzle-orm";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth/session";
+import { getPost } from "@/lib/data/blog";
 import { getProblem, type Problem, readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { unknownCitesError } from "@/lib/references";
-import { comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
+import { blogPost, comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
 import {
   commentSchema,
+  postSchema,
   proposalSchema,
   referenceSchema,
   resultSchema,
@@ -26,6 +28,7 @@ async function pendingCount(userId: string): Promise<number> {
     db.select({ n: count() }).from(contribution).where(and(eq(contribution.authorId, userId), eq(contribution.status, "pending"))),
     db.select({ n: count() }).from(problemRevision).where(and(eq(problemRevision.authorId, userId), eq(problemRevision.status, "pending"))),
     db.select({ n: count() }).from(problemProposal).where(and(eq(problemProposal.authorId, userId), eq(problemProposal.status, "pending"))),
+    db.select({ n: count() }).from(blogPost).where(and(eq(blogPost.authorId, userId), eq(blogPost.status, "pending"))),
   ]);
   return counts.reduce((sum, [row]) => sum + row.n, 0);
 }
@@ -60,11 +63,11 @@ async function guardProblem(
 
 const success: FormState = { status: "success" };
 
-/** An error for the fields that cite keys (\cite{key}) not among the problem's references, or undefined. */
-function citeErrors(values: FormState["values"], problem: Pick<Problem, "references">, fields: Record<string, string>): FormState | undefined {
+/** An error for the fields that cite keys (\cite{key}) not among the problem's (or post's) references, or undefined. */
+function citeErrors(values: FormState["values"], cited: Pick<Problem, "references">, fields: Record<string, string>): FormState | undefined {
   const errors: NonNullable<FormState["errors"]> = {};
   for (const [name, value] of Object.entries(fields)) {
-    const message = unknownCitesError(value, problem.references);
+    const message = unknownCitesError(value, cited.references);
     if (message) errors[name] = [message];
   }
   if (!Object.keys(errors).length) return undefined;
@@ -82,16 +85,28 @@ async function save(values: FormState["values"], insert: () => Promise<unknown>)
   }
 }
 
+/** A comment on a problem or on a published blog post. */
 export async function submitComment(_: FormState, formData: FormData): Promise<FormState> {
   const values = readForm(formData);
   const parsed = commentSchema.safeParse(values);
   if (!parsed.success) return invalid(parsed.error, values);
-  const { user, problem, error } = await guardProblem(values, parsed.data.problemSlug);
-  if (error) return error;
-  const citeError = citeErrors(values, problem, { body: parsed.data.body });
-  if (citeError) return citeError;
+  const { problemSlug, postSlug, body } = parsed.data;
 
-  return save(values, () => db.insert(comment).values({ body: parsed.data.body, problemId: problem.id, authorId: user.id }));
+  if (postSlug) {
+    const { user, error } = await guard(values);
+    if (error) return error;
+    const post = await getPost(postSlug);
+    if (!post) return { status: "error", message: "This blog post does not exist.", values };
+    const citeError = citeErrors(values, post, { body });
+    if (citeError) return citeError;
+    return save(values, () => db.insert(comment).values({ body, postId: post.id, authorId: user.id }));
+  }
+
+  const { user, problem, error } = await guardProblem(values, problemSlug ?? "");
+  if (error) return error;
+  const citeError = citeErrors(values, problem, { body });
+  if (citeError) return citeError;
+  return save(values, () => db.insert(comment).values({ body, problemId: problem.id, authorId: user.id }));
 }
 
 export async function submitResult(_: FormState, formData: FormData): Promise<FormState> {
@@ -149,4 +164,14 @@ export async function submitProposal(_: FormState, formData: FormData): Promise<
 
   const { "agenda[]": agenda, ...rest } = parsed.data;
   return save(values, () => db.insert(problemProposal).values({ ...rest, agenda, authorId: user.id }));
+}
+
+export async function submitPost(_: FormState, formData: FormData): Promise<FormState> {
+  const values = readForm(formData);
+  const parsed = postSchema.safeParse(values);
+  if (!parsed.success) return invalid(parsed.error, values);
+  const { user, error } = await guard(values);
+  if (error) return error;
+
+  return save(values, () => db.insert(blogPost).values({ ...parsed.data, authorId: user.id }));
 }

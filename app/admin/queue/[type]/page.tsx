@@ -15,15 +15,15 @@ import {
   type SubmissionType,
 } from "@/lib/constants";
 import { listSubmissions, type QueueItem } from "@/lib/data/moderation";
-import { getProblems, type Problem } from "@/lib/data/problems";
 import { formatRelative, plural } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 const DESCRIPTIONS: Record<SubmissionType, string> = {
-  comment: "Discussion posts on problem pages.",
+  comment: "Discussion posts on problem pages and blog posts.",
   contribution: "Results and references attached to problems.",
   revision: "Suggested changes to a problem's text or status.",
   proposal: "Suggested new problems for the list.",
+  post: "Blog posts written for the site. Approving publishes them under /blog.",
 };
 
 /** Longer texts are cut off in the list; the review page shows them in full. */
@@ -36,8 +36,7 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
   if (!type) notFound();
   const raw = (await searchParams).status;
   const status: ModerationStatus = MODERATION_STATUSES.find((s) => s === raw) ?? "pending";
-  const [items, problems] = await Promise.all([listSubmissions(type, status), getProblems()]);
-  const references = new Map(problems.map((p) => [p.id, p.references]));
+  const items = await listSubmissions(type, status);
   const quick = status === "pending" && QUICK_DECISION_TYPES.includes(type);
 
   return (
@@ -58,7 +57,7 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
       {items.length ? (
         <ul className="space-y-3">
           {items.map((item) => (
-            <QueueCard key={item.id} type={type} item={item} quick={quick} references={item.problemId ? references.get(item.problemId) : undefined} />
+            <QueueCard key={item.id} type={type} item={item} quick={quick} />
           ))}
         </ul>
       ) : (
@@ -72,11 +71,11 @@ export default async function QueuePage({ params, searchParams }: PageProps<"/ad
 }
 
 /**
- * One submission: the problem it belongs to, then what it is (coloured by type) and the submission itself in
- * the site's typography, then who sent it next to the actions. Comments and results can be decided right
- * here; edits and proposals open the review page.
+ * One submission: the problem or post it belongs to, then what it is (coloured by type) and the submission
+ * itself in the site's typography, then who sent it next to the actions. Comments and results can be decided
+ * right here; edits, proposals and blog posts open the review page.
  */
-function QueueCard({ type, item, quick, references }: { type: SubmissionType; item: QueueItem; quick: boolean; references?: Problem["references"] }) {
+function QueueCard({ type, item, quick }: { type: SubmissionType; item: QueueItem; quick: boolean }) {
   const long = (item.body?.length ?? 0) > LONG_TEXT;
   const review = `/admin/review/${type}/${item.id}`;
   // Only worth showing when someone else is credited than the person who sent it.
@@ -84,12 +83,14 @@ function QueueCard({ type, item, quick, references }: { type: SubmissionType; it
   return (
     <li className="overflow-hidden rounded-xl bg-white shadow-xs ring-1 ring-zinc-200">
       <header className="flex items-baseline justify-between gap-4 border-b border-zinc-100 px-5 py-3">
-        {item.problemLabel && item.problemSlug ? (
-          <Link href={`/problems/${item.problemSlug}`} target="_blank" className="min-w-0 truncate text-[15px] font-semibold text-zinc-900 hover:underline">
-            {item.problemLabel} <span className="font-normal text-zinc-400">↗</span>
+        {item.on?.href ? (
+          <Link href={item.on.href} target="_blank" className="min-w-0 truncate text-[15px] font-semibold text-zinc-900 hover:underline">
+            {item.on.label} <span className="font-normal text-zinc-400">↗</span>
           </Link>
         ) : (
-          <span className="text-[15px] font-semibold text-zinc-900">{type === "proposal" ? "New problem" : "A deleted problem"}</span>
+          <span className="min-w-0 truncate text-[15px] font-semibold text-zinc-900">
+            {item.on?.label ?? (type === "proposal" ? "New problem" : type === "post" ? "Blog post" : "A deleted problem or post")}
+          </span>
         )}
         <span className="flex-none text-xs text-zinc-500">{formatRelative(item.createdAt)}</span>
       </header>
@@ -112,7 +113,7 @@ function QueueCard({ type, item, quick, references }: { type: SubmissionType; it
         )}
         {(item.body ?? item.excerpt) && (
           <div className={cn("mt-3 font-serif text-[16px]/normal text-ink", long && "max-h-44 overflow-hidden [mask-image:linear-gradient(to_bottom,black_60%,transparent)]")}>
-            {item.body ? <MarkdownContent source={item.body} untrusted references={references} /> : <p className="text-zinc-600">{item.excerpt}</p>}
+            {item.body ? <MarkdownContent source={item.body} untrusted references={item.references} /> : <p className="text-zinc-600">{item.excerpt}</p>}
           </div>
         )}
       </div>

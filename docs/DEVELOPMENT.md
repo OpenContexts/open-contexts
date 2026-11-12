@@ -93,6 +93,7 @@ app/
       [slug]/problem.md/  the problem with everything recorded about it, as Markdown (for AI agents)
       [slug]/problem.json/  the same, as JSON
     contribute/           how contributing works; /contribute/new-problem
+    blog/                 published posts, /blog/[slug] with its discussion, /blog/new to write one
     me/                   the signed-in user's submissions and their review status
     (auth)/               sign-in, sign-up, forgot-password, reset-password
     agenda/ about/ guidelines/
@@ -109,6 +110,7 @@ components/
   layout/                 header, footer, navigation, account menu
   submissions/            the contribution forms
   problems/               problem box, list rows, status icon/badge, kind labels, DB-backed page sections
+  blog/                   post list rows and the cached post page body
   progress/               the status chart
   markdown/               safe markdown + math renderer with citations, and an editor with live preview, \cite completion and a formatting summary
   admin/                  dashboard UI: navigation, problem editor, diff view, decision panel, row menus
@@ -172,6 +174,18 @@ its reference in a card on hover or tap. In the editors, typing `\cite{` opens a
 that filters as you type (`CitationsProvider` and `CiteAutocomplete` in `components/markdown`). Keys that
 match no reference are refused when a form is submitted. References stored before keys existed get theirs on
 reading (`withKeys` in `lib/references.ts`); the Markdown download writes citations as `[n]`.
+
+## Blog
+
+Anyone signed in can write a post at `/blog/new`: title, authors (names, like "Posed by"), the text in
+Markdown and references it cites with `\cite{key}`. Posts are a submission type of their own (`post`, table
+`blog_post`) and go through the "Blog posts" queue. Approving a post gives it its URL (`/blog/<slug>`, from
+the title) and its date; reopening an approved post takes it off the site again, and approving it once more
+keeps both. The list and the posts are cached under the `blog` tag, which the decisions invalidate.
+
+Comments on posts use the same `comment` table as comments on problems: each comment has either a
+`problem_id` or a `post_id` (a check constraint enforces exactly one), passes the same "Comments" queue and
+is cached per post with `communityTag(postId)`.
 
 ## Notes
 

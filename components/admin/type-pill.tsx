@@ -10,6 +10,7 @@ const TYPES: Record<Exclude<SubmissionType, "contribution">, { label: string; to
   comment: { label: "Comment", tone: "blue" },
   revision: { label: "Suggested edit", tone: "violet" },
   proposal: { label: "New problem", tone: "green" },
+  post: { label: "Blog post", tone: "dark" },
 };
 
 /** What a submission is, in colour: its kind for contributions, otherwise its type. */

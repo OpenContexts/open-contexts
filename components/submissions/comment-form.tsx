@@ -9,8 +9,11 @@ import { errorOf, initialFormState, valueOf } from "@/lib/actions/form-state";
 import { submitComment } from "@/lib/actions/submissions";
 import { FormMessage } from "./form-parts";
 
-/** `references`: the problem's, which the comment can cite with \cite{key}. */
-export function CommentForm({ problemSlug, references, className }: { problemSlug: string; references: CitableReferences; className?: string }) {
+/** What a comment is on: a problem or a blog post, by its URL name. */
+export type CommentTarget = { type: "problem" | "post"; slug: string };
+
+/** `references`: the problem's or post's, which the comment can cite with \cite{key}. */
+export function CommentForm({ on, references, className }: { on: CommentTarget; references: CitableReferences; className?: string }) {
   const [state, action] = useActionState(submitComment, initialFormState);
   const [dismissed, setDismissed] = useState(false);
 
@@ -27,7 +30,7 @@ export function CommentForm({ problemSlug, references, className }: { problemSlu
 
   return (
     <form action={action} className={className} onSubmit={() => setDismissed(false)}>
-      <input type="hidden" name="problemSlug" value={problemSlug} />
+      <input type="hidden" name={on.type === "problem" ? "problemSlug" : "postSlug"} value={on.slug} />
       <label htmlFor="comment-body" className="mb-1 block font-sans text-sm font-bold">
         Add to the discussion
       </label>

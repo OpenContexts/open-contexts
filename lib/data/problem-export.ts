@@ -74,7 +74,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
   const p = await getProblem(slug);
   if (!p) return undefined;
   cacheTag(communityTag(p.id));
-  const [contributions, comments] = await Promise.all([getApprovedContributions(p.id), getApprovedComments(p.id)]);
+  const [contributions, comments] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id)]);
   const origin = siteOrigin();
 
   return {

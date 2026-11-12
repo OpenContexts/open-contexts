@@ -67,8 +67,11 @@ export default function ContributePage() {
       <PageTitle>Contribute</PageTitle>
       <p className="text-justify hyphens-auto max-sm:text-left">
         OpenContext is written by its readers. You can add results and references to the existing problems,
-        improve their statements, discuss them, or propose new problems. Everything
-        is reviewed by a moderator before it appears.
+        improve their statements, discuss them, propose new problems, or{" "}
+        <Link href="/blog/new" className="text-brand hover:underline">
+          write a post for the blog
+        </Link>
+        . Everything is reviewed by a moderator before it appears.
       </p>
 
       <SectionTitle>How it works</SectionTitle>
@@ -155,8 +158,8 @@ export default function ContributePage() {
         Formatting
       </SectionTitle>
       <p className="mb-6 text-justify hyphens-auto max-sm:text-left">
-        Problems, results and comments are written in Markdown, with LaTeX for math, and can cite the problem&apos;s
-        references. Each text field has a Preview tab to check how the text will look, and the ⓘ above it brings up
+        Problems, results, blog posts and comments are written in Markdown, with LaTeX for math, and can cite the
+        problem&apos;s (or post&apos;s) references. Each text field has a Preview tab to check how the text will look, and the ⓘ above it brings up
         this summary while you write.
       </p>
       <FormattingGuide />

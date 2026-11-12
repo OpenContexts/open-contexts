@@ -13,13 +13,14 @@ export const MODERATION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ModerationStatus = (typeof MODERATION_STATUSES)[number];
 
 /** Everything a user can submit. Each kind has its own table and passes the same moderation queue. */
-export const SUBMISSION_TYPES = ["comment", "contribution", "revision", "proposal"] as const;
+export const SUBMISSION_TYPES = ["comment", "contribution", "revision", "proposal", "post"] as const;
 export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
 export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   comment: "Comments",
   contribution: "Results",
   revision: "Edits",
   proposal: "New problems",
+  post: "Blog posts",
 };
 /** Singular, for "Your … is waiting for review". */
 export const SUBMISSION_TYPE_NOUNS: Record<SubmissionType, string> = {
@@ -27,9 +28,10 @@ export const SUBMISSION_TYPE_NOUNS: Record<SubmissionType, string> = {
   contribution: "result",
   revision: "suggested edit",
   proposal: "problem proposal",
+  post: "blog post",
 };
 
-/** Simple enough to approve or reject straight from the queue. Edits and new problems need the review page. */
+/** Simple enough to approve or reject straight from the queue. Edits, new problems and blog posts need the review page. */
 export const QUICK_DECISION_TYPES: readonly SubmissionType[] = ["comment", "contribution"];
 
 /** Decisions on submissions. */

@@ -24,7 +24,7 @@ export function MobileNav({ children }: { children: ReactNode }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="min-[880px]:hidden">
+    <div ref={ref} className="min-[960px]:hidden">
       <button
         type="button"
         aria-expanded={open}

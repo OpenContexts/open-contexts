@@ -17,11 +17,11 @@ export function SiteHeader() {
           <AppleIcon />
           {SITE.name}
         </Link>
-        <nav aria-label="Main" className="ml-auto flex gap-x-6 text-base max-[880px]:hidden">
+        <nav aria-label="Main" className="ml-auto flex gap-x-6 text-base max-[960px]:hidden">
           <NavLinks />
         </nav>
-        <ThemeToggle className="-mx-3 max-[880px]:ml-auto" />
-        <div className="w-24 text-right text-base whitespace-nowrap min-[880px]:border-l min-[880px]:border-rule min-[880px]:pl-4">
+        <ThemeToggle className="-mx-3 max-[960px]:ml-auto" />
+        <div className="w-24 text-right text-base whitespace-nowrap min-[960px]:border-l min-[960px]:border-rule min-[960px]:pl-4">
           <UserMenu />
         </div>
       </Container>

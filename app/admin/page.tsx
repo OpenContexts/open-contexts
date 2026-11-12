@@ -22,7 +22,7 @@ async function Overview() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {SUBMISSION_TYPES.map((t) => (
           <Link key={t} href={`/admin/queue/${t}`} className="group rounded-xl bg-white p-5 shadow-xs ring-1 ring-zinc-200 transition hover:ring-zinc-400">
             <p className="flex items-center justify-between text-zinc-500">

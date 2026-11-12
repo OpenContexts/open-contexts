@@ -5,10 +5,14 @@ import { AGENDA_IDS } from "@/lib/agenda";
 import { AI_USE } from "@/lib/constants";
 import { citeIssues, commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
-export const commentSchema = z.object({
-  problemSlug: slug,
-  body: text(2, 10_000, "a comment"),
-});
+/** On a problem (`problemSlug`) or on a blog post (`postSlug`). */
+export const commentSchema = z
+  .object({
+    problemSlug: slug.optional(),
+    postSlug: slug.optional(),
+    body: text(2, 10_000, "a comment"),
+  })
+  .refine((c) => !c.problemSlug !== !c.postSlug, { message: "A comment belongs to one problem or one blog post." });
 
 /** Kinds offered on the "Submit a result" page: every kind but references, which have their own page. */
 const RESULT_KINDS = [
@@ -49,6 +53,20 @@ export const revisionSchema = z.object({
   body: text(0, 50_000, "the text"),
   changeSummary: text(10, 1_000, "what you changed"),
 });
+
+export const postSchema = z
+  .object({
+    title: text(3, 200, "a title"),
+    authors: commaList.pipe(z.array(z.string()).min(1, "Please name at least one author.")),
+    body: text(100, 100_000, "the text"),
+    ...referenceRows,
+  })
+  .transform(({ "referenceText[]": texts, "referenceUrl[]": urls, "referenceKey[]": keys, ...rest }, ctx) => {
+    const { references, errors } = toReferences(texts, urls, keys);
+    if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: texts });
+    else citeIssues(ctx, { body: rest.body }, references);
+    return { ...rest, references };
+  });
 
 export const proposalSchema = z
   .object({

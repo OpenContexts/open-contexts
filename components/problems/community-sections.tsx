@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
-import { CommentForm } from "@/components/submissions/comment-form";
+import { CommentForm, type CommentTarget } from "@/components/submissions/comment-form";
 import { Clamped, ExpandableList, PartTitle, toneColors } from "@/components/ui";
 import { AI_USE_LABELS } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -61,8 +61,21 @@ export function ContributionsSection({ items, references }: { items: Contributio
   );
 }
 
-/** The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. They cite the problem's `references`. */
-export function DiscussionSection({ comments, commentBox, references }: { comments: Comment[]; commentBox: ReactNode; references: CitableReferences }) {
+/**
+ * The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. They cite the
+ * `references` of the problem or blog post they are on; `empty` is shown while there are none.
+ */
+export function DiscussionSection({
+  comments,
+  commentBox,
+  references,
+  empty = "No comments yet. Questions about the statement and informal remarks are welcome here.",
+}: {
+  comments: Comment[];
+  commentBox: ReactNode;
+  references: CitableReferences;
+  empty?: string;
+}) {
   return (
     <>
       <PartTitle id="discussion">
@@ -84,7 +97,7 @@ export function DiscussionSection({ comments, commentBox, references }: { commen
           ))}
         </ExpandableList>
       ) : (
-        <p className="mt-5 text-ink-muted">No comments yet. Questions about the statement and informal remarks are welcome here.</p>
+        <p className="mt-5 text-ink-muted">{empty}</p>
       )}
     </>
   );
@@ -99,16 +112,16 @@ function Initials({ name }: { name: string }) {
   );
 }
 
-/** The comment form, or a sign-in link. Reads the session. */
-export async function CommentBox({ slug, references }: { slug: string; references: CitableReferences }) {
-  if (await getCurrentUser()) return <CommentForm problemSlug={slug} references={references} />;
-  return <SignInToComment slug={slug} />;
+/** The comment form for a problem or blog post, or a sign-in link. Reads the session. */
+export async function CommentBox({ on, references }: { on: CommentTarget; references: CitableReferences }) {
+  if (await getCurrentUser()) return <CommentForm on={on} references={references} />;
+  return <SignInToComment page={on.type === "problem" ? `/problems/${on.slug}` : `/blog/${on.slug}`} />;
 }
 
-function SignInToComment({ slug }: { slug: string }) {
+function SignInToComment({ page }: { page: string }) {
   return (
     <p className="text-[0.95rem]">
-      <Link href={`/sign-in?next=${encodeURIComponent(`/problems/${slug}#discussion`)}`} className="text-brand hover:underline">
+      <Link href={`/sign-in?next=${encodeURIComponent(`${page}#discussion`)}`} className="text-brand hover:underline">
         Sign in
       </Link>{" "}
       to join the discussion.

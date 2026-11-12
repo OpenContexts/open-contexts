@@ -1,7 +1,8 @@
-// Everything users submit about the problems (lib/db/schema/problems.ts). Every submission
-// starts as `pending` and only `approved` rows are shown on the public site.
-import { relations } from "drizzle-orm";
+// Everything users submit: material on the problems (lib/db/schema/problems.ts), blog posts, and the
+// comments on both. Every submission starts as `pending` and only `approved` rows are shown on the public site.
+import { relations, sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   jsonb,
@@ -43,14 +44,39 @@ const moderation = () => ({
   reviewNote: text("review_note"),
 });
 
-/** Discussion on a problem. */
+/**
+ * A blog post, written by anyone and published once a moderator approves it. Its URL name and date are set
+ * on approval, so pending posts claim no URL.
+ */
+export const blogPost = pgTable(
+  "blog_post",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** URL segment: /blog/<slug>. Null until the post is first approved; kept if it is reopened and approved again. */
+    slug: text("slug").unique(),
+    title: text("title").notNull(),
+    /** The names shown as the post's authors, which may differ from the submitting account. */
+    authors: text("authors").array().notNull(),
+    /** Markdown with math; cites its references with \cite{key}. */
+    body: text("body").notNull(),
+    references: jsonb("references").$type<Reference[]>().default([]).notNull(),
+    /** Null once the author's account is deleted; a published post stays published. */
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    /** The post's date: when it was first approved. */
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    ...moderation(),
+    ...timestamps(),
+  },
+  (t) => [index("blog_post_status_created_idx").on(t.status, t.createdAt)],
+);
+
+/** Discussion on a problem or on a blog post: exactly one of the two is set. */
 export const comment = pgTable(
   "comment",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    problemId: uuid("problem_id")
-      .notNull()
-      .references(() => problem.id, { onDelete: "cascade" }),
+    problemId: uuid("problem_id").references(() => problem.id, { onDelete: "cascade" }),
+    postId: uuid("post_id").references(() => blogPost.id, { onDelete: "cascade" }),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -60,7 +86,9 @@ export const comment = pgTable(
   },
   (t) => [
     index("comment_problem_status_idx").on(t.problemId, t.status),
+    index("comment_post_status_idx").on(t.postId, t.status),
     index("comment_status_created_idx").on(t.status, t.createdAt),
+    check("comment_target_check", sql`(${t.problemId} is null) <> (${t.postId} is null)`),
   ],
 );
 
@@ -164,6 +192,11 @@ export const activityLog = pgTable(
 export const commentRelations = relations(comment, ({ one }) => ({
   author: one(user, { fields: [comment.authorId], references: [user.id] }),
   problem: one(problem, { fields: [comment.problemId], references: [problem.id] }),
+  post: one(blogPost, { fields: [comment.postId], references: [blogPost.id] }),
+}));
+
+export const blogPostRelations = relations(blogPost, ({ one }) => ({
+  author: one(user, { fields: [blogPost.authorId], references: [user.id] }),
 }));
 
 export const contributionRelations = relations(contribution, ({ one }) => ({

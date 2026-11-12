@@ -9,7 +9,7 @@ import { ActionPill, AdminButtonLink, Avatar, Card } from "@/components/admin/ui
 import { blockRefusal, isAdmin, requireModerator } from "@/lib/auth/session";
 import { type Role, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS } from "@/lib/constants";
 import { getProblems } from "@/lib/data/problems";
-import { getActivityFor, getSubmission } from "@/lib/data/moderation";
+import { getActivityFor, getPostRow, getSubmission } from "@/lib/data/moderation";
 import { formatDate, formatRelative } from "@/lib/format";
 
 export default async function ReviewPage({ params }: PageProps<"/admin/review/[type]/[id]">) {
@@ -22,10 +22,20 @@ export default async function ReviewPage({ params }: PageProps<"/admin/review/[t
   if (!submission) notFound();
   const { row } = submission;
   const byId = new Map(problems.map((p) => [p.id, p]));
-  const problemId = row.problemId;
+  const problemId = "problemId" in row ? row.problemId : null;
   const problem = problemId ? byId.get(problemId) : undefined;
+  // A comment on a blog post belongs to that post; a post is its own.
+  const postId = submission.type === "comment" ? submission.row.postId : submission.type === "post" ? submission.row.id : null;
+  const post = submission.type === "post" ? submission.row : postId ? await getPostRow(postId) : undefined;
+  const postHref = post?.status === "approved" && post.slug ? `/blog/${post.slug}` : undefined;
 
-  const heading = problem ? `Problem ${problem.number}: ${problem.title}` : submission.type === "proposal" ? submission.row.title : "A deleted problem";
+  const heading = problem
+    ? `Problem ${problem.number}: ${problem.title}`
+    : submission.type === "proposal" || submission.type === "post"
+      ? submission.row.title
+      : post
+        ? `Blog post: ${post.title}`
+        : "A deleted problem or post";
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -47,6 +57,11 @@ export default async function ReviewPage({ params }: PageProps<"/admin/review/[t
                 Editor
               </AdminButtonLink>
             </div>
+          )}
+          {postHref && (
+            <AdminButtonLink href={postHref} target="_blank" size="sm">
+              View on site ↗
+            </AdminButtonLink>
           )}
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -72,7 +87,7 @@ export default async function ReviewPage({ params }: PageProps<"/admin/review/[t
         <div className="border-y border-zinc-200 py-5">
           <DecisionPanel type={type} id={id} status={row.status} problemId={problem?.id} />
         </div>
-        <SubmissionContent submission={submission} problems={byId} />
+        <SubmissionContent submission={submission} problems={byId} references={problem?.references ?? post?.references} />
         {decisions.length > 0 && (
           <Card title="History">
             <ol className="space-y-3">

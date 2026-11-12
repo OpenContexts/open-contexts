@@ -5,23 +5,24 @@ import { connection } from "next/server";
 import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, activityLog, problemProposal, problemRevision } from "@/lib/db/schema";
+import { activityLog, blogPost, comment, contribution, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 
 export async function getPendingCounts(): Promise<Record<SubmissionType, number>> {
   await connection();
-  const [[c], [k], [r], [p]] = await db.batch([
+  const [[c], [k], [r], [p], [b]] = await db.batch([
     db.select({ n: count() }).from(comment).where(eq(comment.status, "pending")),
     db.select({ n: count() }).from(contribution).where(eq(contribution.status, "pending")),
     db.select({ n: count() }).from(problemRevision).where(eq(problemRevision.status, "pending")),
     db.select({ n: count() }).from(problemProposal).where(eq(problemProposal.status, "pending")),
+    db.select({ n: count() }).from(blogPost).where(eq(blogPost.status, "pending")),
   ]);
-  return { comment: c.n, contribution: k.n, revision: r.n, proposal: p.n };
+  return { comment: c.n, contribution: k.n, revision: r.n, proposal: p.n, post: b.n };
 }
 
 // id, role and banned let an admin block the author from the review page.
 const author = { columns: { id: true, name: true, email: true, role: true, banned: true } } as const;
 type Author = { id: string | null; name: string; email: string; role: string | null; banned: boolean | null };
-/** Edits and proposals outlive their author's account (author_id is set to null). */
+/** Edits, proposals and blog posts outlive their author's account (author_id is set to null). */
 const DELETED_AUTHOR: Author = { id: null, name: "Deleted account", email: "—", role: null, banned: null };
 
 /** Full rows with their author, per submission type. */
@@ -37,7 +38,17 @@ async function findMany(type: SubmissionType, status: ModerationStatus, limit: n
       return { type, rows: await db.query.problemRevision.findMany({ where: eq(problemRevision.status, status), with: { author }, orderBy: order(problemRevision.createdAt), limit }) };
     case "proposal":
       return { type, rows: await db.query.problemProposal.findMany({ where: eq(problemProposal.status, status), with: { author }, orderBy: order(problemProposal.createdAt), limit }) };
+    case "post":
+      return { type, rows: await db.query.blogPost.findMany({ where: eq(blogPost.status, status), with: { author }, orderBy: order(blogPost.createdAt), limit }) };
+    default:
+      throw new Error(`Unknown submission type: ${type satisfies never}`);
   }
+}
+
+/** Every blog post with what comments on it need: its title, its page once published, and the references they cite. */
+async function postTargets() {
+  const rows = await db.select({ id: blogPost.id, title: blogPost.title, slug: blogPost.slug, status: blogPost.status, references: blogPost.references }).from(blogPost);
+  return new Map(rows.map((r) => [r.id, r]));
 }
 
 export type QueueItem = {
@@ -51,10 +62,10 @@ export type QueueItem = {
   aiUse?: AiUse;
   credit?: string;
   url?: string;
-  problemId: string | null;
-  /** "Problem 2: Black hole information". */
-  problemLabel: string | null;
-  problemSlug: string | null;
+  /** What it belongs to, e.g. "Problem 2: Black hole information", with its public page if it has one. Null for new problems and posts, and when the problem is gone. */
+  on: { label: string; href?: string } | null;
+  /** What its text cites with \cite{key}: the references of its problem or post. */
+  references?: Reference[];
   author: { name: string; email: string };
   createdAt: Date;
 };
@@ -67,21 +78,25 @@ const excerpt = (s: string, n = 140) => {
 /** One list shape for every type, for the queue lists. */
 export async function listSubmissions(type: SubmissionType, status: ModerationStatus, limit = 100): Promise<QueueItem[]> {
   await connection();
-  const [result, problems] = await Promise.all([findMany(type, status, limit), getProblems()]);
+  const [result, problems, posts] = await Promise.all([findMany(type, status, limit), getProblems(), type === "comment" ? postTargets() : undefined]);
   const byId = new Map(problems.map((p) => [p.id, p]));
   const problem = (id: string | null) => {
     const p = id ? byId.get(id) : undefined;
-    return { problemId: id, problemLabel: p ? problemLabel(p) : null, problemSlug: p?.slug ?? null };
+    return { on: p ? { label: problemLabel(p), href: `/problems/${p.slug}` } : null, references: p?.references };
+  };
+  const post = (id: string) => {
+    const p = posts?.get(id);
+    return { on: p ? { label: `Blog post: ${p.title}`, href: p.status === "approved" && p.slug ? `/blog/${p.slug}` : undefined } : null, references: p?.references };
   };
 
   switch (result.type) {
     case "comment":
       return result.rows.map((r) => ({
         id: r.id,
-        title: `On ${problem(r.problemId).problemLabel ?? "a deleted problem"}`,
+        title: "Comment",
         excerpt: excerpt(r.body),
         body: r.body,
-        ...problem(r.problemId),
+        ...(r.postId ? post(r.postId) : problem(r.problemId)),
         author: r.author,
         createdAt: r.createdAt,
       }));
@@ -103,6 +118,15 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
       return result.rows.map((r) => ({ id: r.id, title: r.changeSummary, excerpt: r.title, ...problem(r.problemId), author: r.author ?? DELETED_AUTHOR, createdAt: r.createdAt }));
     case "proposal":
       return result.rows.map((r) => ({ id: r.id, title: r.title, excerpt: excerpt(r.statement), ...problem(r.problemId), author: r.author ?? DELETED_AUTHOR, createdAt: r.createdAt }));
+    case "post":
+      return result.rows.map((r) => ({
+        id: r.id,
+        title: r.title,
+        excerpt: excerpt(r.body),
+        on: r.status === "approved" && r.slug ? { label: "Blog post", href: `/blog/${r.slug}` } : null,
+        author: r.author ?? DELETED_AUTHOR,
+        createdAt: r.createdAt,
+      }));
   }
 }
 
@@ -126,7 +150,17 @@ export async function getSubmission(type: SubmissionType, id: string) {
       const row = await db.query.problemProposal.findFirst({ where: eq(problemProposal.id, id), with: { author } });
       return row && { type, row: { ...row, author: row.author ?? DELETED_AUTHOR } };
     }
+    case "post": {
+      const row = await db.query.blogPost.findFirst({ where: eq(blogPost.id, id), with: { author } });
+      return row && { type, row: { ...row, author: row.author ?? DELETED_AUTHOR } };
+    }
   }
+}
+
+/** A blog post in any state, for the dashboard (e.g. the post a comment belongs to). */
+export async function getPostRow(id: string) {
+  await connection();
+  return db.query.blogPost.findFirst({ where: eq(blogPost.id, id) });
 }
 
 export type Submission = NonNullable<Awaited<ReturnType<typeof getSubmission>>>;

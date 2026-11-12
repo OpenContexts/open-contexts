@@ -1,16 +1,18 @@
 import Form from "next/form";
 import Link from "next/link";
 import { connection } from "next/server";
+import { PostList } from "@/components/blog/post-list";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { ProblemList } from "@/components/problems/problem-list";
 import { AppleIcon, Button, Input, SectionTitle } from "@/components/ui";
 import { AGENDA } from "@/lib/agenda";
+import { getPosts } from "@/lib/data/blog";
 import { getPublishedProblems } from "@/lib/data/problems";
 import { plural } from "@/lib/format";
 import { SITE } from "@/lib/site";
 
 export default async function HomePage() {
-  const problems = await getPublishedProblems();
+  const [problems, posts] = await Promise.all([getPublishedProblems(), getPosts()]);
   const open = problems.filter((p) => p.status === "open");
 
   await connection(); // a new pick per request, never one frozen into a prerender
@@ -108,6 +110,23 @@ export default async function HomePage() {
           All problems →
         </Link>
       </p>
+
+      <SectionTitle>IV. From the blog</SectionTitle>
+      <p className="mx-auto mb-4 -mt-4 max-w-160 text-center text-base text-ink-muted">
+        Informal posts by the community: overviews, the story behind a result, open directions. Anyone can{" "}
+        <Link href="/blog/new" className="text-brand hover:underline">
+          write one
+        </Link>
+        .
+      </p>
+      <PostList posts={posts.slice(0, 3)} empty="No posts yet." />
+      {posts.length > 0 && (
+        <p className="mt-2 text-right text-sm">
+          <Link href="/blog" className="text-brand hover:underline">
+            All posts →
+          </Link>
+        </p>
+      )}
     </>
   );
 }

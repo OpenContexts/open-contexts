@@ -3,13 +3,14 @@ import Link from "next/link";
 import { cacheLife, cacheTag } from "next/cache";
 import type { ReactNode } from "react";
 import { MarkdownContent, MarkdownInline } from "@/components/markdown/markdown";
+import { ReferenceList } from "@/components/markdown/reference-list";
 import { CiteProblem } from "@/components/problems/cite-problem";
 import { ContributionsSection, DiscussionSection } from "@/components/problems/community-sections";
 import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { ButtonAnchor, Chip, ChipList, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
+import { ButtonAnchor, Chip, ChipList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
@@ -27,7 +28,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   cacheLife("max");
   cacheTag(communityTag(id), "community");
 
-  const [problem, contributions, comments] = await Promise.all([getProblemById(id), getApprovedContributions(id), getApprovedComments(id)]);
+  const [problem, contributions, comments] = await Promise.all([getProblemById(id), getApprovedContributions(id), getApprovedComments("problem", id)]);
   // The page checked that the problem exists just before; this only covers a deletion in between.
   if (!problem) return null;
 
@@ -84,24 +85,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         <DownloadLinks slug={problem.slug} number={problem.number} />
       </CiteProblem>
 
-      {problem.references.length > 0 && (
-        <>
-          <PartTitle>References</PartTitle>
-          <ExpandableList limit={10} noun={["reference", "references"]} ordered className="list-decimal pl-6">
-            {problem.references.map((r) => (
-              <li key={r.text} className="my-1.5">
-                {r.url ? (
-                  <a href={r.url} rel="noopener" className="text-brand hover:underline">
-                    {r.text}
-                  </a>
-                ) : (
-                  r.text
-                )}
-              </li>
-            ))}
-          </ExpandableList>
-        </>
-      )}
+      <ReferenceList references={problem.references} />
 
       <PartTitle>Progress and history</PartTitle>
       {history.length ? (

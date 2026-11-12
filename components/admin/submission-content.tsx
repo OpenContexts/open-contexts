@@ -6,9 +6,10 @@ import { MarkdownContent } from "@/components/markdown/markdown";
 import { FramedBox } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { AI_USE_LABELS } from "@/lib/constants";
+import type { Reference } from "@/lib/db/schema";
 import type { Problem } from "@/lib/data/problems";
 import type { Submission } from "@/lib/data/moderation";
-import { formatNames } from "@/lib/format";
+import { formatDate, formatNames } from "@/lib/format";
 import { TextDiff } from "./diff-view";
 
 /** Renders site content in the site's typography inside the admin UI. */
@@ -25,10 +26,8 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** `problems` is keyed by id. */
-export function SubmissionContent({ submission, problems }: { submission: Submission; problems: Map<string, Problem> }) {
-  // What comments, results and edits cite: the references of their problem.
-  const references = submission.row.problemId ? problems.get(submission.row.problemId)?.references : undefined;
+/** `problems` is keyed by id. `references`: what comments, results and edits cite, those of their problem or post. */
+export function SubmissionContent({ submission, problems, references }: { submission: Submission; problems: Map<string, Problem>; references?: Reference[] }) {
   switch (submission.type) {
     case "comment":
       return (
@@ -124,19 +123,45 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
                 <MarkdownContent source={p.statement} untrusted references={p.references} />
               </FramedBox>
               <MarkdownContent source={p.body} untrusted references={p.references} />
-              {p.references.length > 0 && (
-                <ol className="mt-6 list-decimal pl-6 text-[15px]">
-                  {p.references.map((ref, i) => (
-                    <li key={i} className="my-1">
-                      {ref.text} {ref.url && <a href={ref.url} target="_blank" rel="noopener noreferrer nofollow" className="text-brand">{ref.url}</a>}
-                    </li>
-                  ))}
-                </ol>
-              )}
+              <ReferencePreview references={p.references} />
+            </SitePreview>
+          </Card>
+        </div>
+      );
+    }
+
+    case "post": {
+      const p = submission.row;
+      return (
+        <div className="space-y-4">
+          <Card title="Details">
+            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <Fact label="Authors">{formatNames(p.authors)}</Fact>
+              <Fact label="Published">{p.publishedAt ? formatDate(p.publishedAt) : <span className="text-zinc-400">not yet</span>}</Fact>
+            </dl>
+          </Card>
+          <Card title="Preview">
+            <SitePreview>
+              <h2 className="mt-2 mb-4 text-center text-[1.6rem]/tight font-bold">{p.title}</h2>
+              <MarkdownContent source={p.body} untrusted references={p.references} />
+              <ReferencePreview references={p.references} />
             </SitePreview>
           </Card>
         </div>
       );
     }
   }
+}
+
+function ReferencePreview({ references }: { references: Reference[] }) {
+  if (!references.length) return null;
+  return (
+    <ol className="mt-6 list-decimal pl-6 text-[15px]">
+      {references.map((ref, i) => (
+        <li key={i} className="my-1">
+          {ref.text} {ref.url && <a href={ref.url} target="_blank" rel="noopener noreferrer nofollow" className="text-brand">{ref.url}</a>}
+        </li>
+      ))}
+    </ol>
+  );
 }

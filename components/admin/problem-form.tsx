@@ -140,7 +140,7 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
                   label="What changed"
                   htmlFor="changeSummary"
                   error={error("changeSummary")}
-                  hint="Added to the problem's public history. Required when you change the title, statement, text, references or note; optional for the history and the details."
+                  hint="Added to the problem's public history."
                 >
                   <AdminInput id="changeSummary" name="changeSummary" defaultValue={valueOf(state, "changeSummary")} placeholder="e.g. Added the 2024 lattice results" className="w-full" />
                 </AdminField>

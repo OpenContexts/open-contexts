@@ -6,12 +6,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
 import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
+import { BLOG_TAG } from "@/lib/data/blog";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
 import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { comment, contribution, activityLog, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
+import { activityLog, blogPost, comment, contribution, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 import { withKeys } from "@/lib/references";
 
 const decisionSchema = z.object({
@@ -28,7 +29,8 @@ type Review = {
   reviewNote: string | null;
 };
 
-function reviewQuery(type: SubmissionType, id: string, review: Review & { problemId?: string }) {
+/** `problemId`: the problem an approved proposal created. `slug` and `publishedAt`: a blog post's, set on its first approval. */
+function reviewQuery(type: SubmissionType, id: string, review: Review & { problemId?: string; slug?: string; publishedAt?: Date }) {
   switch (type) {
     case "comment":
       return db.update(comment).set(review).where(eq(comment.id, id));
@@ -38,9 +40,29 @@ function reviewQuery(type: SubmissionType, id: string, review: Review & { proble
       return db.update(problemRevision).set(review).where(eq(problemRevision.id, id));
     case "proposal":
       return db.update(problemProposal).set(review).where(eq(problemProposal.id, id));
+    case "post":
+      return db.update(blogPost).set(review).where(eq(blogPost.id, id));
     default:
       throw new Error(`Unknown submission type: ${type satisfies never}`);
   }
+}
+
+/** URL names that are routes of their own under /blog. */
+const RESERVED_POST_SLUGS = new Set(["new"]);
+
+/**
+ * What approving a blog post sets: on its first approval a free URL name and today's date. A post that was
+ * approved before keeps both, so reopening and approving it again does not move it.
+ */
+async function postPublication(id: string): Promise<{ slug?: string; publishedAt?: Date }> {
+  const post = await db.query.blogPost.findFirst({ where: eq(blogPost.id, id), columns: { title: true, slug: true, publishedAt: true } });
+  if (!post) throw new Error("Blog post not found.");
+  if (post.slug && post.publishedAt) return {};
+  const taken = new Set((await db.select({ slug: blogPost.slug }).from(blogPost)).map((r) => r.slug));
+  const start = slugify(post.title) || "post";
+  let slug = start;
+  for (let i = 2; taken.has(slug) || RESERVED_POST_SLUGS.has(slug); i++) slug = `${start}-${i}`;
+  return { slug: post.slug ?? slug, publishedAt: post.publishedAt ?? new Date() };
 }
 
 // The three helpers below return their query wrapped in an object: returning a Drizzle query from an
@@ -113,8 +135,9 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
   const columns = { status: true } as const;
   switch (type) {
     case "comment": {
-      const row = await db.query.comment.findFirst({ where: eq(comment.id, id), columns: { ...columns, problemId: true } });
-      return row && { status: row.status, pages: [row.problemId] };
+      const row = await db.query.comment.findFirst({ where: eq(comment.id, id), columns: { ...columns, problemId: true, postId: true } });
+      // On a problem or on a blog post: exactly one of the two is set.
+      return row && { status: row.status, pages: [row.problemId ?? row.postId].filter((page) => page !== null) };
     }
     case "contribution": {
       const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true, kind: true, title: true, url: true } });
@@ -129,6 +152,11 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
     }
     case "proposal": {
       const row = await db.query.problemProposal.findFirst({ where: eq(problemProposal.id, id), columns });
+      return row && { status: row.status, pages: [] };
+    }
+    // Blog posts are cached under BLOG_TAG.
+    case "post": {
+      const row = await db.query.blogPost.findFirst({ where: eq(blogPost.id, id), columns });
       return row && { status: row.status, pages: [] };
     }
     default:
@@ -159,7 +187,8 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   const referenceChange = action === "approve" ? "add" : current.status === "approved" ? "remove" : undefined;
   const cite = current.reference && referenceChange ? await citeReference(current.pages[0], current.reference, referenceChange) : undefined;
 
-  const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }) });
+  const publication = type === "post" && action === "approve" ? await postPublication(id) : {};
+  const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }), ...publication });
   const log = db.insert(activityLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
   // Publishing runs first: the proposal's problem_id must point at an existing problem.
   // An approved edit or proposal changes the problem, and so may an approved reference (never both at once).
@@ -170,6 +199,7 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   // approved submission takes it off again. Rejecting a pending one changes nothing that is public.
   if (action === "approve" || current.status === "approved") {
     if (type === "revision" || type === "proposal" || cite) updateTag("problems");
+    if (type === "post") updateTag(BLOG_TAG);
     for (const problemId of current.pages) updateTag(communityTag(problemId));
     if (current.pages.length) updateTag(COUNTS_TAG); // the counts in the problem lists
   }
@@ -197,6 +227,7 @@ export async function quickDecide(formData: FormData) {
 export async function refreshSiteCache() {
   await requireAdmin();
   updateTag("problems");
+  updateTag(BLOG_TAG);
   updateTag("community");
   updateTag(MODERATORS_TAG);
 }

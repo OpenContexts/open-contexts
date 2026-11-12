@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ButtonLink, PageTitle, Tag, type TagTone } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { CONTRIBUTION_KIND_LABELS, type ModerationStatus, SUBMISSION_TYPE_NOUNS } from "@/lib/constants";
+import { getPosts } from "@/lib/data/blog";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { getMySubmissions, type MySubmission } from "@/lib/data/submissions";
 import { formatDate } from "@/lib/format";
@@ -34,6 +35,8 @@ export default function MySubmissionsPage() {
 async function Submissions() {
   const user = await requireUser("/me");
   const problems = new Map((await getProblems()).map((p) => [p.id, p]));
+  // Published posts only: a pending or rejected post has no page to link to.
+  const posts = new Map((await getPosts()).map((p) => [p.id, p]));
   const items = await getMySubmissions(user.id);
 
   if (!items.length) {
@@ -49,12 +52,21 @@ async function Submissions() {
     <ul className="border-b border-rule">
       {items.map((s) => {
         const problem = s.problemId ? problems.get(s.problemId) : undefined;
+        const post = s.postId ? posts.get(s.postId) : undefined;
         // An accepted proposal is on the site, but only among the candidates until the moderators publish it.
         const status = s.type === "proposal" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
         return (
           <li key={`${s.type}-${s.id}`} className="flex items-start justify-between gap-x-6 gap-y-2 border-t border-rule py-5 max-sm:flex-col">
             <div className="min-w-0">
-              <p className={s.type === "comment" ? "italic" : "font-bold"}>{s.title}</p>
+              <p className={s.type === "comment" ? "italic" : "font-bold"}>
+                {s.type === "post" && post ? (
+                  <Link href={`/blog/${post.slug}`} className="text-ink hover:text-brand">
+                    {s.title}
+                  </Link>
+                ) : (
+                  s.title
+                )}
+              </p>
               <p className="mt-1 text-[0.95rem] text-ink-subtle">
                 {kindLabel(s)}
                 {problem && (
@@ -62,6 +74,14 @@ async function Submissions() {
                     {" on "}
                     <Link href={`/problems/${problem.slug}`} className="text-brand hover:underline">
                       {problemLabel(problem)}
+                    </Link>
+                  </>
+                )}
+                {s.type === "comment" && post && (
+                  <>
+                    {" on "}
+                    <Link href={`/blog/${post.slug}`} className="text-brand hover:underline">
+                      {post.title}
                     </Link>
                   </>
                 )}

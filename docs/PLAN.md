@@ -117,7 +117,7 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 | `/admin/problems` | — | done (moderators): list, create, edit, delete, download `.md`, publish candidates |
 | `/admin/users` | — | done (admins only): search, pagination, roles, block and unblock |
 | `/candidates` | — | done: accepted problems outside the published list; community reviews in Phase 4 |
-| `/blog` | `#/blog` | Phase 8: informal posts, also moderated |
+| `/blog` | `#/blog` | done: published posts, each with references and a moderated discussion; `/blog/new` to write one |
 | `/people/[id]` | — | Phase 6: a contributor's credited work |
 
 ## 5. Roadmap
@@ -224,8 +224,9 @@ database migration.
 
 ### Phase 8: blog and challenges to goals (Sec. II.C, IV.C)
 
-- [ ] **Blog posts**: informal posts about a problem or the agenda, moderated like everything else (Sec.
-      II.C names them as a submission type).
+- [x] **Blog posts**: informal posts about a problem or the agenda, moderated like everything else (Sec.
+      II.C names them as a submission type). Linked in the navigation and on the home page.
+- [ ] Moderators can edit a published post (today they can only take it down by reopening it).
 - [ ] **Challenges to a goal**: until they become an entry type of their own in the second cycle, they are
       collected as blog posts. Later, a challenge is attached to a goal, states the objection, the
       assumption it contests and what the goal would lose, and has no solution; it can spawn problems.
