@@ -88,14 +88,14 @@ problem list is empty and the database-backed sections show a setup hint.
 app/
   (site)/                 public site: header + footer layout
     page.tsx              home
-    problems/             list (search, status tabs, area filter) and /problems/[slug]
+    problems/             list (search, status tabs, agenda filter) and /problems/[slug]
       [slug]/contribute/  one page per way to contribute: result, reference, edit
       [slug]/problem.md/  the problem with everything recorded about it, as Markdown (for AI agents)
       [slug]/problem.json/  the same, as JSON
     contribute/           how contributing works; /contribute/new-problem
     me/                   the signed-in user's submissions and their review status
     (auth)/               sign-in, sign-up, forgot-password, reset-password
-    areas/ about/ guidelines/
+    agenda/ about/ guidelines/
     progress/             problems by status over time (a static SVG chart, cached daily)
     progress.json/        the progress figures as JSON
   admin/                  dashboard (its own minimal design): overview, problems (editor, .md download),
@@ -115,7 +115,7 @@ components/
 lib/
   actions/                server actions for submissions (all create `pending` rows)
   auth/                   Better Auth config, client, session helpers, institutional-email check, ORCID
-  areas.ts                the research goals that group the problems
+  agenda.ts               the research agenda: the goals that group the problems
   cite.ts                 BibTeX and plain-text citations
   email/send.ts           renders a template and sends it with nodemailer
   validation/             zod schemas for submissions and the problem editor
@@ -134,18 +134,28 @@ Put basic, domain-agnostic elements in `components/ui`. Feature-specific compone
 
 ## Problems
 
-Problems live in the `problem` table: number, URL name (slug), title, status, areas, tags, who posed it and
+Problems live in the `problem` table: number, URL name (slug), title, status, agenda, tags, who posed it and
 when, the boxed statement and the body as markdown, the history, the references and an optional note
 (markdown, set by moderators only, shown in a blue box). Comments, results
 and suggested edits point at a problem by its id, so renaming a problem's URL keeps them.
 
+**Published problems and candidates.** `published_at` says whether a problem is in the published list: the
+fixed list of the current cycle (the companion paper's problems), shown on `/problems`, the home page,
+`/agenda` and `/progress`. A problem without it is a **candidate**: accepted, kept for a later cycle and
+listed on `/candidates` (linked below the problem list). Candidates have their own page and take comments
+and contributions like any other problem. Use `getPublishedProblems()` / `getCandidateProblems()` for
+lists; `getProblems()` returns both.
+
 - **Moderators manage problems** under **Problems** in the dashboard: create (from scratch or from an
   uploaded `.md` file), edit (with a markdown preview), delete, and download any problem as a `.md` file
-  with YAML frontmatter. A problem's number and URL are assigned when it is published and don't change.
+  with YAML frontmatter. A problem's number and URL are assigned when it is created (also for a candidate) and don't change.
+  **Publish in the list** / **Move to candidates** (in the row menu and the editor) switches a problem
+  between the two lists; it counts on `/progress` from the day it was published.
   Every change is recorded in the activity log, and a status change or a "What changed" note also appears
-  in the problem's public history.
+  in the problem's public history. The note is required when the title, statement, text, references or
+  note change; changes to the history and the sidebar details (status, agenda, dates, names, tags) can go without.
 - **Users suggest changes**: an approved edit is written into the problem (its version goes up), and an
-  approved proposal becomes a new problem with the next free number.
+  approved proposal becomes a new candidate problem with the next free number.
 - **Editing conflicts**: each problem has a `version`. Saving a form that was opened before someone else's
   change is refused instead of silently overwriting it, and edits suggested against an older version are
   flagged in the review.

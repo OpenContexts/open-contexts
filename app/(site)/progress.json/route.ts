@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { siteOrigin } from "@/lib/cite";
 import { PROBLEM_STATUSES } from "@/lib/constants";
-import { getProblems, statusSince } from "@/lib/data/problems";
+import { getPublishedProblems, statusSince } from "@/lib/data/problems";
 import { paceFigures, statusTimeline } from "@/lib/data/progress";
 import { SITE } from "@/lib/site";
 
@@ -22,7 +22,7 @@ async function progressData() {
   cacheTag("problems");
 
   const today = new Date().toISOString().slice(0, 10);
-  const problems = await getProblems();
+  const problems = await getPublishedProblems();
   const origin = siteOrigin();
   const timeline = statusTimeline(problems, today);
   const pace = paceFigures(problems, today);
@@ -48,7 +48,7 @@ async function progressData() {
       status: p.status,
       statusSince: statusSince(p),
       listed: p.listed,
-      areas: p.areas,
+      agenda: p.agenda,
       statusChanges: p.history
         .filter((h) => h.kind === "status")
         .toSorted((a, b) => a.date.localeCompare(b.date))

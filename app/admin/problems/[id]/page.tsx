@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { DeleteProblemButton } from "@/components/admin/problem-controls";
+import { DeleteProblemButton, PublishButton } from "@/components/admin/problem-controls";
 import { ProblemForm } from "@/components/admin/problem-form";
 import { AdminButtonLink, PageHeader } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
@@ -12,7 +12,7 @@ import { formatDate } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Edit problem" };
 
-const SAVED = { created: "The problem has been published.", updated: "Your changes have been saved." } as const;
+const SAVED = { created: "The problem has been created.", updated: "Your changes have been saved." } as const;
 
 export default async function EditProblemPage({ params, searchParams }: PageProps<"/admin/problems/[id]">) {
   await requireModerator();
@@ -22,22 +22,24 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
   const [problem, activity, { saved }] = await Promise.all([readProblem(id), getProblemActivity(), searchParams]);
   if (!problem) notFound();
   const pendingEdits = activity.get(id)?.pending ?? 0;
+  const target = { id: problem.id, number: problem.number, title: problem.title, slug: problem.slug, published: problem.published };
 
   return (
     <>
       <PageHeader
         back={{ href: "/admin/problems", label: "Problems" }}
         title={`Problem ${problem.number}: ${problem.title}`}
-        description={`Version ${problem.version}, last changed ${formatDate(problem.updated)}`}
+        description={`${problem.published ? `Published in the list since ${formatDate(problem.listed)}` : "Candidate, not in the published list"} · Version ${problem.version}, last changed ${formatDate(problem.updated)}`}
         actions={
           <div className="flex gap-2">
+            <PublishButton problem={target} />
             <AdminButtonLink href={`/problems/${problem.slug}`} target="_blank">
               View on the site ↗
             </AdminButtonLink>
             <AdminButtonLink href={`/admin/problems/${problem.id}/download`} download={`${problem.slug}.md`} prefetch={false}>
               Download .md
             </AdminButtonLink>
-            <DeleteProblemButton problem={{ id: problem.id, number: problem.number, title: problem.title, slug: problem.slug }} activity={activity.get(id)} />
+            <DeleteProblemButton problem={target} activity={activity.get(id)} />
           </div>
         }
       />
@@ -60,7 +62,7 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
         initial={{
           title: problem.title,
           status: problem.status,
-          areas: problem.areas,
+          agenda: problem.agenda,
           posed: problem.posed,
           posedBy: problem.posedBy.join(", "),
           tags: problem.tags.join(", "),

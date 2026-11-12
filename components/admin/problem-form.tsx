@@ -10,7 +10,7 @@ import { TagInput } from "@/components/admin/tag-input";
 import { AdminButton, AdminField, AdminInput, Card } from "@/components/admin/ui";
 import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import { useReferenceRows } from "@/components/ui/use-reference-rows";
-import { AREAS } from "@/lib/areas";
+import { AGENDA } from "@/lib/agenda";
 import { initialFormState, errorOf, valueOf, valuesOf } from "@/lib/actions/form-state";
 import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry, Reference } from "@/lib/db/schema";
@@ -24,7 +24,7 @@ export type ProblemFormValues = {
   /** New problems only: the preferred URL name (from an imported file); otherwise made from the title. */
   slug?: string;
   status: ProblemStatus;
-  areas: string[];
+  agenda: string[];
   posed: string;
   posedBy: string;
   tags: string;
@@ -34,6 +34,8 @@ export type ProblemFormValues = {
   /** Markdown; "" for none. */
   note: string;
   history: HistoryEntry[];
+  /** New problems only: start in the published list rather than as a candidate. */
+  published?: boolean;
 };
 
 function SaveButton({ label }: { label: string }) {
@@ -51,9 +53,10 @@ function SaveButton({ label }: { label: string }) {
  */
 export function ProblemForm({ initial, id, version, nextNumber }: { initial: ProblemFormValues; id?: string; version?: number; nextNumber?: number }) {
   const [state, action] = useActionState(id ? updateProblem : createProblem, initialFormState);
-  const value = (name: Exclude<keyof ProblemFormValues, "history" | "areas" | "references">) => valueOf(state, name, String(initial[name] ?? ""));
+  const value = (name: Exclude<keyof ProblemFormValues, "history" | "agenda" | "references" | "published">) => valueOf(state, name, String(initial[name] ?? ""));
   const error = (name: string) => errorOf(state, name);
-  const areas = valuesOf(state, "areas[]", state.values ? [] : initial.areas);
+  const agenda = valuesOf(state, "agenda[]", state.values ? [] : initial.agenda);
+  const publish = state.values ? state.values.publish === "on" : !!initial.published;
   // Kept here, so the texts can cite the references as they are while editing.
   const refs = useReferenceRows(initial.references);
 
@@ -123,14 +126,28 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
                 </div>
                 {error("status") && <p className="mt-1 text-xs text-red-600">{error("status")}</p>}
               </fieldset>
+              {!id && (
+                <label className="flex cursor-pointer items-start gap-2 text-zinc-700">
+                  <input type="checkbox" name="publish" defaultChecked={publish} className="mt-0.5 accent-zinc-900" />
+                  <span>
+                    Publish in the problem list
+                    <span className="block text-xs text-zinc-500">Otherwise it is a candidate, listed under /candidates until it is published.</span>
+                  </span>
+                </label>
+              )}
               {id && (
-                <AdminField label="What changed (optional)" htmlFor="changeSummary" error={error("changeSummary")} hint="Added to the problem's public history.">
+                <AdminField
+                  label="What changed"
+                  htmlFor="changeSummary"
+                  error={error("changeSummary")}
+                  hint="Added to the problem's public history. Required when you change the title, statement, text, references or note; optional for the history and the details."
+                >
                   <AdminInput id="changeSummary" name="changeSummary" defaultValue={valueOf(state, "changeSummary")} placeholder="e.g. Added the 2024 lattice results" className="w-full" />
                 </AdminField>
               )}
             </div>
             <div className="-mx-5 mt-5 -mb-5 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4">
-              <SaveButton label={id ? "Save changes" : "Publish problem"} />
+              <SaveButton label={id ? "Save changes" : "Create problem"} />
               {!id && <p className="mt-2 text-center text-xs text-zinc-500">Appears on the site right away{nextNumber ? ` as Problem ${nextNumber}` : ""}.</p>}
             </div>
           </Card>
@@ -138,18 +155,18 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
           <Card title="Details">
             <div className="space-y-4">
               <fieldset>
-                <legend className="mb-1.5 text-xs font-medium text-zinc-700">Areas</legend>
+                <legend className="mb-1.5 text-xs font-medium text-zinc-700">Agenda</legend>
                 <div className="space-y-1">
-                  {AREAS.map((a) => (
+                  {AGENDA.map((a) => (
                     <label key={a.id} className="flex cursor-pointer items-start gap-2 text-zinc-700">
-                      <input type="checkbox" name="areas[]" value={a.id} defaultChecked={areas.includes(a.id)} className="mt-0.5 accent-zinc-900" />
+                      <input type="checkbox" name="agenda[]" value={a.id} defaultChecked={agenda.includes(a.id)} className="mt-0.5 accent-zinc-900" />
                       <span>
                         {a.numeral}. {a.title}
                       </span>
                     </label>
                   ))}
                 </div>
-                {error("areas[]") && <p className="mt-1 text-xs text-red-600">{error("areas[]")}</p>}
+                {error("agenda[]") && <p className="mt-1 text-xs text-red-600">{error("agenda[]")}</p>}
               </fieldset>
               <AdminField label="Posed" htmlFor="posed" error={error("posed")} hint="Year, or YYYY-MM or YYYY-MM-DD.">
                 <AdminInput id="posed" name="posed" defaultValue={value("posed")} required className="w-full" />

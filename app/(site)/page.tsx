@@ -4,13 +4,13 @@ import { connection } from "next/server";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { ProblemList } from "@/components/problems/problem-list";
 import { AppleIcon, Button, Input, SectionTitle } from "@/components/ui";
-import { AREAS } from "@/lib/areas";
-import { getProblems } from "@/lib/data/problems";
+import { AGENDA } from "@/lib/agenda";
+import { getPublishedProblems } from "@/lib/data/problems";
 import { plural } from "@/lib/format";
 import { SITE } from "@/lib/site";
 
 export default async function HomePage() {
-  const problems = await getProblems();
+  const problems = await getPublishedProblems();
   const open = problems.filter((p) => p.status === "open");
 
   await connection(); // a new pick per request, never one frozen into a prerender
@@ -76,19 +76,19 @@ export default async function HomePage() {
           .
         </p>
       <ol className="border-b border-rule">
-        {AREAS.map((area) => {
-          const n = problems.filter((p) => p.areas.some((a) => a === area.id)).length;
+        {AGENDA.map((item) => {
+          const n = problems.filter((p) => p.agenda.some((a) => a === item.id)).length;
           return (
-            <li key={area.id} className="grid grid-cols-[3.8rem_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-t border-rule py-3">
+            <li key={item.id} className="grid grid-cols-[3.8rem_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-t border-rule py-3">
               <span className="flex items-center gap-1.5 font-bold">
                 <AppleIcon variant="gold" />
-                {area.numeral}.
+                {item.numeral}.
               </span>
-              <Link href={`/problems?area=${area.id}`} className="font-bold text-ink hover:text-brand">
-                {area.title}
+              <Link href={`/problems?agenda=${item.id}`} className="font-bold text-ink hover:text-brand">
+                {item.title}
               </Link>
               <span className="text-sm whitespace-nowrap text-ink-subtle hidden md:block">{plural(n, "problem")}</span>
-              <p className="col-start-2 text-[0.98rem] text-ink-muted">{area.summary}</p>
+              <p className="col-start-2 text-[0.98rem] text-ink-muted">{item.summary}</p>
             </li>
           );
         })}

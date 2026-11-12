@@ -15,6 +15,20 @@
       "when": 1793525626227,
       "tag": "0001_problem_note",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794490971456,
+      "tag": "0002_problem_published",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794491788862,
+      "tag": "0003_agenda",
+      "breakpoints": true
     }
   ]
 }

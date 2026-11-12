@@ -95,7 +95,7 @@ async function publishProposal(id: string, problemId: string) {
     slug: await uniqueSlug(slugify(proposal.title)),
     title: proposal.title,
     status: "open",
-    areas: proposal.areas,
+    agenda: proposal.agenda,
     tags: proposal.tags,
     posedBy: proposal.posedBy,
     posed: today(),

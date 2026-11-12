@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MarkdownContent } from "@/components/markdown/markdown";
-import { AppleIcon, FramedBox } from "@/components/ui";
+import { AppleIcon, FramedBox, HourglassIcon } from "@/components/ui";
 import type { Problem } from "@/lib/data/problems";
 
 /** The boxed problem statement. `heading` makes its title the page's h1. */
@@ -10,7 +10,7 @@ export function ProblemBox({ problem, heading, link }: { problem: Problem; headi
       titleAs={heading ? "h1" : "div"}
       title={
         <>
-          <AppleIcon variant="white" />
+          {problem.published ? <AppleIcon variant="white" /> : <HourglassIcon variant="white" />}
           Problem {problem.number}: {problem.title}
         </>
       }

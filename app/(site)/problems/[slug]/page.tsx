@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CommentBox } from "@/components/problems/community-sections";
 import { ModeratorEditLink } from "@/components/problems/moderator-link";
 import { ProblemContent } from "@/components/problems/problem-content";
+import { Callout } from "@/components/ui";
 import { getProblem, problemLabel } from "@/lib/data/problems";
 
 export async function generateMetadata({ params }: PageProps<"/problems/[slug]">): Promise<Metadata> {
@@ -24,11 +25,17 @@ export default async function ProblemPage({ params }: PageProps<"/problems/[slug
   return (
     <>
       <p className="mt-6 flex justify-between text-[0.92rem]">
-        <Link href="/problems" className="text-brand hover:underline">
-          ← All problems
+        <Link href={problem.published ? "/problems" : "/candidates"} className="text-brand hover:underline">
+          {problem.published ? "← All problems" : "← All candidate problems"}
         </Link>
         <ModeratorEditLink problemId={problem.id} />
       </p>
+      {!problem.published && (
+        <Callout>
+          A <Link href="/candidates">candidate problem</Link>: accepted by the moderators, but not yet part of the
+          published list.
+        </Callout>
+      )}
       {/* The key: the cached content places this slot among its own children, and React needs one there. */}
       <ProblemContent id={problem.id} commentBox={<CommentBox key="comment-box" slug={problem.slug} references={problem.references} />} />
     </>

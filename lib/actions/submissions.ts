@@ -147,6 +147,6 @@ export async function submitProposal(_: FormState, formData: FormData): Promise<
   const { user, error } = await guard(values);
   if (error) return error;
 
-  const { "areas[]": areas, ...rest } = parsed.data;
-  return save(values, () => db.insert(problemProposal).values({ ...rest, areas, authorId: user.id }));
+  const { "agenda[]": agenda, ...rest } = parsed.data;
+  return save(values, () => db.insert(problemProposal).values({ ...rest, agenda, authorId: user.id }));
 }

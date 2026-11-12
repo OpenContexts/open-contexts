@@ -1,7 +1,7 @@
 // Validation for everything users submit. The server actions are the only callers;
 // the forms show the resulting field errors.
 import { z } from "zod";
-import { AREA_IDS } from "@/lib/areas";
+import { AGENDA_IDS } from "@/lib/agenda";
 import { AI_USE } from "@/lib/constants";
 import { citeIssues, commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
@@ -55,7 +55,7 @@ export const proposalSchema = z
   title: text(3, 200, "a title"),
   statement: text(40, 10_000, "the statement"),
   body: text(100, 50_000, "the background"),
-  "areas[]": z.array(z.enum(AREA_IDS)).min(1, "Please choose at least one area."),
+  "agenda[]": z.array(z.enum(AGENDA_IDS)).min(1, "Please choose at least one agenda item."),
   tags: commaList,
   posedBy: commaList.pipe(z.array(z.string()).min(1, "Please name at least one person.")),
   ...referenceRows,

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Card, Notice, Pill } from "@/components/admin/ui";
 import { MarkdownContent } from "@/components/markdown/markdown";
 import { FramedBox } from "@/components/ui";
-import { getArea } from "@/lib/areas";
+import { getAgendaItem } from "@/lib/agenda";
 import { AI_USE_LABELS } from "@/lib/constants";
 import type { Problem } from "@/lib/data/problems";
 import type { Submission } from "@/lib/data/moderation";
@@ -112,7 +112,7 @@ export function SubmissionContent({ submission, problems }: { submission: Submis
         <div className="space-y-4">
           <Card title="Details">
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              <Fact label="Areas">{p.areas.map((a) => getArea(a)?.title ?? a).join(", ")}</Fact>
+              <Fact label="Agenda">{p.agenda.map((a) => getAgendaItem(a)?.title ?? a).join(", ")}</Fact>
               <Fact label="Posed by">{formatNames(p.posedBy)}</Fact>
               <Fact label="Tags">{p.tags.length ? p.tags.join(", ") : <span className="text-zinc-400">none</span>}</Fact>
               <Fact label="AI use">{AI_USE_LABELS[p.aiUse].replace(/^./, (ch) => ch.toUpperCase())}</Fact>

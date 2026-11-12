@@ -6,18 +6,19 @@ import { ProblemList } from "@/components/problems/problem-list";
 import { SortSelect } from "@/components/problems/sort-select";
 import { StatusIcon } from "@/components/problems/status";
 import { Button, ChipLink, Input, PageTitle, TabLink, Tabs } from "@/components/ui";
-import { AREAS, type AreaId } from "@/lib/areas";
+import { AGENDA, type AgendaId } from "@/lib/agenda";
 import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
-import { getProblems, searchProblems } from "@/lib/data/problems";
+import { getCandidateProblems, getPublishedProblems, searchProblems } from "@/lib/data/problems";
+import { plural } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Problems" };
 
-type Filters = { status?: ProblemStatus; area?: AreaId; q?: string; sort: "number" | "date" };
+type Filters = { status?: ProblemStatus; agenda?: AgendaId; q?: string; sort: "number" | "date" };
 
-function href({ status, area, q, sort }: Partial<Filters>) {
+function href({ status, agenda, q, sort }: Partial<Filters>) {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
-  if (area) params.set("area", area);
+  if (agenda) params.set("agenda", agenda);
   if (q) params.set("q", q);
   if (sort === "date") params.set("sort", sort);
   const qs = params.toString();
@@ -28,7 +29,7 @@ function readFilters(sp: Record<string, string | string[] | undefined>): Filters
   const one = (name: string) => [sp[name]].flat()[0]?.trim() || undefined;
   return {
     status: PROBLEM_STATUSES.find((s) => s === one("status")),
-    area: AREAS.find((a) => a.id === one("area"))?.id,
+    agenda: AGENDA.find((a) => a.id === one("agenda"))?.id,
     q: one("q")?.slice(0, 200),
     sort: one("sort") === "date" ? "date" : "number",
   };
@@ -36,11 +37,11 @@ function readFilters(sp: Record<string, string | string[] | undefined>): Filters
 
 /** Filtered and sorted on the server. Each combination of filters is rendered once and cached until a problem changes. */
 export default async function ProblemsPage({ searchParams }: PageProps<"/problems">) {
-  const { status, area, q, sort } = readFilters(await searchParams);
+  const { status, agenda, q, sort } = readFilters(await searchParams);
   return (
     <>
       <PageTitle>Problems</PageTitle>
-      <ProblemResults status={status} area={area} q={q} sort={sort} />
+      <ProblemResults status={status} agenda={agenda} q={q} sort={sort} />
     </>
   );
 }
@@ -50,8 +51,9 @@ async function ProblemResults(filters: Filters) {
   cacheLife("max");
   cacheTag("problems");
 
-  const { status, area, q, sort } = filters;
-  const base = searchProblems(await getProblems(), q ?? "").filter((p) => !area || p.areas.includes(area));
+  const { status, agenda, q, sort } = filters;
+  const [published, candidates] = await Promise.all([getPublishedProblems(), getCandidateProblems()]);
+  const base = searchProblems(published, q ?? "").filter((p) => !agenda || p.agenda.includes(agenda));
   const list = (status ? base.filter((p) => p.status === status) : base).toSorted((a, b) =>
     sort === "date" ? b.updated.localeCompare(a.updated) : a.number - b.number,
   );
@@ -60,7 +62,7 @@ async function ProblemResults(filters: Filters) {
     <>
       <Form action="/problems" role="search" className="mt-4 flex flex-wrap gap-2">
         {status && <input type="hidden" name="status" value={status} />}
-        {area && <input type="hidden" name="area" value={area} />}
+        {agenda && <input type="hidden" name="agenda" value={agenda} />}
         <label htmlFor="q" className="sr-only">
           Search problems
         </label>
@@ -76,11 +78,11 @@ async function ProblemResults(filters: Filters) {
       </Form>
 
       <Tabs label="Filter by status">
-        <TabLink href={href({ area, q, sort })} active={!status} count={base.length}>
+        <TabLink href={href({ agenda, q, sort })} active={!status} count={base.length}>
           All
         </TabLink>
         {PROBLEM_STATUSES.map((s) => (
-          <TabLink key={s} href={href({ status: s, area, q, sort })} active={status === s} count={base.filter((p) => p.status === s).length}>
+          <TabLink key={s} href={href({ status: s, agenda, q, sort })} active={status === s} count={base.filter((p) => p.status === s).length}>
             <StatusIcon status={s} />
             <span className="capitalize">{PROBLEM_STATUS_LABELS[s]}</span>
           </TabLink>
@@ -88,13 +90,13 @@ async function ProblemResults(filters: Filters) {
       </Tabs>
 
       <div className="mt-3.5 mb-7 flex flex-wrap items-center gap-1.5 text-[0.95rem] text-ink-muted">
-        <span>Area:</span>
-        {AREAS.map((a) => (
-          <ChipLink key={a.id} shape="square" active={area === a.id} title={a.title} href={href({ status, area: area === a.id ? undefined : a.id, q, sort })}>
+        <span>Agenda:</span>
+        {AGENDA.map((a) => (
+          <ChipLink key={a.id} shape="square" active={agenda === a.id} title={a.title} href={href({ status, agenda: agenda === a.id ? undefined : a.id, q, sort })}>
             {a.numeral}
           </ChipLink>
         ))}
-        {area && (
+        {agenda && (
           <Link href={href({ status, q, sort })} className="text-sm text-brand hover:underline">
             clear
           </Link>
@@ -104,13 +106,22 @@ async function ProblemResults(filters: Filters) {
       {q && (
         <p className="mb-2 text-sm text-ink-muted">
           {list.length} {list.length === 1 ? "result" : "results"} for “{q}”.{" "}
-          <Link href={href({ status, area, sort })} className="text-brand hover:underline">
+          <Link href={href({ status, agenda, sort })} className="text-brand hover:underline">
             Clear search
           </Link>
         </p>
       )}
 
       <ProblemList problems={list} empty={q ? `No problems match “${q}”.` : "No problems in this selection yet."} />
+
+      {candidates.length > 0 && (
+        <p className="mt-8 text-center text-[0.95rem] text-ink-muted">
+          {plural(candidates.length, "further problem")} {candidates.length === 1 ? "has" : "have"} been accepted but {candidates.length === 1 ? "is" : "are"} not part of this list yet.{" "}
+          <Link href="/candidates" className="text-brand hover:underline">
+            See the candidate problems →
+          </Link>
+        </p>
+      )}
     </>
   );
 }

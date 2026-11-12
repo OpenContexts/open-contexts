@@ -10,7 +10,7 @@ import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
 import { ButtonAnchor, Chip, ChipList, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
-import { getArea } from "@/lib/areas";
+import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
@@ -31,7 +31,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   // The page checked that the problem exists just before; this only covers a deletion in between.
   if (!problem) return null;
 
-  const areas = problem.areas.map(getArea).filter((a) => a !== undefined);
+  const agenda = problem.agenda.map(getAgendaItem).filter((a) => a !== undefined);
   // Newest first; entries of the same day in reverse order of recording, so the latest is on top.
   const history = problem.history.map((h, i) => ({ ...h, i })).toSorted((a, b) => b.date.localeCompare(a.date) || b.i - a.i);
 
@@ -39,15 +39,15 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
     <article>
       <ProblemBox problem={problem} heading />
 
-      {/* Status, areas and the last update in one row; the people who posed it get the full width below. */}
+      {/* Status, agenda and the last update in one row; the people who posed it get the full width below. */}
       <dl className="mb-10 grid grid-cols-2 gap-x-10 gap-y-4 border-b border-rule pb-5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
         <Fact label="Status">
           <StatusBadge status={problem.status} className="relative -top-px" />{" "}
           <span className="text-[0.95rem] text-ink-subtle">since {formatDate(statusSince(problem))}</span>
         </Fact>
-        <Fact label={areas.length === 1 ? "Area" : "Areas"} className="max-sm:order-1 max-sm:col-span-2">
-          {areas.map((a) => (
-            <Link key={a.id} href={`/problems?area=${a.id}`} className="block text-brand hover:underline">
+        <Fact label="Agenda" className="max-sm:order-1 max-sm:col-span-2">
+          {agenda.map((a) => (
+            <Link key={a.id} href={`/problems?agenda=${a.id}`} className="block text-brand hover:underline">
               {a.numeral}. {a.title}
             </Link>
           ))}

@@ -2,24 +2,24 @@
 
 import { eq, sql } from "drizzle-orm";
 import matter from "gray-matter";
-import { updateTag } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { ProblemFormValues } from "@/components/admin/problem-form";
 import { type FormState, invalid, readForm } from "@/lib/actions/form-state";
-import { AREA_IDS, type AreaId } from "@/lib/areas";
+import { AGENDA_IDS, type AgendaId } from "@/lib/agenda";
 import { requireModerator } from "@/lib/auth/session";
 import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { type HistoryEntry, activityLog, problem } from "@/lib/db/schema";
+import { type HistoryEntry, activityLog, problem, type Reference } from "@/lib/db/schema";
 import { changeEntries, nextProblemNumber, slugify, uniqueSlug } from "@/lib/data/problem-writes";
-import { problemLabel, readProblem } from "@/lib/data/problems";
+import { type Problem, problemLabel, readProblem } from "@/lib/data/problems";
 import { type ProblemInput, problemSchema } from "@/lib/validation/problems";
 
 /** The stored columns that the editor changes. Number and URL name are set once, when a problem is created. */
 function fields(i: ProblemInput) {
   const { title, status, posed, posedBy, tags, statement, body, references, note, history } = i;
-  return { title, status, areas: i["areas[]"], posed, posedBy, tags, statement, body, references, note, history };
+  return { title, status, agenda: i["agenda[]"], posed, posedBy, tags, statement, body, references, note, history };
 }
 
 export async function createProblem(_: FormState, formData: FormData): Promise<FormState> {
@@ -34,7 +34,7 @@ export async function createProblem(_: FormState, formData: FormData): Promise<F
   const slug = await uniqueSlug(input.slug ?? slugify(input.title));
   try {
     await db.batch([
-      db.insert(problem).values({ ...fields(input), id, number, slug, createdById: moderator.id }),
+      db.insert(problem).values({ ...fields(input), id, number, slug, publishedAt: input.publish ? new Date() : null, createdById: moderator.id }),
       db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "create", moderatorId: moderator.id, note: problemLabel({ number, title: input.title }) }),
     ]);
   } catch (error) {
@@ -44,6 +44,18 @@ export async function createProblem(_: FormState, formData: FormData): Promise<F
   }
   updateTag("problems");
   redirect(`/admin/problems/${id}?saved=created`);
+}
+
+/**
+ * Whether the problem's content changed: title, statement, text, references or note. These need a "What
+ * changed" summary for the public history; the history itself and the details in the sidebar (status, agenda,
+ * dates, names, tags) do not.
+ */
+function contentChanged(current: Problem, input: ProblemInput): boolean {
+  const refs = (list: Reference[]) => JSON.stringify(list.map((r) => [r.key ?? "", r.text.trim(), r.url?.trim() ?? ""]));
+  return (
+    (["title", "statement", "body", "note"] as const).some((f) => current[f].trim() !== input[f]) || refs(current.references) !== refs(input.references)
+  );
 }
 
 const updateSchema = z.object({ id: z.uuid(), version: z.coerce.number().int() });
@@ -63,6 +75,14 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
   }
 
   const input = parsed.data;
+  if (!input.changeSummary && contentChanged(current, input)) {
+    return {
+      status: "error",
+      message: "Please say what changed. It is added to the problem's public history.",
+      errors: { changeSummary: ["Required when the title, statement, text, references or note change."] },
+      values,
+    };
+  }
   const history = [...input.history, ...changeEntries({ summary: input.changeSummary, from: current.status, to: input.status })];
   await db.batch([
     db
@@ -73,6 +93,24 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
   ]);
   updateTag("problems");
   redirect(`/admin/problems/${id}?saved=updated`);
+}
+
+/**
+ * Admits a candidate to the published list (from today on), or takes a problem off it again, back to the
+ * candidates. Leaves the version alone: an editor that is open at the same time can still save.
+ */
+export async function setPublished(id: string, publish: boolean): Promise<void> {
+  const moderator = await requireModerator();
+  const current = await readProblem(z.uuid().parse(id));
+  // Deleted in the meantime: the refresh shows that.
+  if (current && current.published !== publish) {
+    await db.batch([
+      db.update(problem).set({ publishedAt: publish ? new Date() : null }).where(eq(problem.id, id)),
+      db.insert(activityLog).values({ targetType: "problem", targetId: id, action: publish ? "publish" : "unpublish", moderatorId: moderator.id, note: problemLabel(current) }),
+    ]);
+    updateTag("problems");
+  }
+  refresh();
 }
 
 /** Deletes the problem and, through the foreign keys, its comments, contributions and suggested edits. */
@@ -122,7 +160,8 @@ export async function parseProblemFile(file: { name: string; text: string }): Pr
       title: String(data.title ?? ""),
       slug: typeof data.slug === "string" ? data.slug : file.name.replace(/\.(md|markdown)$/i, ""),
       status: PROBLEM_STATUSES.includes(data.status as ProblemStatus) ? (data.status as ProblemStatus) : "open",
-      areas: list(data.areas).filter((a): a is AreaId => AREA_IDS.includes(a as AreaId)),
+      published: data.published === true,
+      agenda: list(data.agenda).filter((a): a is AgendaId => AGENDA_IDS.includes(a as AgendaId)),
       posed: dateText(data.posed),
       posedBy: list(data.posedBy).join(", "),
       tags: list(data.tags).join(", "),

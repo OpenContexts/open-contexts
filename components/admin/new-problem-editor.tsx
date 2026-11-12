@@ -5,7 +5,7 @@ import { parseProblemFile } from "@/app/admin/problems/actions";
 import { ProblemForm, type ProblemFormValues } from "@/components/admin/problem-form";
 import { AdminButton } from "@/components/admin/ui";
 
-/** The new-problem form, which can be filled from an uploaded .md file before publishing. */
+/** The new-problem form, which can be filled from an uploaded .md file before saving. */
 export function NewProblemEditor({ blank, nextNumber }: { blank: ProblemFormValues; nextNumber: number }) {
   const input = useRef<HTMLInputElement>(null);
   const [initial, setInitial] = useState(blank);
@@ -34,7 +34,7 @@ export function NewProblemEditor({ blank, nextNumber }: { blank: ProblemFormValu
         <p className="min-w-0 flex-1 text-zinc-600">
           {imported ? (
             <>
-              Filled in from <span className="font-medium text-zinc-900">{imported}</span>. Check the fields, then publish.
+              Filled in from <span className="font-medium text-zinc-900">{imported}</span>. Check the fields, then save.
             </>
           ) : (
             "Start from a markdown file, for example one downloaded from this dashboard."

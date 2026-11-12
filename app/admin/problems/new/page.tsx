@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "New problem" };
 export default function NewProblemPage() {
   return (
     <>
-      <PageHeader back={{ href: "/admin/problems", label: "Problems" }} title="New problem" description="Published as soon as you save it. Users can then comment, contribute and suggest edits." />
+      <PageHeader back={{ href: "/admin/problems", label: "Problems" }} title="New problem" description="On the site as soon as you save it, in the problem list or as a candidate. Users can then comment, contribute and suggest edits." />
       <NewProblem />
     </>
   );
@@ -24,7 +24,7 @@ async function NewProblem() {
       blank={{
         title: "",
         status: "open",
-        areas: [],
+        agenda: [],
         posed: today().slice(0, 4),
         posedBy: "",
         tags: "",

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { FormattingGuide } from "@/components/markdown/formatting-guide";
 import { ButtonLink, FramedBox, PageTitle, SectionTitle } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Contribute" };
@@ -42,14 +43,14 @@ const PARTS: { name: string; text: ReactNode }[] = [
     text: (
       <>
         How the problem is motivated within the existing literature, and which of the{" "}
-        <Link href="/areas" className="text-brand hover:underline">
-          research areas
+        <Link href="/agenda" className="text-brand hover:underline">
+          research agenda
         </Link>{" "}
         it traces to.
       </>
     ),
   },
-  { name: "Significance", text: "How its resolution would meaningfully advance those areas." },
+  { name: "Significance", text: "How its resolution would meaningfully advance that agenda." },
   { name: "Feasibility", text: "Why the problem can plausibly be tackled with existing techniques and near-term AI assistance, for instance known special cases or a possible line of attack." },
 ];
 
@@ -149,6 +150,16 @@ export default function ContributePage() {
           ))}
         </dl>
       </FramedBox>
+
+      <SectionTitle id="formatting" className="scroll-mt-6">
+        Formatting
+      </SectionTitle>
+      <p className="mb-6 text-justify hyphens-auto max-sm:text-left">
+        Problems, results and comments are written in Markdown, with LaTeX for math, and can cite the problem&apos;s
+        references. Each text field has a Preview tab to check how the text will look, and the ⓘ above it brings up
+        this summary while you write.
+      </p>
+      <FormattingGuide />
     </>
   );
 }

@@ -1,24 +1,26 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deleteProblem } from "@/app/admin/problems/actions";
+import { deleteProblem, setPublished } from "@/app/admin/problems/actions";
 import { AdminButton, AdminDialog, AdminInput, DialogActions, RowMenu } from "@/components/admin/ui";
 import type { ProblemActivity } from "@/lib/data/moderation";
 import { plural } from "@/lib/format";
 
-type Target = { id: string; number: number; title: string; slug: string };
+type Target = { id: string; number: number; title: string; slug: string; published: boolean };
 
 const downloadHref = (p: Target) => `/admin/problems/${p.id}/download`;
 
 /** The "⋮" menu at the end of a row in the problem list. */
 export function ProblemActions({ problem, activity }: { problem: Target; activity?: ProblemActivity }) {
   const [deleting, setDeleting] = useState(false);
+  const [, startTransition] = useTransition();
   return (
     <>
       <RowMenu
         label={`Actions for problem ${problem.number}`}
         items={[
           { label: "Edit", href: `/admin/problems/${problem.id}` },
+          { label: problem.published ? "Move to candidates" : "Publish in the list", onSelect: () => startTransition(() => setPublished(problem.id, !problem.published)) },
           { label: "View on the site ↗", href: `/problems/${problem.slug}`, external: true },
           { label: "Download .md", href: downloadHref(problem), download: `${problem.slug}.md` },
           { label: "Delete…", onSelect: () => setDeleting(true), danger: true, separated: true },
@@ -26,6 +28,16 @@ export function ProblemActions({ problem, activity }: { problem: Target; activit
       />
       <DeleteProblemDialog problem={problem} activity={activity} open={deleting} onClose={() => setDeleting(false)} />
     </>
+  );
+}
+
+/** For the editor page: admits a candidate to the published list, or takes a problem off it again. */
+export function PublishButton({ problem }: { problem: Target }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <AdminButton variant={problem.published ? "secondary" : "primary"} disabled={pending} onClick={() => startTransition(() => setPublished(problem.id, !problem.published))}>
+      {pending ? "Saving…" : problem.published ? "Move to candidates" : "Publish in the list"}
+    </AdminButton>
   );
 }
 

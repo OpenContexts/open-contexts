@@ -1,7 +1,8 @@
 import { cn } from "@/lib/cn";
 
 // The site's mark. Its colour encodes state: red = open, outline = under revision,
-// grey = solved, gold = research area, white = on a red background. The outline apple is filled with the page colour.
+// grey = solved, gold = agenda item, white = on a red background. The outline apple is filled with the page colour.
+// Candidate problems (not yet in the published list) get an hourglass in the same colours instead.
 const palettes = {
   red: { body: "#c00808", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "none" },
   outline: { body: "var(--color-paper)", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "#c00808" },
@@ -12,8 +13,9 @@ const palettes = {
 
 export type AppleVariant = keyof typeof palettes;
 
-export function AppleIcon({ variant = "red", className, label }: { variant?: AppleVariant; className?: string; label?: string }) {
-  const c = palettes[variant];
+type IconProps = { variant?: AppleVariant; className?: string; label?: string };
+
+function Icon({ className, label, children }: Omit<IconProps, "variant"> & { children: React.ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -22,6 +24,15 @@ export function AppleIcon({ variant = "red", className, label }: { variant?: App
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
+      {children}
+    </svg>
+  );
+}
+
+export function AppleIcon({ variant = "red", className, label }: IconProps) {
+  const c = palettes[variant];
+  return (
+    <Icon className={className} label={label}>
       <path
         style={{ fill: c.body }} // a style, not the attribute: attributes can't read CSS variables
         stroke={c.stroke}
@@ -31,6 +42,24 @@ export function AppleIcon({ variant = "red", className, label }: { variant?: App
       />
       <path fill="none" stroke={c.stem} strokeWidth={1.7} strokeLinecap="round" d="M12 8.6c0-1.8.6-3.4 1.8-4.6" />
       <path fill={c.leaf} d="M13 6.6c.4-2 2.2-3.1 4.4-2.8-.3 2.1-2 3.3-4.4 2.8z" />
-    </svg>
+    </Icon>
+  );
+}
+
+/** The apple's counterpart for candidate problems: the glass in the apple's colour, the frame in its stem colour. */
+export function HourglassIcon({ variant = "red", className, label }: IconProps) {
+  const c = palettes[variant];
+  return (
+    <Icon className={className} label={label}>
+      <path
+        style={{ fill: c.body }}
+        stroke={c.stroke}
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+        d="M6.5 4.5h11c0 3.6-2.3 5.8-4.9 7.5 2.6 1.7 4.9 3.9 4.9 7.5h-11c0-3.6 2.3-5.8 4.9-7.5C8.8 10.3 6.5 8.1 6.5 4.5z"
+      />
+      <rect x={4.5} y={2.4} width={15} height={2.4} rx={1.2} fill={c.stem} />
+      <rect x={4.5} y={19.2} width={15} height={2.4} rx={1.2} fill={c.stem} />
+    </Icon>
   );
 }

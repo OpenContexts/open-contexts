@@ -5,7 +5,7 @@ import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
 import { useReferenceRows } from "@/components/ui/use-reference-rows";
-import { AREAS } from "@/lib/areas";
+import { AGENDA } from "@/lib/agenda";
 import { errorOf, initialFormState, valueOf, valuesOf } from "@/lib/actions/form-state";
 import { submitProposal } from "@/lib/actions/submissions";
 import { FormMessage, SubmissionReceived } from "./form-parts";
@@ -18,11 +18,11 @@ What a reader needs to understand the statement, with references.
 
 ## Relevance
 
-How the problem is motivated within the existing literature, and which research areas it traces to.
+How the problem is motivated within the existing literature, and which items of the research agenda it traces to.
 
 ## Significance
 
-How its resolution would meaningfully advance those areas.
+How its resolution would meaningfully advance that agenda.
 
 ## Feasibility
 
@@ -53,12 +53,12 @@ export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
         </Field>
         <ChoiceCards
           type="checkbox"
-          name="areas[]"
-          legend="Research areas"
+          name="agenda[]"
+          legend="Research agenda"
           hint="Choose all that apply."
-          choices={AREAS.map((a) => ({ value: a.id, label: `${a.numeral}. ${a.title}` }))}
-          defaultValue={valuesOf(state, "areas[]")}
-          error={errorOf(state, "areas[]")}
+          choices={AGENDA.map((a) => ({ value: a.id, label: `${a.numeral}. ${a.title}` }))}
+          defaultValue={valuesOf(state, "agenda[]")}
+          error={errorOf(state, "agenda[]")}
         />
 
         <h2 className="mt-7 font-sans text-sm font-bold">2. Context</h2>

@@ -1,7 +1,7 @@
-// The research areas that organize the problem list: the long-term goals of the research agenda in the
-// companion paper. Each problem lists one or more area ids in its `areas` column.
+// The research agenda that organizes the problem list: the long-term goals set out in the companion paper.
+// Each problem lists the ids of one or more agenda items in its `agenda` column.
 
-export type Area = {
+export type AgendaItem = {
   id: string;
   numeral: string;
   title: string;
@@ -9,7 +9,7 @@ export type Area = {
   description: string;
 };
 
-export const AREAS = [
+export const AGENDA = [
   {
     id: "classicality",
     numeral: "I",
@@ -52,12 +52,12 @@ This is the most open-ended and conceptually demanding of the three goals. A maj
 
 **Contextuality as a resource.** Qualitatively, the question is which tasks require contextuality: for which tasks every noncontextual model falls short of the quantum performance, and which feature of the task is responsible. This has been studied in computation, state discrimination, interference, measurement compatibility, uncertainty relations, metrology, thermodynamics, information processing and communication, cloning, and broadcasting; advances add tasks to the list and show that the advantage survives the noise of actual devices. Quantitatively, the question is how much advantage a given amount of contextuality buys and whether contextuality can be converted from one form into another, as entanglement can. That requires a resource theory of generalized contextuality, with its free operations, monotones, and conversion rules, which remains to be formulated. It is not a goal in its own right here: its value for this goal is the quantitative link to advantage, and its conceptual value belongs to Goal I.`,
   },
-] as const satisfies readonly Area[];
+] as const satisfies readonly AgendaItem[];
 
-export type AreaId = (typeof AREAS)[number]["id"];
+export type AgendaId = (typeof AGENDA)[number]["id"];
 
-export const AREA_IDS = AREAS.map((a) => a.id) as [AreaId, ...AreaId[]];
+export const AGENDA_IDS = AGENDA.map((a) => a.id) as [AgendaId, ...AgendaId[]];
 
-export function getArea(id: string): Area | undefined {
-  return AREAS.find((a) => a.id === id);
+export function getAgendaItem(id: string): AgendaItem | undefined {
+  return AGENDA.find((a) => a.id === id);
 }

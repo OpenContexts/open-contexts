@@ -43,7 +43,7 @@ sections.
 | Concept | Where it lives | Notes |
 | ------- | -------------- | ----- |
 | Problem | `problem` table | Number, slug, statement and body (markdown), history, references, an optional note (markdown, moderators only), `version`. Managed in the dashboard. |
-| Area | `lib/areas.ts` | The long-term goals of the research agenda (Sec. III.B). Groups problems; numbered I, II, III. |
+| Agenda item | `lib/agenda.ts` | The long-term goals of the research agenda (Sec. III.B). Groups problems; numbered I, II, III. |
 | Problem status | `problem.status`, set by moderators | `open` → `under-revision` (a solution has been claimed) → `solved`, and back (Fig. 2, Sec. II.C). |
 | Comment | `comment` table | Markdown + math. |
 | Contribution | `contribution` table | `kind`, `title`, `summary`, `url`, `aiUse`, `credit`. |
@@ -100,11 +100,11 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 | Route | Prototype equivalent | State |
 | ----- | -------------------- | ----- |
 | `/` | home | done: masthead, companion paper, counts, search, goals, a random open problem, recently updated |
-| `/problems` | `#/problems` | done: search, status tabs, area filter, sort (all on the server) |
+| `/problems` | `#/problems` | done: the published list; search, status tabs, agenda filter, sort (all on the server) |
 | `/problems/[slug]` | `#/problem/n` | done: statement, meta, lettered sections, tags, note, citation and download buttons, references, history, contributions, contribute options, discussion |
 | `/problems/[slug]/problem.md`, `.json` | "Data as JSON" | done: the problem with everything recorded about it, for AI agents and programs |
 | `/problems/[slug]/contribute/*` | `#/submit` | done: result, reference, edit; comments inline |
-| `/areas` | `#/agenda`, `#/tags` | done (basic) |
+| `/agenda` | `#/agenda`, `#/tags` | done (basic) |
 | `/guidelines` | same | done: participation, submission format, moderation, status rules, credit, cycles, assessment |
 | `/about` | same | done: mission, companion paper, citation, moderators, data, license |
 | `/contribute` | same | done: steps, curation criteria (Box I), problem structure, best practices (Box III) |
@@ -114,9 +114,9 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 | `/sign-in`, `/sign-up` | — | done: institutional email and password, GitHub, ORCID |
 | `/me` | — | done |
 | `/admin` | `#/moderate` | done: overview, queues with quick decisions, review with diff, activity log |
-| `/admin/problems` | — | done (moderators): list, create, edit, delete, download `.md` |
+| `/admin/problems` | — | done (moderators): list, create, edit, delete, download `.md`, publish candidates |
 | `/admin/users` | — | done (admins only): search, pagination, roles, block and unblock |
-| `/candidates` | — | Phase 4: proposed problems for the next cycle, with community reviews |
+| `/candidates` | — | done: accepted problems outside the published list; community reviews in Phase 4 |
 | `/blog` | `#/blog` | Phase 8: informal posts, also moderated |
 | `/people/[id]` | — | Phase 6: a contributor's credited work |
 
@@ -149,9 +149,9 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 
 Needed so that the site behaves as the Guidelines already describe.
 
-- [ ] Approving a proposal no longer publishes it: it becomes a **candidate** for the next cycle. Moderators
-      can still admit it to the active list explicitly.
-- [ ] A public list of candidate problems (`/candidates`).
+- [x] Approving a proposal no longer publishes it: it becomes a **candidate** for the next cycle. Moderators
+      can still admit it to the active list explicitly (Publish in the dashboard).
+- [x] A public list of candidate problems (`/candidates`), linked below the problem list.
 - [ ] **Community review of proposals** against the curation criteria (Box I). Any signed-in researcher can
       tick each criterion and comment, and reviews are a submission type of their own (Sec. II.C). Whether
       and how reviews add up to admission is an open question (see §6).

@@ -18,7 +18,7 @@
   --color-brand-dark: light-dark(#5a0000, #8a2b2b);
   --color-brand-tint: light-dark(#fdf3f3, #261616);
 
-  /* gold: research areas, notices, the criteria box */
+  /* gold: the research agenda, notices, the criteria box */
   --color-gold: light-dark(#e0a820, #d9a12a);
   --color-gold-dark: light-dark(#804000, #e2b75a);
   --color-gold-tint: light-dark(#fefbf4, #241e10);

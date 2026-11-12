@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { StatusChart } from "@/components/progress/status-chart";
 import { PageTitle, SectionTitle } from "@/components/ui";
-import { getProblems } from "@/lib/data/problems";
+import { getPublishedProblems } from "@/lib/data/problems";
 import { paceFigures, statusTimeline } from "@/lib/data/progress";
 import { formatDate, plural } from "@/lib/format";
 
@@ -16,7 +16,7 @@ export default async function ProgressPage() {
   cacheTag("problems");
 
   const today = new Date().toISOString().slice(0, 10);
-  const problems = await getProblems();
+  const problems = await getPublishedProblems();
   const rows = statusTimeline(problems, today);
   const pace = paceFigures(problems, today);
 

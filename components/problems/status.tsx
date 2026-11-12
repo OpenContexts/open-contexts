@@ -1,4 +1,4 @@
-import { AppleIcon, type AppleVariant, Tag, type TagTone } from "@/components/ui";
+import { AppleIcon, type AppleVariant, HourglassIcon, Tag, type TagTone } from "@/components/ui";
 import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 
 const appleFor: Record<ProblemStatus, AppleVariant> = {
@@ -14,8 +14,10 @@ const toneFor: Record<ProblemStatus, TagTone> = {
   solved: "success",
 };
 
-export function StatusIcon({ status, className }: { status: ProblemStatus; className?: string }) {
-  return <AppleIcon variant={appleFor[status]} className={className} />;
+/** An apple in the status's colour; an hourglass in the same colour for a `candidate` (not yet in the published list). */
+export function StatusIcon({ status, candidate, className }: { status: ProblemStatus; candidate?: boolean; className?: string }) {
+  const Icon = candidate ? HourglassIcon : AppleIcon;
+  return <Icon variant={appleFor[status]} className={className} />;
 }
 
 export function StatusBadge({ status, className }: { status: ProblemStatus; className?: string }) {

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 const shapes = {
   /** rounded pill, for topics and tags */
   pill: "rounded-full border-rule-strong px-2 py-px text-sm text-ink-muted hover:border-ink hover:text-ink",
-  /** square chip, for short codes such as area numerals */
+  /** square chip, for short codes such as agenda numerals */
   square: "min-w-6 rounded-sm border-ink px-1.5 py-0.5 text-center text-sm font-bold text-ink hover:bg-ink hover:text-paper",
 } as const;
 

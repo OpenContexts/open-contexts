@@ -17,7 +17,7 @@ export function DecisionPanel({ type, id, status, problemId }: { type: Submissio
       <section aria-label="Decision" className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-center gap-2.5 text-zinc-600">
           <StatusPill status={status} />
-          {type === "revision" ? "Applied to the problem. Undo it in the editor." : "Published as a problem."}
+          {type === "revision" ? "Applied to the problem. Undo it in the editor." : "Added as a candidate problem. Publish it in the editor."}
         </p>
         {problemId && (
           <AdminButtonLink href={`/admin/problems/${problemId}`} className="w-28">

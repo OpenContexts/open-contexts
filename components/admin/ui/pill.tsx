@@ -34,8 +34,8 @@ export function StatusPill({ status }: { status: ModerationStatus }) {
   );
 }
 
-const actionTone = { approve: "green", reject: "red", reopen: "blue", create: "green", update: "blue", delete: "red" } as const;
-const actionLabel = { approve: "Approved", reject: "Rejected", reopen: "Reopened", create: "Created", update: "Edited", delete: "Deleted" } as const;
+const actionTone = { approve: "green", reject: "red", reopen: "blue", create: "green", update: "blue", delete: "red", publish: "green", unpublish: "amber" } as const;
+const actionLabel = { approve: "Approved", reject: "Rejected", reopen: "Reopened", create: "Created", update: "Edited", delete: "Deleted", publish: "Published", unpublish: "Unpublished" } as const;
 export function ActionPill({ action }: { action: LogAction }) {
   return (
     <Pill tone={actionTone[action]} dot>

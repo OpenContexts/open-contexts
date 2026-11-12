@@ -1,10 +1,11 @@
-// The published problems, read from the `problem` table. The list is cached; every change to a
-// problem (admin editor, approved edits and proposals) invalidates it with `updateTag("problems")`.
+// The problems, read from the `problem` table: the published list and the candidates (accepted, but kept for
+// a later cycle). The list is cached; every change to a problem (admin editor, approved edits and proposals,
+// publishing) invalidates it with `updateTag("problems")`.
 import "server-only";
 import { asc, eq } from "drizzle-orm";
 import matter from "gray-matter";
 import { cacheLife, cacheTag } from "next/cache";
-import type { AreaId } from "@/lib/areas";
+import type { AgendaId } from "@/lib/agenda";
 import type { ProblemStatus } from "@/lib/constants";
 import { db, isDbConfigured } from "@/lib/db";
 import { type HistoryEntry, problem, type Reference } from "@/lib/db/schema";
@@ -18,12 +19,14 @@ export type Problem = {
   slug: string;
   title: string;
   status: ProblemStatus;
-  areas: AreaId[];
+  agenda: AgendaId[];
   tags: string[];
   posedBy: string[];
   /** "1976", "1976-11" or "1976-11-15". */
   posed: string;
-  /** Date the problem was published on the site, "YYYY-MM-DD". */
+  /** In the published list (/problems); false for a candidate (/candidates). */
+  published: boolean;
+  /** Date the problem was published in the list, "YYYY-MM-DD"; for a candidate, the date it was accepted. */
   listed: string;
   /** Date of the last change, "YYYY-MM-DD". */
   updated: string;
@@ -47,11 +50,12 @@ function toProblem(r: typeof problem.$inferSelect): Problem {
     slug: r.slug,
     title: r.title,
     status: r.status,
-    areas: r.areas as AreaId[],
+    agenda: r.agenda as AgendaId[],
     tags: r.tags,
     posedBy: r.posedBy,
     posed: r.posed,
-    listed: isoDate(r.createdAt),
+    published: r.publishedAt !== null,
+    listed: isoDate(r.publishedAt ?? r.createdAt),
     updated: isoDate(r.updatedAt),
     statement: r.statement,
     body: r.body,
@@ -62,7 +66,7 @@ function toProblem(r: typeof problem.$inferSelect): Problem {
   };
 }
 
-/** All problems, sorted by number. Cached until the "problems" tag is invalidated. */
+/** All problems, published and candidates, sorted by number. Cached until the "problems" tag is invalidated. */
 export async function getProblems(): Promise<Problem[]> {
   "use cache";
   cacheLife("max");
@@ -70,6 +74,16 @@ export async function getProblems(): Promise<Problem[]> {
   if (!isDbConfigured()) return [];
   const rows = await db.select().from(problem).orderBy(asc(problem.number));
   return rows.map(toProblem);
+}
+
+/** The published list: what /problems, the home page, the agenda and the progress figures show. */
+export async function getPublishedProblems(): Promise<Problem[]> {
+  return (await getProblems()).filter((p) => p.published);
+}
+
+/** Accepted, but not (yet) in the published list. */
+export async function getCandidateProblems(): Promise<Problem[]> {
+  return (await getProblems()).filter((p) => !p.published);
 }
 
 export async function getProblem(slug: string): Promise<Problem | undefined> {
@@ -116,7 +130,8 @@ export function problemToMarkdown(p: Problem): string {
     slug: p.slug,
     title: p.title,
     status: p.status,
-    areas: p.areas,
+    published: p.published,
+    agenda: p.agenda,
     tags: p.tags,
     posedBy: p.posedBy,
     posed: p.posed,

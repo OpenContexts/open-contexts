@@ -4,7 +4,7 @@
 import "server-only";
 import matter from "gray-matter";
 import { cacheLife, cacheTag } from "next/cache";
-import { getArea } from "@/lib/areas";
+import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import {
   AI_USE_LABELS,
@@ -32,10 +32,12 @@ export type ProblemExport = {
     statusSince: string;
     posedBy: string[];
     posed: string;
+    /** False for a candidate problem: accepted, but not (yet) in the published list. */
+    published: boolean;
     listed: string;
     updated: string;
     version: number;
-    areas: { id: string; numeral: string; title: string; summary: string }[];
+    agenda: { id: string; numeral: string; title: string; summary: string }[];
     tags: string[];
     /** Markdown with $…$ math, as everywhere below. \cite{key} cites the reference with that `key`. */
     statement: string;
@@ -92,11 +94,12 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       statusSince: statusSince(p),
       posedBy: p.posedBy,
       posed: p.posed,
+      published: p.published,
       listed: p.listed,
       updated: p.updated,
       version: p.version,
-      areas: p.areas
-        .map(getArea)
+      agenda: p.agenda
+        .map(getAgendaItem)
         .filter((a) => a !== undefined)
         .map(({ id, numeral, title, summary }) => ({ id, numeral, title, summary })),
       tags: p.tags,
@@ -148,7 +151,8 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
     `- **Status:** ${PROBLEM_STATUS_LABELS[p.status]} since ${formatDate(p.statusSince)}`,
     `- **Posed${p.posedBy.length ? " by" : ""}:** ${p.posedBy.length ? `${formatNames(p.posedBy)}, ` : ""}${formatDate(p.posed)}`,
     `- **Last updated:** ${formatDate(p.updated)}`,
-    ...(p.areas.length ? [`- **Research goals:** ${p.areas.map((a) => `${a.numeral}. ${a.title}`).join("; ")}`] : []),
+    ...(p.published ? [] : [`- **Candidate problem:** accepted by the moderators, but not yet part of the published list.`]),
+    ...(p.agenda.length ? [`- **Research agenda:** ${p.agenda.map((a) => `${a.numeral}. ${a.title}`).join("; ")}`] : []),
     ...(p.tags.length ? [`- **Tags:** ${p.tags.join(", ")}`] : []),
   );
 
@@ -156,9 +160,9 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
   if (p.body) add(cite(p.body));
   if (p.note) add("## Note", "", cite(p.note));
 
-  if (p.areas.length) {
-    add("## Research goals", "", "The long-term goals of the research agenda that this problem traces to.");
-    for (const a of p.areas) add(`### ${a.numeral}. ${a.title}`, "", a.summary);
+  if (p.agenda.length) {
+    add("## Research agenda", "", "The long-term goals of the research agenda that this problem traces to.");
+    for (const a of p.agenda) add(`### ${a.numeral}. ${a.title}`, "", a.summary);
   }
 
   add("## References", "", p.references.length ? p.references.map((r, i) => `${i + 1}. ${r.url ? `[${r.text}](${r.url})` : r.text}`).join("\n") : "None recorded.");
@@ -206,10 +210,11 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
     title: p.title,
     status: p.status,
     statusSince: p.statusSince,
+    published: p.published,
     posedBy: p.posedBy,
     posed: p.posed,
     updated: p.updated,
-    areas: p.areas.map((a) => a.id),
+    agenda: p.agenda.map((a) => a.id),
     tags: p.tags,
     contributions: contributions.length,
     comments: comments.length,

@@ -13,14 +13,14 @@ export type HistoryEntry = { date: string; kind: HistoryKind; text: string; stat
 
 export const problem = pgTable("problem", {
   id: uuid("id").primaryKey().defaultRandom(),
-  /** Shown as "Problem 7". Unique, assigned in order of publication. */
+  /** Shown as "Problem 7". Unique, assigned when the problem is accepted, and kept when it is published later. */
   number: integer("number").notNull().unique(),
   /** URL segment: /problems/<slug>. */
   slug: text("slug").notNull().unique(),
   title: text("title").notNull(),
   status: problemStatus("status").default("open").notNull(),
-  /** Area ids from lib/areas.ts. */
-  areas: text("areas").array().notNull(),
+  /** Agenda item ids from lib/agenda.ts. */
+  agenda: text("agenda").array().notNull(),
   tags: text("tags").array().default([]).notNull(),
   posedBy: text("posed_by").array().default([]).notNull(),
   /** When the problem was first posed: "1976", "1976-11" or "1976-11-15". */
@@ -35,6 +35,11 @@ export const problem = pgTable("problem", {
   note: text("note").default("").notNull(),
   /** Increases with every change. Suggested edits record the version they started from. */
   version: integer("version").default(1).notNull(),
+  /**
+   * When the problem was admitted to the published list (/problems). Null for a candidate: accepted by the
+   * moderators but kept for a later cycle, shown only on /candidates. Proposals are accepted as candidates.
+   */
+  publishedAt: timestamp("published_at", { withTimezone: true }),
   createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   /** Shown as "Updated" on the problem page. */

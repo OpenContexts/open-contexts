@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MarkdownInline } from "@/components/markdown/markdown";
 import { ChipLink } from "@/components/ui";
-import { getArea } from "@/lib/areas";
+import { getAgendaItem } from "@/lib/agenda";
 import { type CommunityCounts, getCommunityCounts } from "@/lib/data/community";
 import { type Problem, statusSince } from "@/lib/data/problems";
 import { formatDate, formatNames, plural } from "@/lib/format";
@@ -9,16 +9,16 @@ import { citesToText } from "@/lib/references";
 import { StatusBadge, StatusIcon } from "./status";
 
 /**
- * One problem in a list: number, title and status, the start of the statement, then areas, who posed it and
+ * One problem in a list: number, title and status, the start of the statement, then the agenda items, who posed it and
  * how much the community has added (approved contributions and comments).
- * The whole row opens the problem (the title link covers it); the area chips stay separate links above that.
+ * The whole row opens the problem (the title link covers it); the agenda chips stay separate links above that.
  */
 function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: CommunityCounts[string] }) {
   const decided = p.status !== "open" && (p.status === "solved" ? "solved" : "under revision since");
   return (
     <li className="group relative grid grid-cols-[3.8rem_minmax(0,1fr)] gap-x-3 border-t border-rule px-2 py-4 transition-colors hover:bg-surface max-sm:grid-cols-[3rem_minmax(0,1fr)] max-sm:px-0">
       <span className="flex items-center gap-1.5 self-start text-[1.3rem]/[1.6rem] font-bold tabular-nums max-sm:text-[1.1rem]">
-        <StatusIcon status={p.status} className="size-[0.8em]" />
+        <StatusIcon status={p.status} candidate={!p.published} className="size-[0.8em]" />
         {p.number}
       </span>
       <div className="min-w-0">
@@ -43,11 +43,11 @@ function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: Communi
         <p className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink-subtle">
           <StatusBadge status={p.status} className="sm:hidden" />
           <span className="relative z-10 flex gap-1">
-            {p.areas.map((id) => {
-              const area = getArea(id);
-              return area ? (
-                <ChipLink key={id} shape="square" href={`/problems?area=${id}`} title={area.title} className="px-1 py-0 text-xs">
-                  {area.numeral}
+            {p.agenda.map((id) => {
+              const item = getAgendaItem(id);
+              return item ? (
+                <ChipLink key={id} shape="square" href={`/problems?agenda=${id}`} title={item.title} className="px-1 py-0 text-xs">
+                  {item.numeral}
                 </ChipLink>
               ) : null;
             })}

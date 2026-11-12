@@ -48,8 +48,9 @@ async function Submissions() {
   return (
     <ul className="border-b border-rule">
       {items.map((s) => {
-        const status = STATUS[s.status];
         const problem = s.problemId ? problems.get(s.problemId) : undefined;
+        // An accepted proposal is on the site, but only among the candidates until the moderators publish it.
+        const status = s.type === "proposal" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
         return (
           <li key={`${s.type}-${s.id}`} className="flex items-start justify-between gap-x-6 gap-y-2 border-t border-rule py-5 max-sm:flex-col">
             <div className="min-w-0">

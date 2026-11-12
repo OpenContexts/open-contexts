@@ -131,7 +131,7 @@ export const problemProposal = pgTable(
     statement: text("statement").notNull(),
     /** The text below the statement, as markdown with `##` sections. */
     body: text("body").notNull(),
-    areas: text("areas").array().notNull(),
+    agenda: text("agenda").array().notNull(),
     tags: text("tags").array().default([]).notNull(),
     posedBy: text("posed_by").array().notNull(),
     references: jsonb("references").$type<Reference[]>().default([]).notNull(),
