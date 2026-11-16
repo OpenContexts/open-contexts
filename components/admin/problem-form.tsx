@@ -145,6 +145,17 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
                   <AdminInput id="changeSummary" name="changeSummary" defaultValue={valueOf(state, "changeSummary")} placeholder="e.g. Added the 2024 lattice results" className="w-full" />
                 </AdminField>
               )}
+              {id && (
+                <label className="flex cursor-pointer items-start gap-2 text-zinc-700">
+                  <input type="checkbox" name="minor" defaultChecked={state.values?.minor === "on"} className="mt-0.5 accent-zinc-900" />
+                  <span>
+                    Minor change
+                    <span className="block text-xs text-zinc-500">
+                      A typo or a broken link: corrects the current version instead of starting a new one, and needs no summary.
+                    </span>
+                  </span>
+                </label>
+              )}
             </div>
             <div className="-mx-5 mt-5 -mb-5 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4">
               <SaveButton label={id ? "Save changes" : "Create problem"} />

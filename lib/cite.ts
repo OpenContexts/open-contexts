@@ -1,10 +1,23 @@
 // Citations: a BibTeX entry for each problem and for the database, in the format of the prototype.
 // Plain functions of their inputs, so the browser can build them on a click with the day's date.
-import { PROBLEM_STATUS_LABELS } from "@/lib/constants";
+import { AI_USE_LABELS, type AiUse, CONTRIBUTION_KIND_LABELS, type ContributionKind, PROBLEM_STATUS_LABELS } from "@/lib/constants";
 import type { Problem } from "@/lib/data/problems";
+import { permalinkPath, problemKey } from "@/lib/permalinks";
 import { SITE } from "@/lib/site";
 
-export type CitableProblem = Pick<Problem, "number" | "slug" | "title" | "posedBy" | "posed" | "status" | "updated">;
+/** `version`: the version cited, named in the entry; it links to the problem's permanent key either way. */
+export type CitableProblem = Pick<Problem, "number" | "slug" | "title" | "posedBy" | "posed" | "status" | "updated"> & { version?: number };
+
+/** `accepted`: "YYYY-MM-DD". */
+export type CitableContribution = {
+  key: string;
+  kind: ContributionKind;
+  title: string;
+  credit: string;
+  aiUse: AiUse;
+  accepted: string;
+  problem: { number: number; title: string };
+};
 
 /** Where the entry is cited from and when: the site's address without a trailing slash, and today as "YYYY-MM-DD". */
 export type CiteContext = { origin: string; today: string };
@@ -42,20 +55,60 @@ function entry(key: string, fields: [string, string | undefined][]): string {
   return `@misc{${key},\n${lines.join(",\n")}\n}`;
 }
 
-/** The problem's entry. Its author and date are those of the problem as posed; with no posers recorded, the database is the author. */
+/**
+ * The problem's entry. Its author and date are those of the problem as posed; with no posers recorded, the
+ * database is the author. It links to the problem's permanent key ("12"), which always shows the current version.
+ */
 export function problemBibtex(p: CitableProblem, { origin, today }: CiteContext): string {
   const authors = p.posedBy.map(author).filter(Boolean);
   const [year, month] = p.posed.split("-");
+  const version = p.version ? `, version ${p.version}` : "";
   return entry(`${KEY}-problem-${p.number}`, [
     ["author", authors.length ? `{${authors.join(" and ")}}` : `{{${SITE.name}}}`],
     ["title", `{{${escape(p.title)}}}`],
-    ["howpublished", `{${escape(`${SITE.name}: ${SITE.subtitle}`)}, Problem ${p.number}}`],
+    ["howpublished", `{${escape(`${SITE.name}: ${SITE.subtitle}`)}, Problem ${p.number}${version}}`],
     ["year", `{${year}}`],
     ["month", month ? MONTHS[Number(month) - 1] : undefined],
     ["date", `{${p.posed}}`],
-    ["url", `{${origin}/problems/${p.slug}}`],
+    ["url", `{${origin}${permalinkPath(problemKey(p.number))}}`],
     ["urldate", `{${today}}`],
     ["note", `{Problem posed ${longDate(p.posed)}; status: ${PROBLEM_STATUS_LABELS[p.status]}, last updated ${longDate(p.updated)}}`],
+  ]);
+}
+
+/**
+ * The credited names of a contribution, which are free text ("A. Smith (Ulm), B. Jones and C. Lee"): split at
+ * commas, semicolons and "and", except inside parentheses.
+ */
+function creditNames(credit: string): string[] {
+  const names: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const part of credit.split(/(\s+and\s+|[,;()])/)) {
+    if (part === "(") depth++;
+    if (part === ")") depth = Math.max(0, depth - 1);
+    if (depth === 0 && (part === "," || part === ";" || /^\s+and\s+$/.test(part))) {
+      names.push(current);
+      current = "";
+    } else current += part;
+  }
+  return [...names, current].map((n) => n.trim()).filter(Boolean);
+}
+
+/** A contribution's entry, dated by its acceptance and linked by its permanent key ("12.3"). */
+export function contributionBibtex(c: CitableContribution, { origin, today }: CiteContext): string {
+  const authors = creditNames(c.credit).map(author).filter(Boolean);
+  const [year, month] = c.accepted.split("-");
+  return entry(`${KEY}-${c.key}`, [
+    ["author", authors.length ? `{${authors.join(" and ")}}` : `{{${SITE.name}}}`],
+    ["title", `{{${escape(c.title)}}}`],
+    ["howpublished", `{${escape(`${SITE.name}: ${SITE.subtitle}`)}, contribution ${c.key} to Problem ${c.problem.number}}`],
+    ["year", `{${year}}`],
+    ["month", MONTHS[Number(month) - 1]],
+    ["date", `{${c.accepted}}`],
+    ["url", `{${origin}${permalinkPath(c.key)}}`],
+    ["urldate", `{${today}}`],
+    ["note", `{${escape(`${CONTRIBUTION_KIND_LABELS[c.kind].replace(/^./, (l) => l.toUpperCase())} on Problem ${c.problem.number} (${c.problem.title}); ${AI_USE_LABELS[c.aiUse]}`)}}`],
   ]);
 }
 

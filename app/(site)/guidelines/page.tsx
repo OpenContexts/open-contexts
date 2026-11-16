@@ -146,6 +146,15 @@ export default function GuidelinesPage() {
         here without acknowledging its posers is a breach of academic norms.
       </p>
       <p>
+        Everything citable has a permanent link of the form <code>/contribution/&lt;key&gt;</code> that keeps
+        working when pages move: <code>12</code> is Problem 12, <code>12v3</code> its statement and text as they
+        stood at version 3, <code>12.3</code> a contribution to it, and <code>blog.7</code> a blog post. Problems
+        and blog posts get their key when they are accepted, as do contributions other than references; comments get
+        none. A key is never reused: if what it points to is removed, the link says so. Every accepted change to
+        a problem’s title, statement, text or references starts a new version, except minor corrections such as
+        typos, which moderators apply to the current version.
+      </p>
+      <p>
         Within the database, credit for solving a problem goes primarily to those who understand and verify its
         solution, and to those who make it understandable. Being the first to submit an AI-generated claimed
         solution therefore carries only moderate weight, and prompting an AI does not entitle anyone to sole credit

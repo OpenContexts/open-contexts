@@ -7,6 +7,8 @@ import { getPosts } from "@/lib/data/blog";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { getMySubmissions, type MySubmission } from "@/lib/data/submissions";
 import { formatDate } from "@/lib/format";
+import { permalinkPath } from "@/lib/permalinks";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "My submissions", robots: { index: false } };
 
@@ -63,6 +65,10 @@ async function Submissions() {
                   <Link href={`/blog/${post.slug}`} className="text-ink hover:text-brand">
                     {s.title}
                   </Link>
+                ) : s.type === "contribution" && s.key ? (
+                  <Link href={permalinkPath(s.key)} className="text-ink hover:text-brand">
+                    {s.title}
+                  </Link>
                 ) : (
                   s.title
                 )}
@@ -87,6 +93,14 @@ async function Submissions() {
                 )}
                 {" · "}
                 {formatDate(s.createdAt)}
+                {s.key && (
+                  <>
+                    {" · "}
+                    <Link href={permalinkPath(s.key)} className="text-brand tabular-nums hover:underline" title="Permanent link, for citing">
+                      {SITE.name} {s.key}
+                    </Link>
+                  </>
+                )}
               </p>
               {s.reviewNote && (
                 <p className="mt-3 border-l-2 border-rule-strong pl-3 text-[0.95rem] text-ink-muted">

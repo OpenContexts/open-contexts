@@ -7,6 +7,7 @@ import { ProblemForm } from "@/components/admin/problem-form";
 import { AdminButtonLink, PageHeader } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
 import { getProblemActivity } from "@/lib/data/moderation";
+import { getVersions } from "@/lib/data/permalinks";
 import { readProblem } from "@/lib/data/problems";
 import { formatDate } from "@/lib/format";
 
@@ -19,8 +20,11 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   // Uncached: the editor must show exactly what is stored, including the current version.
-  const [problem, activity, { saved }] = await Promise.all([readProblem(id), getProblemActivity(), searchParams]);
+  const [problem, activity, versions, { saved }] = await Promise.all([readProblem(id), getProblemActivity(), getVersions(id), searchParams]);
   if (!problem) notFound();
+  // The public version (12v3), which only changes with the text; `problem.version` counts every save, and only
+  // guards against overwriting someone else's change.
+  const current = versions.at(-1);
   const pendingEdits = activity.get(id)?.pending ?? 0;
   const target = { id: problem.id, number: problem.number, title: problem.title, slug: problem.slug, published: problem.published };
 
@@ -29,7 +33,20 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
       <PageHeader
         back={{ href: "/admin/problems", label: "Problems" }}
         title={`Problem ${problem.number}: ${problem.title}`}
-        description={`${problem.published ? `Published in the list since ${formatDate(problem.listed)}` : "Candidate, not in the published list"} · Version ${problem.version}, last changed ${formatDate(problem.updated)}`}
+        description={
+          <>
+            {problem.published ? `Published in the list since ${formatDate(problem.listed)}` : "Candidate, not in the published list"}
+            {current && (
+              <>
+                {" · "}
+                <Link href={`/problems/${problem.slug}/versions`} target="_blank" className="underline decoration-zinc-300 hover:text-zinc-900" title="All versions, on the site">
+                  Version {current.version}
+                </Link>
+              </>
+            )}
+            {` · last changed ${formatDate(problem.updated)}`}
+          </>
+        }
         actions={
           <div className="flex gap-2">
             <PublishButton problem={target} />

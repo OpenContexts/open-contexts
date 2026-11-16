@@ -18,11 +18,10 @@ export async function copyText(text: string): Promise<boolean> {
 
 /**
  * Text to copy, such as a citation: a labelled panel with the text in a monospaced block and a Copy button.
- * When copying fails, the text is selected instead, ready for Cmd/Ctrl+C. `initial` reports a copy that was
- * already made when the block opened.
+ * When copying fails, the text is selected instead, ready for Cmd/Ctrl+C.
  */
-export function CopyBlock({ label, text, initial = "idle", actions, className }: { label: string; text: string; initial?: CopyState; actions?: ReactNode; className?: string }) {
-  const [state, setState] = useState(initial);
+export function CopyBlock({ label, text, actions, className }: { label: string; text: string; actions?: ReactNode; className?: string }) {
+  const [state, setState] = useState<CopyState>("idle");
   const pre = useRef<HTMLPreElement>(null);
 
   useEffect(() => {

@@ -19,13 +19,13 @@ const strongTones = {
   danger: "bg-brand-strong text-white ring-brand-strong",
 } as const;
 
-/** The plain colour of each tone, for markers and rules that go with a tag. */
+/** The plain colour of each tone, for markers and rules that go with a tag; `tint`, a light background in it. */
 export const toneColors = {
-  neutral: { bg: "bg-rule-strong", border: "border-rule-strong" },
-  success: { bg: "bg-success", border: "border-success" },
-  info: { bg: "bg-info", border: "border-info" },
-  warning: { bg: "bg-gold", border: "border-gold" },
-  danger: { bg: "bg-brand-strong", border: "border-brand-strong" },
+  neutral: { bg: "bg-rule-strong", border: "border-rule-strong", tint: "bg-surface" },
+  success: { bg: "bg-success", border: "border-success", tint: "bg-success-tint" },
+  info: { bg: "bg-info", border: "border-info", tint: "bg-info-tint" },
+  warning: { bg: "bg-gold", border: "border-gold", tint: "bg-gold-tint" },
+  danger: { bg: "bg-brand-strong", border: "border-brand-strong", tint: "bg-brand-tint" },
 } as const;
 
 export type TagTone = keyof typeof softTones;

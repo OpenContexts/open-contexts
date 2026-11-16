@@ -10,13 +10,15 @@ import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { ButtonAnchor, Chip, ChipList, FramedBox, PartTitle, toneColors } from "@/components/ui";
+import { ButtonAnchor, ButtonLink, Chip, ChipList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
+import { SITE } from "@/lib/site";
 import { formatDate, formatNames } from "@/lib/format";
+import { permalinkPath, problemKey } from "@/lib/permalinks";
 
 /**
  * Rendered once and reused for every visitor until something on the page changes: the problem
@@ -82,8 +84,13 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
       )}
 
       <CiteProblem problem={pick(problem)} origin={siteOrigin()}>
+        <ButtonLink href={`/problems/${problem.slug}/versions`} variant="quiet" size="sm" title="Every version of the statement and text, each with its own permanent link.">
+          <span aria-hidden className="text-base/none">↺</span>
+          See all versions
+        </ButtonLink>
         <DownloadLinks slug={problem.slug} number={problem.number} />
       </CiteProblem>
+      <PermanentLink number={problem.number} />
 
       <ReferenceList references={problem.references} />
 
@@ -144,6 +151,18 @@ function DownloadLinks({ slug, number }: { slug: string; number: number }) {
       {f.label}
     </ButtonAnchor>
   ));
+}
+
+/** The problem's permanent link ("12"), which keeps working if the page's URL changes. */
+function PermanentLink({ number }: { number: number }) {
+  return (
+    <p className="mt-3 text-sm text-ink-subtle">
+      Permanent link:{" "}
+      <Link href={permalinkPath(problemKey(number))} className="text-brand hover:underline">
+        {SITE.name} {number}
+      </Link>
+    </p>
+  );
 }
 
 function Fact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {

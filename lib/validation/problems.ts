@@ -42,6 +42,11 @@ export const problemSchema = z
       .transform((v) => v === "on"),
     /** Edits only: added to the history as an `edit` entry. */
     changeSummary: z.string().trim().max(1_000).optional(),
+    /** Edits only: a minor fix, which amends the problem's current version instead of starting a new one. */
+    minor: z
+      .string()
+      .optional()
+      .transform((v) => v === "on"),
   })
   .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];

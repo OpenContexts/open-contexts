@@ -9,6 +9,17 @@ import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type Submi
 import { BLOG_TAG } from "@/lib/data/blog";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
+import {
+  amendLatestVersion,
+  contributionPermalink,
+  nextVersion,
+  PERMALINKS_TAG,
+  postPermalink,
+  problemPermalink,
+  type Query,
+  runBatch,
+  versionQuery,
+} from "@/lib/data/permalinks";
 import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
@@ -65,26 +76,30 @@ async function postPublication(id: string): Promise<{ slug?: string; publishedAt
   return { slug: post.slug ?? slug, publishedAt: post.publishedAt ?? new Date() };
 }
 
-// The three helpers below return their query wrapped in an object: returning a Drizzle query from an
+// The three helpers below return their queries wrapped in an object: returning a Drizzle query from an
 // async function would run it right away, outside the decision's batch.
 
-/** Approving an edit writes its snapshot into the problem and records it in the history. */
+/** Approving an edit writes its snapshot into the problem, records it in the history and starts a new version. */
 async function applyRevision(id: string) {
   const revision = await db.query.problemRevision.findFirst({ where: eq(problemRevision.id, id) });
   const current = revision && (await readProblem(revision.problemId));
   if (!revision || !current) throw new Error("The edit or its problem no longer exists.");
+  const text = { title: revision.title, statement: revision.statement, body: revision.body, references: current.references };
   return {
-    query: db
-      .update(problem)
-      .set({
-        title: revision.title,
-        statement: revision.statement,
-        body: revision.body,
-        history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary }],
-        version: sql`${problem.version} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(eq(problem.id, current.id)),
+    queries: [
+      db
+        .update(problem)
+        .set({
+          title: text.title,
+          statement: text.statement,
+          body: text.body,
+          history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary }],
+          version: sql`${problem.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(problem.id, current.id)),
+      versionQuery(current, await nextVersion(current.id), text, revision.changeSummary),
+    ],
   };
 }
 
@@ -104,10 +119,15 @@ async function citeReference(problemId: string, ref: Reference, change: "add" | 
       : current.references.some((r) => r.text === ref.text && r.url === ref.url)
         ? current.references.filter((r) => !(r.text === ref.text && r.url === ref.url))
         : undefined;
-  return references && { query: db.update(problem).set({ references, updatedAt: new Date() }).where(eq(problem.id, problemId)) };
+  // An added or removed reference is not a new version of the problem: it amends the latest one.
+  return (
+    references && {
+      queries: [db.update(problem).set({ references, updatedAt: new Date() }).where(eq(problem.id, problemId)), amendLatestVersion(problemId, { references })],
+    }
+  );
 }
 
-/** Approving a proposal creates the problem, with the next free number. */
+/** Approving a proposal creates the problem, with the next free number, its first version and its key. */
 async function publishProposal(id: string, problemId: string) {
   const proposal = await db.query.problemProposal.findFirst({ where: eq(problemProposal.id, id) });
   if (!proposal) throw new Error("Proposal not found.");
@@ -127,7 +147,7 @@ async function publishProposal(id: string, problemId: string) {
     references: withKeys(proposal.references),
     createdById: proposal.authorId,
   } satisfies typeof problem.$inferInsert;
-  return { query: db.insert(problem).values(values) };
+  return { queries: [db.insert(problem).values(values), versionQuery(values, 1, values), problemPermalink(problemId, values.number)] };
 }
 
 /** The submission's status; `pages`: the problem pages that show it once approved; `reference`: what an approved reference adds to its problem. */
@@ -188,17 +208,21 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   const cite = current.reference && referenceChange ? await citeReference(current.pages[0], current.reference, referenceChange) : undefined;
 
   const publication = type === "post" && action === "approve" ? await postPublication(id) : {};
+  // Accepted contributions (of the kinds in PERMALINK_KINDS) and posts get their permanent key on the first approval.
+  const key =
+    action !== "approve" ? undefined : type === "contribution" ? await contributionPermalink(id) : type === "post" ? await postPermalink(id) : undefined;
   const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }), ...publication });
   const log = db.insert(activityLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
   // Publishing runs first: the proposal's problem_id must point at an existing problem.
   // An approved edit or proposal changes the problem, and so may an approved reference (never both at once).
-  const change = publish?.query ?? cite?.query;
-  await (change ? db.batch([change, update, log]) : db.batch([update, log]));
+  const change: Query[] = publish?.queries ?? cite?.queries ?? [];
+  await runBatch([...change, update, log, ...(key ? [key.query] : [])]);
 
   // Problem pages are cached until something on them changes: an approval adds to them, reopening an
   // approved submission takes it off again. Rejecting a pending one changes nothing that is public.
   if (action === "approve" || current.status === "approved") {
     if (type === "revision" || type === "proposal" || cite) updateTag("problems");
+    if (key || type === "proposal") updateTag(PERMALINKS_TAG);
     if (type === "post") updateTag(BLOG_TAG);
     for (const problemId of current.pages) updateTag(communityTag(problemId));
     if (current.pages.length) updateTag(COUNTS_TAG); // the counts in the problem lists

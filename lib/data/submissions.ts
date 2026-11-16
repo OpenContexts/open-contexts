@@ -1,9 +1,9 @@
 // A user's own submissions, for /me. Includes pending and rejected ones.
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import type { ContributionKind, ModerationStatus, SubmissionType } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { blogPost, comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
+import { blogPost, comment, contribution, permalink, problemProposal, problemRevision } from "@/lib/db/schema";
 
 export type MySubmission = {
   type: SubmissionType;
@@ -17,6 +17,8 @@ export type MySubmission = {
   status: ModerationStatus;
   reviewNote: string | null;
   createdAt: Date;
+  /** The permanent key of an accepted contribution or post ("12.3", "blog.7"), if it has one. */
+  key?: string;
 };
 
 const excerpt = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s);
@@ -29,11 +31,16 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
     db.select().from(problemProposal).where(eq(problemProposal.authorId, userId)).orderBy(desc(problemProposal.createdAt)),
     db.select().from(blogPost).where(eq(blogPost.authorId, userId)).orderBy(desc(blogPost.createdAt)),
   ]);
+  const linkable = [...contributions, ...posts].map((r) => r.id);
+  const links = linkable.length ? await db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(inArray(permalink.targetId, linkable)) : [];
+  const keys = new Map(links.map((l) => [l.id, l.key]));
   const common = (r: { id: string; status: ModerationStatus; reviewNote: string | null; createdAt: Date }) => ({
     id: r.id,
     status: r.status,
     reviewNote: r.reviewNote,
     createdAt: r.createdAt,
+    // A reopened or rejected submission keeps its key, but its page is not public then.
+    key: r.status === "approved" ? keys.get(r.id) : undefined,
   });
   return [
     ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), problemId: r.problemId, postId: r.postId })),

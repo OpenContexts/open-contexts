@@ -87,6 +87,23 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   reference: "Relevant literature not yet cited on the page.",
 };
 
+/** What a permanent link (lib/permalinks.ts) can point to. Problem versions have keys of their own, from problem_version. */
+export const PERMALINK_TARGETS = ["problem", "contribution", "post"] as const;
+export type PermalinkTarget = (typeof PERMALINK_TARGETS)[number];
+
+/** The contributions that get a permanent link when accepted: results in their own right, not pointers to literature. */
+export const PERMALINK_KINDS: readonly ContributionKind[] = [
+  "claim",
+  "partial",
+  "negative",
+  "reformulation",
+  "decomposition",
+  "evidence",
+  "verification",
+  "exposition",
+  "challenge",
+];
+
 export const AI_USE = ["none", "partial", "full"] as const;
 export type AiUse = (typeof AI_USE)[number];
 export const AI_USE_LABELS: Record<AiUse, string> = {

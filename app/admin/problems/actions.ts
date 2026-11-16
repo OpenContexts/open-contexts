@@ -12,6 +12,7 @@ import { requireModerator } from "@/lib/auth/session";
 import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { type HistoryEntry, activityLog, problem, type Reference } from "@/lib/db/schema";
+import { amendLatestVersion, nextVersion, PERMALINKS_TAG, problemPermalink, runBatch, versionChanged, versionQuery } from "@/lib/data/permalinks";
 import { changeEntries, nextProblemNumber, slugify, uniqueSlug } from "@/lib/data/problem-writes";
 import { type Problem, problemLabel, readProblem } from "@/lib/data/problems";
 import { type ProblemInput, problemSchema } from "@/lib/validation/problems";
@@ -35,6 +36,8 @@ export async function createProblem(_: FormState, formData: FormData): Promise<F
   try {
     await db.batch([
       db.insert(problem).values({ ...fields(input), id, number, slug, publishedAt: input.publish ? new Date() : null, createdById: moderator.id }),
+      versionQuery({ id, number }, 1, input),
+      problemPermalink(id, number),
       db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "create", moderatorId: moderator.id, note: problemLabel({ number, title: input.title }) }),
     ]);
   } catch (error) {
@@ -43,6 +46,7 @@ export async function createProblem(_: FormState, formData: FormData): Promise<F
     return { status: "error", message: "The problem could not be saved. Please try again.", values };
   }
   updateTag("problems");
+  updateTag(PERMALINKS_TAG);
   redirect(`/admin/problems/${id}?saved=created`);
 }
 
@@ -75,20 +79,28 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
   }
 
   const input = parsed.data;
-  if (!input.changeSummary && contentChanged(current, input)) {
+  // A minor fix (a typo, a broken link) needs no summary and amends the current version instead of starting one.
+  if (!input.changeSummary && !input.minor && contentChanged(current, input)) {
     return {
       status: "error",
       message: "Please say what changed. It is added to the problem's public history.",
-      errors: { changeSummary: ["Required when the title, statement, text, references or note change."] },
+      errors: { changeSummary: ["Required when the title, statement, text, references or note change, unless the change is minor."] },
       values,
     };
   }
   const history = [...input.history, ...changeEntries({ summary: input.changeSummary, from: current.status, to: input.status })];
-  await db.batch([
+  const text = { title: input.title, statement: input.statement, body: input.body, references: input.references };
+  const versionQueries = !versionChanged(current, text)
+    ? []
+    : input.minor
+      ? [amendLatestVersion(id, text)]
+      : [versionQuery(current, await nextVersion(id), text, input.changeSummary)];
+  await runBatch([
     db
       .update(problem)
       .set({ ...fields(input), history, version: sql`${problem.version} + 1`, updatedAt: new Date() })
       .where(eq(problem.id, id)),
+    ...versionQueries,
     db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "update", moderatorId: moderator.id, note: input.changeSummary || problemLabel(current) }),
   ]);
   updateTag("problems");
@@ -113,7 +125,10 @@ export async function setPublished(id: string, publish: boolean): Promise<void> 
   refresh();
 }
 
-/** Deletes the problem and, through the foreign keys, its comments, contributions and suggested edits. */
+/**
+ * Deletes the problem and, through the foreign keys, its comments, contributions and suggested edits. Its
+ * permanent links and versions stay: they then show that the problem was removed, and its number is not reused.
+ */
 export async function deleteProblem(id: string): Promise<{ error?: string }> {
   const moderator = await requireModerator();
   const current = await readProblem(z.uuid().parse(id));

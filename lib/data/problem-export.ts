@@ -17,6 +17,8 @@ import {
 } from "@/lib/constants";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { getProblem, type Reference, statusSince } from "@/lib/data/problems";
+import { getVersions } from "@/lib/data/permalinks";
+import { permalinkPath, problemKey, versionKey } from "@/lib/permalinks";
 import { formatDate, formatNames } from "@/lib/format";
 import { citesToText } from "@/lib/references";
 import { SITE } from "@/lib/site";
@@ -28,6 +30,8 @@ export type ProblemExport = {
     title: string;
     slug: string;
     url: string;
+    /** The problem's permanent link, which keeps working if `url` changes. */
+    permalink: string;
     status: ProblemStatus;
     statusSince: string;
     posedBy: string[];
@@ -36,7 +40,9 @@ export type ProblemExport = {
     published: boolean;
     listed: string;
     updated: string;
+    /** The current version of the text (see /problems/<slug>/versions), and its permanent link. */
     version: number;
+    versionPermalink: string;
     agenda: { id: string; numeral: string; title: string; summary: string }[];
     tags: string[];
     /** Markdown with $…$ math, as everywhere below. \cite{key} cites the reference with that `key`. */
@@ -55,6 +61,8 @@ export type ProblemExport = {
     title: string;
     summary: string;
     url: string | null;
+    /** The contribution's permanent link; null for kinds that get none (references). */
+    permalink: string | null;
     credit: string;
     aiUse: AiUse;
     aiUseLabel: string;
@@ -74,7 +82,9 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
   const p = await getProblem(slug);
   if (!p) return undefined;
   cacheTag(communityTag(p.id));
-  const [contributions, comments] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id)]);
+  // The versions change only together with the problem, whose "problems" tag getProblem gives this entry.
+  const [contributions, comments, versions] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id), getVersions(p.id)]);
+  const version = versions.at(-1)?.version ?? 1;
   const origin = siteOrigin();
 
   return {
@@ -90,6 +100,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       title: p.title,
       slug: p.slug,
       url: `${origin}/problems/${p.slug}`,
+      permalink: `${origin}${permalinkPath(problemKey(p.number))}`,
       status: p.status,
       statusSince: statusSince(p),
       posedBy: p.posedBy,
@@ -97,7 +108,8 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       published: p.published,
       listed: p.listed,
       updated: p.updated,
-      version: p.version,
+      version,
+      versionPermalink: `${origin}${permalinkPath(versionKey(p.number, version))}`,
       agenda: p.agenda
         .map(getAgendaItem)
         .filter((a) => a !== undefined)
@@ -119,6 +131,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       title: c.title,
       summary: c.summary.trim(),
       url: c.url,
+      permalink: c.key ? `${origin}${permalinkPath(c.key)}` : null,
       credit: c.credit,
       aiUse: c.aiUse,
       aiUseLabel: AI_USE_LABELS[c.aiUse],
@@ -182,6 +195,7 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
       `- **Credit:** ${c.credit}`,
       `- **AI use:** ${c.aiUseLabel}`,
       ...(c.url ? [`- **Link:** ${c.url}`] : []),
+      ...(c.permalink ? [`- **Permanent link:** ${c.permalink}`] : []),
       "",
       cite(c.summary),
     );

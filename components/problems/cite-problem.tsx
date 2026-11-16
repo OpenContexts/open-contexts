@@ -1,23 +1,23 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { Button, CopyBlock, type CopyState, copyText } from "@/components/ui";
-import { type CitableProblem, problemBibtex, todayIso } from "@/lib/cite";
+import { Button, CopyBlock } from "@/components/ui";
+import { type CitableContribution, type CitableProblem, contributionBibtex, problemBibtex, todayIso } from "@/lib/cite";
+
+type Citable = { problem: CitableProblem; contribution?: never } | { contribution: CitableContribution; problem?: never };
 
 /**
- * "Cite this problem": opens the problem's BibTeX entry and copies it in the same click. The entry is built
+ * "Cite this problem" (or contribution): opens the BibTeX entry, with a button to copy it. The entry is built
  * here, so its access date is the day of the click, not the day the cached page was rendered.
  * `children` (e.g. download links) go next to the button.
  */
-export function CiteProblem({ problem, origin, children }: { problem: CitableProblem; origin: string; children?: ReactNode }) {
-  const [open, setOpen] = useState<{ text: string; copied: CopyState }>();
+export function CiteProblem({ origin, children, ...item }: Citable & { origin: string; children?: ReactNode }) {
+  const [open, setOpen] = useState<string>();
 
-  async function cite() {
+  function cite() {
     if (open) return setOpen(undefined);
-    const text = problemBibtex(problem, { origin, today: todayIso() });
-    // Copied before the box opens: browsers only allow it while handling the click.
-    const copied = await copyText(text);
-    setOpen({ text, copied: copied ? "copied" : "failed" });
+    const context = { origin, today: todayIso() };
+    setOpen(item.problem ? problemBibtex(item.problem, context) : contributionBibtex(item.contribution, context));
   }
 
   return (
@@ -25,7 +25,7 @@ export function CiteProblem({ problem, origin, children }: { problem: CitablePro
       <div className="flex flex-wrap gap-2">
         <Button variant="quiet" size="sm" onClick={cite} aria-expanded={!!open} aria-controls="cite-problem">
           <span aria-hidden className="font-serif text-base/none">“</span>
-          Cite this problem
+          {item.problem ? "Cite this problem" : "Cite this contribution"}
         </Button>
         {children}
       </div>
@@ -33,8 +33,7 @@ export function CiteProblem({ problem, origin, children }: { problem: CitablePro
         <div id="cite-problem">
           <CopyBlock
             label="BibTeX"
-            text={open.text}
-            initial={open.copied}
+            text={open}
             className="mt-3"
             actions={
               <Button variant="ghost" size="sm" onClick={() => setOpen(undefined)} aria-label="Close">

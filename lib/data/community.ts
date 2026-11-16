@@ -2,10 +2,10 @@
 // The problem and blog post pages cache what these return (see ProblemContent) under communityTag(id);
 // moderation decisions invalidate that tag, so the queries run again only after something changed.
 import "server-only";
-import { and, count, desc, eq, isNotNull } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db, isDbConfigured } from "@/lib/db";
-import { comment, contribution } from "@/lib/db/schema";
+import { comment, contribution, permalink } from "@/lib/db/schema";
 
 /** Cache tag for everything users added to one problem (comments and contributions) or blog post (comments). */
 export const communityTag = (id: string) => `community:${id}`;
@@ -42,9 +42,16 @@ export async function getApprovedComments(on: "problem" | "post", id: string) {
   });
 }
 
+/** Newest first, each with its permanent key ("12.3") if its kind gets one (PERMALINK_KINDS). */
 export async function getApprovedContributions(problemId: string) {
-  return db.query.contribution.findMany({
+  const rows = await db.query.contribution.findMany({
     where: and(eq(contribution.problemId, problemId), eq(contribution.status, "approved")),
     orderBy: desc(contribution.createdAt),
   });
+  const ids = rows.map((r) => r.id);
+  const links = ids.length
+    ? await db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(and(eq(permalink.target, "contribution"), inArray(permalink.targetId, ids)))
+    : [];
+  const keys = new Map(links.map((l) => [l.id, l.key]));
+  return rows.map((r) => ({ ...r, key: keys.get(r.id) }));
 }

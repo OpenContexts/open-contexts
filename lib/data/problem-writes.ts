@@ -4,7 +4,7 @@ import "server-only";
 import { max, ne } from "drizzle-orm";
 import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { type HistoryEntry, problem } from "@/lib/db/schema";
+import { type HistoryEntry, permalink, problem, problemVersion } from "@/lib/db/schema";
 
 export const today = () => new Date().toISOString().slice(0, 10);
 
@@ -29,9 +29,17 @@ export async function uniqueSlug(base: string, exceptId?: string): Promise<strin
   return slug;
 }
 
+/**
+ * One more than the highest number ever given, so a deleted problem's number, and its permanent links
+ * ("12", "12v3", "12.3"), are never given to another problem.
+ */
 export async function nextProblemNumber(): Promise<number> {
-  const [row] = await db.select({ n: max(problem.number) }).from(problem);
-  return (row?.n ?? 0) + 1;
+  const [problems, links, versions] = await db.batch([
+    db.select({ n: max(problem.number) }).from(problem),
+    db.select({ n: max(permalink.problemNumber) }).from(permalink),
+    db.select({ n: max(problemVersion.problemNumber) }).from(problemVersion),
+  ]);
+  return Math.max(problems[0]?.n ?? 0, links[0]?.n ?? 0, versions[0]?.n ?? 0) + 1;
 }
 
 /**

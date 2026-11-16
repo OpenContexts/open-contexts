@@ -36,6 +36,20 @@
       "when": 1794492464402,
       "tag": "0004_blog",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794823549336,
+      "tag": "0005_permalinks",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794824758386,
+      "tag": "0006_problem_keys",
+      "breakpoints": true
     }
   ]
 }
