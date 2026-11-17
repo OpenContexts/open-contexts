@@ -60,7 +60,8 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
             <p className="truncate font-bold">{name}</p>
             <p className="truncate text-sm text-ink-subtle">{email}</p>
           </div>
-          <Link role="menuitem" href="/me" className={`${item} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
+          {/* Not prefetched: opening /me records the visit, which only a click should do. */}
+          <Link role="menuitem" href="/me" prefetch={false} className={`${item} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
             My submissions
             {unseen > 0 && (
               <span className="flex items-center gap-1.5 text-sm text-brand">

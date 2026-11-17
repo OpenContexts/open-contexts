@@ -1,0 +1,1 @@
+ALTER TABLE "submissions_seen" DROP COLUMN "new_since";

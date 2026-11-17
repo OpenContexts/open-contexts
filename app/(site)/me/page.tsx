@@ -38,6 +38,13 @@ function typeLook(s: MySubmission): KindLook {
 
 const isStatus = (v: unknown): v is ModerationStatus => MODERATION_STATUSES.includes(v as ModerationStatus);
 
+/** The `since` the tabs pass on: a time, or null for "never" (a first visit, so everything decided is new). */
+function readSince(value: string | string[] | undefined): Date | null | undefined {
+  if (value === "never") return null;
+  const date = typeof value === "string" ? new Date(value) : undefined;
+  return date && !Number.isNaN(date.getTime()) ? date : undefined;
+}
+
 export default function MySubmissionsPage({ searchParams }: PageProps<"/me">) {
   return (
     <>
@@ -50,11 +57,15 @@ export default function MySubmissionsPage({ searchParams }: PageProps<"/me">) {
 
 async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParams">) {
   const user = await requireUser("/me");
-  const { status: param } = await searchParams;
+  const { status: param, since: sinceParam } = await searchParams;
   const status = isStatus(param) ? param : undefined;
   // Opening the page counts as seeing every decision so far; those made since the last visit are marked as new.
+  // The tabs pass on when that was (`since`), so the marks stay while switching between them; opening /me again
+  // starts afresh.
   const [problemList, postList, items, seenBefore] = await Promise.all([getProblems(), getPosts(), getMySubmissions(user.id), markSubmissionsSeen(user.id)]);
-  const isNew = (s: MySubmission) => !!s.reviewedAt && (!seenBefore || s.reviewedAt > seenBefore);
+  const passed = readSince(sinceParam);
+  const since = passed === undefined ? seenBefore : passed;
+  const isNew = (s: MySubmission) => !!s.reviewedAt && (!since || s.reviewedAt > since);
   const problems = new Map(problemList.map((p) => [p.id, p]));
   // Published posts only: a pending or rejected post has no page to link to.
   const posts = new Map(postList.map((p) => [p.id, p]));
@@ -70,6 +81,10 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
 
   const shown = status ? items.filter((s) => s.status === status) : items;
   const news = items.filter(isNew).length;
+  const tab = (s?: ModerationStatus) => {
+    const query = new URLSearchParams({ ...(s && { status: s }), ...(news > 0 && { since: since?.toISOString() ?? "never" }) });
+    return query.size ? `/me?${query}` : "/me";
+  };
   return (
     <>
       {news > 0 && (
@@ -80,11 +95,11 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
         </p>
       )}
       <Tabs label="Filter by review status" className="mb-6">
-        <TabLink href="/me" active={!status} count={items.length}>
+        <TabLink href={tab()} active={!status} count={items.length}>
           All
         </TabLink>
         {MODERATION_STATUSES.map((s) => (
-          <TabLink key={s} href={`/me?status=${s}`} active={status === s} count={items.filter((i) => i.status === s).length}>
+          <TabLink key={s} href={tab(s)} active={status === s} count={items.filter((i) => i.status === s).length}>
             {STATUS[s].label}
           </TabLink>
         ))}

@@ -181,16 +181,14 @@ export const problemProposal = pgTable(
 );
 
 /**
- * When each user last looked at their submissions (/me): decisions made since then are counted in the account
- * menu. `newSince`: where their current visit's "new" starts, so the marks stay while they look around. No row:
- * they never have.
+ * When each user last looked at their submissions (/me): decisions made since then are new to them, and counted
+ * in the account menu. No row: they never have.
  */
 export const submissionsSeen = pgTable("submissions_seen", {
   userId: text("user_id")
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
   seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull(),
-  newSince: timestamp("new_since", { withTimezone: true }),
 });
 
 /** Append-only audit trail ("Activity log"): decisions on submissions, and direct changes to problems. */

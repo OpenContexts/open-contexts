@@ -61,13 +61,13 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
 
 type Moderated = typeof comment | typeof contribution | typeof problemRevision | typeof problemProposal | typeof blogPost;
 
-/** The user's submissions in `t` decided since they last looked (ever, if they never have), and not by themselves. */
+/** The user's submissions in `t` decided since they last looked (ever, if they never have). */
 function decidedSince(t: Moderated, userId: string) {
   const seen = sql`coalesce((select ${submissionsSeen.seenAt} from ${submissionsSeen} where ${submissionsSeen.userId} = ${userId}), '-infinity'::timestamptz)`;
   return db
     .select({ n: count() })
     .from(t)
-    .where(and(eq(t.authorId, userId), ne(t.status, "pending"), sql`${t.reviewedAt} > ${seen}`, sql`${t.reviewedById} is distinct from ${userId}`));
+    .where(and(eq(t.authorId, userId), ne(t.status, "pending"), sql`${t.reviewedAt} > ${seen}`));
 }
 
 /** How many of the user's submissions were decided on since they last opened /me. One round trip. */
@@ -82,24 +82,11 @@ export async function countNewDecisions(userId: string): Promise<number> {
   return counts.reduce((sum, [row]) => sum + (row?.n ?? 0), 0);
 }
 
-/** Views of /me this close together are one visit: what was new at its start stays marked, e.g. across the tabs. */
-const VISIT = "30 minutes";
-
-/**
- * Records that the user looked at their submissions now, and returns where "new" starts for this visit: their
- * previous visit (null: they never looked).
- */
+/** Records that the user looked at their submissions now, and returns when they last did before (null: never). */
 export async function markSubmissionsSeen(userId: string): Promise<Date | null> {
-  const [row] = await db
-    .insert(submissionsSeen)
-    .values({ userId })
-    .onConflictDoUpdate({
-      target: submissionsSeen.userId,
-      set: {
-        newSince: sql`case when ${submissionsSeen.seenAt} < now() - ${VISIT}::interval then ${submissionsSeen.seenAt} else ${submissionsSeen.newSince} end`,
-        seenAt: sql`now()`,
-      },
-    })
-    .returning({ newSince: submissionsSeen.newSince });
-  return row?.newSince ?? null;
+  const [before] = await db.batch([
+    db.select({ seenAt: submissionsSeen.seenAt }).from(submissionsSeen).where(eq(submissionsSeen.userId, userId)),
+    db.insert(submissionsSeen).values({ userId }).onConflictDoUpdate({ target: submissionsSeen.userId, set: { seenAt: sql`now()` } }),
+  ]);
+  return before[0]?.seenAt ?? null;
 }
