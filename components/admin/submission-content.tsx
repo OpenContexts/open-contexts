@@ -87,10 +87,15 @@ export function SubmissionContent({ submission, problems, references }: { submis
           {outdated && <Notice tone="warning">The problem has changed since this edit was written. The diff compares against the current version; approving replaces title, statement and text with this edit.</Notice>}
           {r.status === "approved" && <Notice tone="warning">This edit has been applied. The diff compares it with the problem as it is now.</Notice>}
           <Card title="What changed">
-            <p className="mb-5 rounded-lg bg-zinc-50 px-4 py-3 text-zinc-700 ring-1 ring-zinc-100 ring-inset">
+            <p className="mb-3 rounded-lg bg-zinc-50 px-4 py-3 text-zinc-700 ring-1 ring-zinc-100 ring-inset">
               <span className="mb-0.5 block text-xs font-medium text-zinc-500">Summary of the change</span>
               {r.changeSummary}
             </p>
+            {/* What the new version will credit, if accepted. */}
+            <div className="mb-5 flex flex-wrap gap-1.5">
+              <Pill>Credit: {r.credit ?? "not given"}</Pill>
+              <Pill>{r.aiUse ? AI_USE_LABELS[r.aiUse].replace(/^./, (ch) => ch.toUpperCase()) : "AI use not stated"}</Pill>
+            </div>
             <div className="space-y-5">
               {[
                 { label: "Title", before: current.title, after: r.title },

@@ -90,6 +90,7 @@ export function HistoryField({ initial, error }: { initial: HistoryEntry[]; erro
             <li key={row.key} className="flex items-center gap-2">
               <EntryInputs entry={row} onChange={(patch) => update(row.key, patch)} names label={`Entry ${i + 1}`} />
               <input type="hidden" name="historyStatus[]" value={row.status ?? ""} />
+              <input type="hidden" name="historyVersion[]" value={row.version ?? ""} />
               <button
                 type="button"
                 onClick={() => setRows((r) => r.filter((x) => x.key !== row.key))}

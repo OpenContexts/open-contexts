@@ -88,13 +88,16 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
       values,
     };
   }
-  const history = [...input.history, ...changeEntries({ summary: input.changeSummary, from: current.status, to: input.status })];
   const text = { title: input.title, statement: input.statement, body: input.body, references: input.references };
-  const versionQueries = !versionChanged(current, text)
-    ? []
-    : input.minor
+  // A change to the text starts a version, unless it is minor; credited to whom the moderator names, else the editors.
+  const changed = versionChanged(current, text);
+  const started = changed && !input.minor ? await nextVersion(id) : undefined;
+  const versionQueries = started
+    ? [versionQuery(current, started, text, { changeSummary: input.changeSummary, credit: input.credit, aiUse: input.aiUse })]
+    : changed
       ? [amendLatestVersion(id, text)]
-      : [versionQuery(current, await nextVersion(id), text, input.changeSummary)];
+      : [];
+  const history = [...input.history, ...changeEntries({ summary: input.changeSummary, from: current.status, to: input.status, version: started })];
   await runBatch([
     db
       .update(problem)

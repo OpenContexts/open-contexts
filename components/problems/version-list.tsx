@@ -1,12 +1,23 @@
 import Link from "next/link";
 import { Tag } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { AI_USE_LABELS } from "@/lib/constants";
 import type { VersionSummary } from "@/lib/data/permalinks";
 import { formatDate } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 
 /**
- * A problem's versions, newest first: each with its permanent link, the day it started and what changed.
+ * Who made the change that started a version: "by Jane Doe · no AI assistance", or "by the editors" when no one
+ * is credited. Not for the first version, whose text is the problem as posed.
+ */
+export function versionCredit(v: Pick<VersionSummary, "credit" | "aiUse">): string {
+  if (!v.credit) return "by the editors";
+  return v.aiUse ? `by ${v.credit} · ${AI_USE_LABELS[v.aiUse]}` : `by ${v.credit}`;
+}
+
+/**
+ * A problem's versions, newest first: each with its permanent link, the day it started, what changed and who
+ * changed it.
  * `shown`: the version on the page, marked as such.
  */
 export function VersionList({ versions, shown }: { versions: VersionSummary[]; shown?: number }) {
@@ -26,6 +37,7 @@ export function VersionList({ versions, shown }: { versions: VersionSummary[]; s
               {v.version === shown && <Tag>Shown here</Tag>}
             </p>
             <p className="mt-0.5 text-[0.98rem]">{v.changeSummary ?? (v.version === 1 ? "First recorded version." : "No summary recorded.")}</p>
+            {v.version > 1 && <p className="mt-0.5 text-sm text-ink-subtle">{versionCredit(v)}</p>}
           </div>
         </li>
       ))}

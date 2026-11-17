@@ -16,6 +16,7 @@ import {
   type ProblemStatus,
 } from "@/lib/constants";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { contributorsOf, getProposer, roleText } from "@/lib/data/contributors";
 import { getProblem, type Reference, statusSince } from "@/lib/data/problems";
 import { getVersions } from "@/lib/data/permalinks";
 import { permalinkPath, problemKey, versionKey } from "@/lib/permalinks";
@@ -51,8 +52,20 @@ export type ProblemExport = {
     body: string;
     note: string | null;
     references: Reference[];
-    history: { date: string; kind: HistoryKind; status: ProblemStatus | null; text: string }[];
+    /**
+     * `version`: the version of the text the change started, with who made it (`credit` null: the editors) and
+     * how much AI they used (null: not stated).
+     */
+    history: {
+      date: string;
+      kind: HistoryKind;
+      status: ProblemStatus | null;
+      text: string;
+      version: { number: number; permalink: string; credit: string | null; aiUse: AiUse | null } | null;
+    }[];
   };
+  /** Everyone who posed or proposed the problem, edited its text, or added a result or reference; comments do not count. */
+  contributors: { name: string; contributions: string[] }[];
   /** Oldest first. */
   contributions: {
     date: string;
@@ -85,7 +98,8 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
   if (!p) return undefined;
   cacheTag(communityTag(p.id));
   // The versions change only together with the problem, whose "problems" tag getProblem gives this entry.
-  const [contributions, comments, versions] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id), getVersions(p.id)]);
+  const [contributions, comments, versions, proposer] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id), getVersions(p.id), getProposer(p.id)]);
+  const byNumber = new Map(versions.map((v) => [v.version, v]));
   const version = versions.at(-1)?.version ?? 1;
   const origin = siteOrigin();
 
@@ -123,8 +137,18 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       references: p.references,
       history: p.history
         .toSorted((a, b) => a.date.localeCompare(b.date))
-        .map((h) => ({ date: h.date, kind: h.kind, status: h.status ?? null, text: h.text })),
+        .map((h) => {
+          const v = h.version ? byNumber.get(h.version) : undefined;
+          return {
+            date: h.date,
+            kind: h.kind,
+            status: h.status ?? null,
+            text: h.text,
+            version: v ? { number: v.version, permalink: `${origin}${permalinkPath(v.key)}`, credit: v.credit, aiUse: v.aiUse } : null,
+          };
+        }),
     },
+    contributors: contributorsOf({ problem: p, contributions, versions, proposer }).map((c) => ({ name: c.name, contributions: c.roles.map(roleText) })),
     // The queries return newest first; a document reads better in the order things happened.
     contributions: contributions.toReversed().map((c) => ({
       date: isoDate(c.createdAt),
@@ -160,7 +184,7 @@ function historyLabel(h: ProblemExport["problem"]["history"][number]): string {
  * The export as one Markdown document: YAML frontmatter with the facts, then the problem as on its page,
  * then everything recorded about it, a citation and the rules a solution has to meet.
  */
-export function problemExportToMarkdown({ source, problem: p, contributions, comments }: ProblemExport, bibtex: string): string {
+export function problemExportToMarkdown({ source, problem: p, contributors, contributions, comments }: ProblemExport, bibtex: string): string {
   const parts: string[] = [];
   // Citations as the numbers of the reference list below: \cite{key} → [n].
   const cite = (text: string) => citesToText(text, p.references);
@@ -192,9 +216,16 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
   add(
     "## Progress and history",
     "",
-    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${cite(h.text)}`).join("\n") : "No entries yet.",
+    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${cite(h.text)}${h.version ? ` ([version ${h.version.number}](${h.version.permalink}), by ${h.version.credit ?? "the editors"})` : ""}`).join("\n") : "No entries yet.",
   );
 
+  add(
+    "## Contributors",
+    "",
+    contributors.length
+      ? ["Everyone who posed or proposed the problem, edited its text, or added a result or reference, in the order they first contributed.", "", ...contributors.map((c) => `- **${c.name}:** ${c.contributions.join("; ")}`)].join("\n")
+      : "None recorded.",
+  );
   add("## Contributions", "", contributions.length ? "Material submitted by researchers and approved by the moderators, oldest first." : "No contributions recorded yet.");
   contributions.forEach((c, i) => {
     add(

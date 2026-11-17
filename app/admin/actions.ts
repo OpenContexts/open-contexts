@@ -85,6 +85,7 @@ async function applyRevision(id: string) {
   const current = revision && (await readProblem(revision.problemId));
   if (!revision || !current) throw new Error("The edit or its problem no longer exists.");
   const text = { title: revision.title, statement: revision.statement, body: revision.body, references: current.references };
+  const version = await nextVersion(current.id);
   return {
     queries: [
       db
@@ -93,12 +94,13 @@ async function applyRevision(id: string) {
           title: text.title,
           statement: text.statement,
           body: text.body,
-          history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary }],
+          history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary, version }],
           version: sql`${problem.version} + 1`,
           updatedAt: new Date(),
         })
         .where(eq(problem.id, current.id)),
-      versionQuery(current, await nextVersion(current.id), text, revision.changeSummary),
+      // Credited to the names the edit gives, with its statement on AI use.
+      versionQuery(current, version, text, { changeSummary: revision.changeSummary, credit: revision.credit, aiUse: revision.aiUse, revisionId: revision.id }),
     ],
   };
 }

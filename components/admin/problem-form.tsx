@@ -7,12 +7,12 @@ import { MarkdownField } from "@/components/admin/markdown-field";
 import { HistoryField } from "@/components/admin/history-field";
 import { ReferencesField } from "@/components/admin/references-field";
 import { TagInput } from "@/components/admin/tag-input";
-import { AdminButton, AdminField, AdminInput, Card } from "@/components/admin/ui";
+import { AdminButton, AdminField, AdminInput, AdminSelect, Card } from "@/components/admin/ui";
 import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import { useReferenceRows } from "@/components/ui/use-reference-rows";
 import { AGENDA } from "@/lib/agenda";
 import { initialFormState, errorOf, valueOf, valuesOf } from "@/lib/actions/form-state";
-import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
+import { AI_USE, AI_USE_LABELS, PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry, Reference } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
@@ -143,6 +143,28 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
                   hint="Added to the problem's public history."
                 >
                   <AdminInput id="changeSummary" name="changeSummary" defaultValue={valueOf(state, "changeSummary")} placeholder="e.g. Added the 2024 lattice results" className="w-full" />
+                </AdminField>
+              )}
+              {id && (
+                <AdminField
+                  label="Credit (optional)"
+                  htmlFor="credit"
+                  error={error("credit")}
+                  hint="Whom the new version credits, e.g. someone who sent the correction. Left empty, it reads “by the editors”. A minor change keeps the current version’s credit."
+                >
+                  <AdminInput id="credit" name="credit" defaultValue={valueOf(state, "credit")} placeholder="e.g. Jane Doe (ETH Zürich)" className="w-full" />
+                </AdminField>
+              )}
+              {id && (
+                <AdminField label="AI use in the change" htmlFor="aiUse" error={error("aiUse")}>
+                  <AdminSelect id="aiUse" name="aiUse" defaultValue={valueOf(state, "aiUse")} className="w-full">
+                    <option value="">Not stated</option>
+                    {AI_USE.map((a) => (
+                      <option key={a} value={a}>
+                        {AI_USE_LABELS[a].replace(/^./, (c) => c.toUpperCase())}
+                      </option>
+                    ))}
+                  </AdminSelect>
                 </AdminField>
               )}
               {id && (

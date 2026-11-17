@@ -161,14 +161,14 @@ export async function submitRevision(_: FormState, formData: FormData): Promise<
 
   // Compared with the stored row, not the cached list, so a just-saved change counts.
   const current = (await readProblem(problem.id)) ?? problem;
-  const { title, statement, body, changeSummary, baseVersion } = parsed.data;
+  const { title, statement, body, changeSummary, baseVersion, credit, aiUse } = parsed.data;
   if (title === current.title && statement === current.statement.trim() && body === current.body.trim()) {
     return { status: "error", message: "You have not changed anything yet.", values };
   }
   const citeError = citeErrors(values, current, { statement, body });
   if (citeError) return citeError;
   return save(values, () =>
-    db.insert(problemRevision).values({ problemId: problem.id, baseVersion, title, statement, body, changeSummary, authorId: user.id }),
+    db.insert(problemRevision).values({ problemId: problem.id, baseVersion, title, statement, body, changeSummary, credit, aiUse, authorId: user.id }),
   );
 }
 

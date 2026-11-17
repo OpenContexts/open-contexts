@@ -1,7 +1,7 @@
 // Validation for the admin problem editor (app/admin/problems).
 import { z } from "zod";
 import { AGENDA_IDS } from "@/lib/agenda";
-import { HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
+import { AI_USE, HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry } from "@/lib/db/schema";
 import { citeIssues, commaList, referenceRows, text, toReferences } from "./fields";
 
@@ -13,6 +13,8 @@ const historyRows = {
   "historyKind[]": z.array(z.string()).default([]),
   "historyText[]": z.array(z.string().trim()).default([]),
   "historyStatus[]": z.array(z.string()).default([]),
+  /** The version an entry links to, kept as it is: set when the change is saved, not in the editor. */
+  "historyVersion[]": z.array(z.string()).default([]),
 };
 
 export const problemSchema = z
@@ -42,18 +44,23 @@ export const problemSchema = z
       .transform((v) => v === "on"),
     /** Edits only: added to the history as an `edit` entry. */
     changeSummary: z.string().trim().max(1_000).optional(),
+    /** Edits only: whom the new version credits for the change; empty for the editors. */
+    credit: z.string().trim().max(500).optional(),
+    /** Edits only, with a credit: how much AI the change used; empty if not stated. */
+    aiUse: z.enum(AI_USE).optional().or(z.literal("").transform(() => undefined)),
     /** Edits only: a minor fix, which amends the problem's current version instead of starting a new one. */
     minor: z
       .string()
       .optional()
       .transform((v) => v === "on"),
   })
-  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
+  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "historyVersion[]": versions, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
     dates.forEach((date, i) => {
       const kind = kinds[i] as HistoryKind;
       const entryText = texts[i] ?? "";
       const status = statuses[i] as ProblemStatus | "";
+      const version = Number(versions[i]);
       const problem = !PARTIAL_DATE.test(date)
         ? "needs a date like 2019, 2019-07 or 2019-07-04"
         : !HISTORY_KINDS.includes(kind)
@@ -62,7 +69,14 @@ export const problemSchema = z
             ? "needs a text"
             : null;
       if (problem) ctx.issues.push({ code: "custom", path: ["history"], message: `Entry ${i + 1} ${problem}.`, input: date });
-      else history.push({ date, kind, text: entryText, ...(status && PROBLEM_STATUSES.includes(status) && { status }) });
+      else
+        history.push({
+          date,
+          kind,
+          text: entryText,
+          ...(status && PROBLEM_STATUSES.includes(status) && { status }),
+          ...(Number.isInteger(version) && version > 0 && { version }),
+        });
     });
     const { references, errors } = toReferences(refTexts, refUrls, refKeys);
     if (errors.length) ctx.issues.push({ code: "custom", path: ["references"], message: errors.join(" "), input: refTexts });

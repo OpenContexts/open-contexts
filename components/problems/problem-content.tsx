@@ -8,12 +8,15 @@ import { CiteProblem } from "@/components/problems/cite-problem";
 import { ContributionsSection, DiscussionSection } from "@/components/problems/community-sections";
 import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
+import { versionCredit } from "@/components/problems/version-list";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeOptions } from "@/components/submissions/contribute-options";
 import { ButtonAnchor, ButtonLink, Chip, ChipList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { activeContributors, type Contributor, contributorsOf, getProposer } from "@/lib/data/contributors";
+import { getVersions, type VersionSummary } from "@/lib/data/permalinks";
 import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
 import { SITE } from "@/lib/site";
@@ -30,13 +33,22 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   cacheLife("max");
   cacheTag(communityTag(id), "community");
 
-  const [problem, contributions, comments] = await Promise.all([getProblemById(id), getApprovedContributions(id), getApprovedComments("problem", id)]);
+  const [problem, contributions, comments, versionList, proposer] = await Promise.all([
+    getProblemById(id),
+    getApprovedContributions(id),
+    getApprovedComments("problem", id),
+    getVersions(id),
+    getProposer(id),
+  ]);
   // The page checked that the problem exists just before; this only covers a deletion in between.
   if (!problem) return null;
 
   const agenda = problem.agenda.map(getAgendaItem).filter((a) => a !== undefined);
   // Newest first; entries of the same day in reverse order of recording, so the latest is on top.
   const history = problem.history.map((h, i) => ({ ...h, i })).toSorted((a, b) => b.date.localeCompare(a.date) || b.i - a.i);
+  // The versions the entries started, which they link to with who made the change.
+  const versions = new Map(versionList.map((v) => [v.version, v]));
+  const contributors = activeContributors(contributorsOf({ problem, contributions, versions: versionList, proposer }));
 
   return (
     <article>
@@ -65,6 +77,11 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
             {formatDate(problem.posed)}
           </span>
         </Fact>
+        {contributors.length > 0 && (
+          <Fact label="Contributors" className="col-span-full max-sm:order-3">
+            <ContributorNames contributors={contributors} slug={problem.slug} />
+          </Fact>
+        )}
       </dl>
 
       <MarkdownContent source={problem.body} references={problem.references} className="lettered" />
@@ -107,6 +124,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
                   <span aria-hidden className={cn("absolute top-[1.15rem] -left-[7px] size-3 rounded-full ring-3 ring-paper", toneColors[look.tone].bg)} />
                   <KindTag look={look} className="relative -top-px mr-2" />
                   <MarkdownInline source={h.text} references={problem.references} />
+                  {h.version && versions.has(h.version) && <VersionLine version={versions.get(h.version)!} />}
                 </div>
               </li>
             );
@@ -151,6 +169,34 @@ function DownloadLinks({ slug, number }: { slug: string; number: number }) {
       {f.label}
     </ButtonAnchor>
   ));
+}
+
+/** The most recently active contributors by name, the rest as a number, and the link to the full list. */
+function ContributorNames({ contributors, slug }: { contributors: Contributor[]; slug: string }) {
+  const SHOWN = 4;
+  const names = contributors.slice(0, SHOWN).map((c) => c.name);
+  const rest = contributors.length - names.length;
+  return (
+    <>
+      {formatNames(rest > 0 ? [...names, `${rest} ${rest === 1 ? "other" : "others"}`] : names)}
+      <span className="text-ink-subtle"> · </span>
+      <Link href={`/problems/${slug}/contributors`} className="text-brand hover:underline">
+        See all and what they did →
+      </Link>
+    </>
+  );
+}
+
+/** Under a history entry that started a version: the link to that version, and who made the change. */
+function VersionLine({ version: v }: { version: VersionSummary }) {
+  return (
+    <p className="mt-1 text-sm text-ink-subtle">
+      <Link href={permalinkPath(v.key)} className="text-brand tabular-nums hover:underline" title="This version of the problem, with its own permanent link">
+        Version {v.version}
+      </Link>{" "}
+      {versionCredit(v)}
+    </p>
+  );
 }
 
 /** The problem's permanent link ("12"), which keeps working if the page's URL changes. */

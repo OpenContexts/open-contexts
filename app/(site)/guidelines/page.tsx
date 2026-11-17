@@ -155,6 +155,13 @@ export default function GuidelinesPage() {
         typos, which moderators apply to the current version.
       </p>
       <p>
+        Improving a problem’s text is a contribution too. A suggested edit names the people to credit and how much
+        AI was used, like a result; once accepted, the new version is credited to them and linked from the
+        problem’s history. Changes the moderators make themselves are credited to the editors, unless they name
+        someone. Each problem lists its contributors: everyone who posed or proposed it, edited its text, or added
+        a result or a reference. Comments are discussion and are not counted as contributions.
+      </p>
+      <p>
         Within the database, credit for solving a problem goes primarily to those who understand and verify its
         solution, and to those who make it understandable. Being the first to submit an AI-generated claimed
         solution therefore carries only moderate weight, and prompting an AI does not entitle anyone to sole credit

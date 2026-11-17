@@ -6,7 +6,7 @@ import "server-only";
 import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { cacheLife, cacheTag } from "next/cache";
-import { PERMALINK_KINDS, type PermalinkTarget } from "@/lib/constants";
+import { type AiUse, PERMALINK_KINDS, type PermalinkTarget } from "@/lib/constants";
 import { BLOG_TAG, getPostById } from "@/lib/data/blog";
 import { communityTag } from "@/lib/data/community";
 import { getProblemById, type Problem } from "@/lib/data/problems";
@@ -74,10 +74,28 @@ export async function nextVersion(problemId: string): Promise<number> {
   return (row?.n ?? 0) + 1;
 }
 
+/**
+ * What a new version records about its change: the summary, and who made it (`credit`, `aiUse`; left out for
+ * the editors' own changes), and the suggested edit it came from.
+ */
+export type VersionChange = { changeSummary?: string; credit?: string | null; aiUse?: AiUse | null; revisionId?: string };
+
 /** Starts a version of the problem with the given text: version 1 for a new problem, nextVersion() for an edit. */
-export function versionQuery(p: { id: string; number: number }, version: number, text: VersionText, changeSummary?: string): Query {
+export function versionQuery(p: { id: string; number: number }, version: number, text: VersionText, change: VersionChange = {}): Query {
   const { title, statement, body, references } = text;
-  return db.insert(problemVersion).values({ problemId: p.id, problemNumber: p.number, version, title, statement, body, references, changeSummary: changeSummary || null });
+  return db.insert(problemVersion).values({
+    problemId: p.id,
+    problemNumber: p.number,
+    version,
+    title,
+    statement,
+    body,
+    references,
+    changeSummary: change.changeSummary || null,
+    credit: change.credit || null,
+    aiUse: change.aiUse ?? null,
+    revisionId: change.revisionId ?? null,
+  });
 }
 
 /** Writes changes into the problem's latest version instead of starting a new one: minor edits, added references. */
@@ -109,16 +127,24 @@ export async function getPermalinkKeys(target: PermalinkTarget, ids: string[]): 
   return new Map(rows.map((r) => [r.id, r.key]));
 }
 
-export type VersionSummary = { version: number; key: string; changeSummary: string | null; created: Date };
+/** `credit`: who made the change (null: the editors, or the first version); `aiUse`: null where not stated. */
+export type VersionSummary = { version: number; key: string; changeSummary: string | null; credit: string | null; aiUse: AiUse | null; created: Date };
 
 /** The problem's versions, oldest first. */
 export async function getVersions(problemId: string): Promise<VersionSummary[]> {
   const rows = await db
-    .select({ version: problemVersion.version, number: problemVersion.problemNumber, changeSummary: problemVersion.changeSummary, created: problemVersion.createdAt })
+    .select({
+      version: problemVersion.version,
+      number: problemVersion.problemNumber,
+      changeSummary: problemVersion.changeSummary,
+      credit: problemVersion.credit,
+      aiUse: problemVersion.aiUse,
+      created: problemVersion.createdAt,
+    })
     .from(problemVersion)
     .where(eq(problemVersion.problemId, problemId))
     .orderBy(asc(problemVersion.version));
-  return rows.map((r) => ({ version: r.version, key: versionKey(r.number, r.version), changeSummary: r.changeSummary, created: r.created }));
+  return rows.map(({ number, ...r }) => ({ ...r, key: versionKey(number, r.version) }));
 }
 
 /** getVersions, cached for the versions page: versions only change together with the problem ("problems"). */
@@ -159,6 +185,8 @@ export type ResolvedVersion = {
   body: string;
   references: (Reference & { key: string })[];
   changeSummary: string | null;
+  credit: string | null;
+  aiUse: AiUse | null;
   created: Date;
   updated: Date;
 };
@@ -195,6 +223,8 @@ export async function resolvePermalink(key: string): Promise<Resolved | undefine
       body: row.body,
       references: withKeys(row.references),
       changeSummary: row.changeSummary,
+      credit: row.credit,
+      aiUse: row.aiUse,
       created: row.createdAt,
       updated: row.updatedAt,
     };

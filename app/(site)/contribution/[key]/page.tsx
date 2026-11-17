@@ -10,7 +10,7 @@ import { VersionList } from "@/components/problems/version-list";
 import { ButtonLink, Callout, PageTitle, PartTitle } from "@/components/ui";
 import { siteOrigin } from "@/lib/cite";
 import { AI_USE_LABELS } from "@/lib/constants";
-import { type Resolved, resolvePermalink } from "@/lib/data/permalinks";
+import { type Resolved, type ResolvedVersion, resolvePermalink } from "@/lib/data/permalinks";
 import { type Problem, problemLabel } from "@/lib/data/problems";
 import { formatDate } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
@@ -147,6 +147,7 @@ function VersionView({ version: v, versions, problem }: Extract<Resolved, { type
           </ButtonLink>
         </Callout>
       )}
+      {v.version > 1 && <VersionChange version={v} />}
       <article>
         <ProblemBox problem={shown} heading />
         <MarkdownContent source={v.body} references={v.references} className="lettered" />
@@ -163,6 +164,22 @@ function VersionView({ version: v, versions, problem }: Extract<Resolved, { type
         <VersionList versions={versions} shown={v.version} />
       </article>
     </>
+  );
+}
+
+/** What changed with this version and who changed it: the credited names, or the editors. */
+function VersionChange({ version: v }: { version: ResolvedVersion }) {
+  const label = "font-sans text-[0.7rem] font-bold tracking-[0.12em] text-ink-subtle uppercase";
+  return (
+    <dl className="mt-6 mb-2 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-6 gap-y-2 border-b border-rule pb-5">
+      <dt className={label}>Changed by</dt>
+      <dd>
+        {v.credit ?? "The editors"}
+        {v.credit && v.aiUse && <span className="text-ink-subtle"> · {AI_USE_LABELS[v.aiUse]}</span>}
+      </dd>
+      <dt className={label}>What changed</dt>
+      <dd>{v.changeSummary ?? "No summary recorded."}</dd>
+    </dl>
   );
 }
 

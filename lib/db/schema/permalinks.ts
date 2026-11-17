@@ -4,6 +4,7 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, jsonb, pgEnum, pgTable, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { PERMALINK_TARGETS } from "../../constants";
+import { aiUse } from "./community";
 import type { Reference } from "./problems";
 
 export const permalinkTarget = pgEnum("permalink_target", PERMALINK_TARGETS);
@@ -54,6 +55,15 @@ export const problemVersion = pgTable(
     references: jsonb("references").$type<Reference[]>().default([]).notNull(),
     /** What changed from the version before; null for the first. */
     changeSummary: text("change_summary"),
+    /**
+     * Who made the change, as credited publicly: the credit of the accepted edit, or whom a moderator named.
+     * Null for the first version and for changes by the editors.
+     */
+    credit: text("credit"),
+    /** How much AI the change used; null where not stated (the first version, the editors' own changes). */
+    aiUse: aiUse("ai_use"),
+    /** The suggested edit (problem_revision) the version came from, if any. */
+    revisionId: uuid("revision_id"),
     /** When the version started. */
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     /** When it was last amended by a minor edit. */

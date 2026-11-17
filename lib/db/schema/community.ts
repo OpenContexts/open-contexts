@@ -145,6 +145,10 @@ export const problemRevision = pgTable(
     body: text("body").notNull(),
     /** What changed and why, shown to moderators and in the problem's history. */
     changeSummary: text("change_summary").notNull(),
+    /** The names credited for the edit; null for edits submitted before it was asked. */
+    credit: text("credit"),
+    /** Null for edits submitted before it was asked. */
+    aiUse: aiUse("ai_use"),
     ...moderation(),
     ...timestamps(),
   },

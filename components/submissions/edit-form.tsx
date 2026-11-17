@@ -4,16 +4,19 @@ import { useActionState } from "react";
 import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import type { CitableReferences } from "@/components/markdown/markdown";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
-import { Field, Input, SubmitButton } from "@/components/ui";
+import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
 import { errorOf, initialFormState, valueOf } from "@/lib/actions/form-state";
 import { submitRevision } from "@/lib/actions/submissions";
 import { FormMessage, SubmissionReceived } from "./form-parts";
+import { AI_CHOICES } from "./result-form";
 
 export function EditForm({
   problem,
+  defaultCredit,
 }: {
   /** `references`: the problem's, which the statement and the text can cite with \cite{key}. */
   problem: { slug: string; title: string; statement: string; body: string; version: number; references: CitableReferences };
+  defaultCredit: string;
 }) {
   const [state, action] = useActionState(submitRevision, initialFormState);
   if (state.status === "success") return <SubmissionReceived noun="suggested edit" back={{ href: `/problems/${problem.slug}`, label: "back to the problem" }} />;
@@ -40,6 +43,12 @@ export function EditForm({
         <Field label="Background, relevance and significance" htmlFor="body" error={errorOf(state, "body")} hint="Use “## Heading” to start a section.">
           <MarkdownEditor id="body" name="body" rows={18} defaultValue={valueOf(state, "body", problem.body.trim())} invalid={!!errorOf(state, "body")} />
         </Field>
+
+        <h2 className="mt-7 font-sans text-sm font-bold">Credit</h2>
+        <Field label="Credit" htmlFor="credit" error={errorOf(state, "credit")} hint="Everyone who made this change, with affiliations if you like. Once accepted, the new version of the problem is credited to them.">
+          <Input id="credit" name="credit" defaultValue={valueOf(state, "credit", defaultCredit)} required />
+        </Field>
+        <ChoiceCards name="aiUse" legend="How much AI was used?" choices={AI_CHOICES} columns={1} defaultValue={valueOf(state, "aiUse", "none")} error={errorOf(state, "aiUse")} required />
         <div className="mt-6">
           <SubmitButton pendingLabel="Submitting…">Submit edit for review</SubmitButton>
         </div>

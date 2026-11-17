@@ -3,7 +3,8 @@ import "server-only";
 import { and, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { ContributionKind, ModerationStatus, SubmissionType } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { blogPost, comment, contribution, permalink, problemProposal, problemRevision, submissionsSeen } from "@/lib/db/schema";
+import { blogPost, comment, contribution, permalink, problemProposal, problemRevision, problemVersion, submissionsSeen } from "@/lib/db/schema";
+import { versionKey } from "@/lib/permalinks";
 
 export type MySubmission = {
   type: SubmissionType;
@@ -21,7 +22,7 @@ export type MySubmission = {
   createdAt: Date;
   /** When the moderators decided on it; null while pending. */
   reviewedAt: Date | null;
-  /** The permanent key of an accepted contribution or post ("12.3", "blog.7"), if it has one. */
+  /** The permanent key of an accepted contribution or post ("12.3", "blog.7"), or of the version an accepted edit started ("12v3"). */
   key?: string;
 };
 
@@ -36,8 +37,18 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
     db.select().from(blogPost).where(eq(blogPost.authorId, userId)).orderBy(desc(blogPost.createdAt)),
   ]);
   const linkable = [...contributions, ...posts].map((r) => r.id);
-  const links = linkable.length ? await db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(inArray(permalink.targetId, linkable)) : [];
-  const keys = new Map(links.map((l) => [l.id, l.key]));
+  const edits = revisions.map((r) => r.id);
+  const [links, versions] = await Promise.all([
+    linkable.length ? db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(inArray(permalink.targetId, linkable)) : [],
+    // An accepted edit is linked by the version of the problem it started ("12v3").
+    edits.length
+      ? db
+          .select({ id: problemVersion.revisionId, number: problemVersion.problemNumber, version: problemVersion.version })
+          .from(problemVersion)
+          .where(inArray(problemVersion.revisionId, edits))
+      : [],
+  ]);
+  const keys = new Map([...links.map((l) => [l.id, l.key] as const), ...versions.flatMap((v) => (v.id ? [[v.id, versionKey(v.number, v.version)] as const] : []))]);
   const common = (r: { id: string; status: ModerationStatus; reviewNote: string | null; createdAt: Date; reviewedAt: Date | null }) => ({
     id: r.id,
     status: r.status,

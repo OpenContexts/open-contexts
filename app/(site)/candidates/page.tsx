@@ -20,7 +20,12 @@ export default async function CandidatesPage() {
   const candidates = await getCandidateProblems();
   return (
     <>
-      <PageTitle>Candidate problems</PageTitle>
+      <p className="mt-6 text-[0.92rem]">
+        <Link href="/problems" className="text-brand hover:underline">
+          ← All problems
+        </Link>
+      </p>
+      <PageTitle className="mt-5">Candidate problems</PageTitle>
       <p className="mb-8 text-justify hyphens-auto max-sm:text-left">
         For the first cycle, {SITE.name} I, the{" "}
         <Link href="/problems" className="text-brand hover:underline">
@@ -34,11 +39,6 @@ export default async function CandidatesPage() {
         ). Until then they are open for comments and contributions like any other problem.
       </p>
       <ProblemList problems={candidates} empty="There are no candidate problems at the moment." />
-      <p className="mt-2 text-right text-sm">
-        <Link href="/problems" className="text-brand hover:underline">
-          ← The published problems
-        </Link>
-      </p>
     </>
   );
 }

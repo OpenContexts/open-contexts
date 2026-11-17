@@ -80,7 +80,7 @@ export function problemBibtex(p: CitableProblem, { origin, today }: CiteContext)
  * The credited names of a contribution, which are free text ("A. Smith (Ulm), B. Jones and C. Lee"): split at
  * commas, semicolons and "and", except inside parentheses.
  */
-function creditNames(credit: string): string[] {
+export function creditNames(credit: string): string[] {
   const names: string[] = [];
   let depth = 0;
   let current = "";

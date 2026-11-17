@@ -53,6 +53,8 @@ export const revisionSchema = z.object({
   statement: text(20, 10_000, "the statement"),
   body: text(0, 50_000, "the text"),
   changeSummary: text(10, 1_000, "what you changed"),
+  credit: text(2, 500, "the names to credit"),
+  aiUse: z.enum(AI_USE, { error: "Please say how much AI was used." }),
 });
 
 export const postSchema = z
