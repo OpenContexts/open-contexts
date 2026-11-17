@@ -5,10 +5,10 @@
 import { and, count, eq } from "drizzle-orm";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth/session";
 import { getPost } from "@/lib/data/blog";
-import { getProblem, type Problem, readProblem } from "@/lib/data/problems";
+import { getProblem, getProblemById, type Problem, readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { unknownCitesError } from "@/lib/references";
-import { blogPost, comment, contribution, problemProposal, problemRevision } from "@/lib/db/schema";
+import { blogPost, comment, contribution, permalink, problemProposal, problemRevision } from "@/lib/db/schema";
 import {
   commentSchema,
   postSchema,
@@ -85,45 +85,74 @@ async function save(values: FormState["values"], insert: () => Promise<unknown>)
   }
 }
 
+/** Where a comment goes: a problem's own discussion, a blog post, or a contribution to a problem. */
+type Discussion = { problemId: string } | { postId: string } | { contributionId: string };
+
 /**
- * The comment a reply goes under: a published comment on the same page. A reply to a reply goes under the
+ * The comment a reply goes under: a published comment in the same discussion. A reply to a reply goes under the
  * comment that one answers, so threads stay one level deep. Undefined if there is no such comment.
  */
-async function replyParent(parentId: string, on: { problemId: string } | { postId: string }): Promise<string | undefined> {
-  const parent = await db.query.comment.findFirst({ where: eq(comment.id, parentId), columns: { id: true, parentId: true, problemId: true, postId: true, status: true } });
+async function replyParent(parentId: string, on: Discussion): Promise<string | undefined> {
+  const parent = await db.query.comment.findFirst({
+    where: eq(comment.id, parentId),
+    columns: { id: true, parentId: true, problemId: true, postId: true, contributionId: true, status: true },
+  });
   if (!parent || parent.status !== "approved") return undefined;
-  const samePage = "problemId" in on ? parent.problemId === on.problemId : parent.postId === on.postId;
-  return samePage ? (parent.parentId ?? parent.id) : undefined;
+  const same =
+    "contributionId" in on
+      ? parent.contributionId === on.contributionId
+      : "postId" in on
+        ? parent.postId === on.postId
+        : parent.problemId === on.problemId && !parent.contributionId;
+  return same ? (parent.parentId ?? parent.id) : undefined;
 }
 
 const NO_PARENT = "The comment you are replying to is no longer available.";
 
-/** A comment on a problem or on a published blog post, or a reply to one. */
+/** The accepted contribution with this key ("12.3"), if it can be commented on: not a reference. */
+async function commentableContribution(key: string) {
+  const link = await db.query.permalink.findFirst({ where: and(eq(permalink.key, key), eq(permalink.target, "contribution")) });
+  const row = link && (await db.query.contribution.findFirst({ where: eq(contribution.id, link.targetId), columns: { id: true, problemId: true, kind: true, status: true } }));
+  return row && row.status === "approved" && row.kind !== "reference" ? row : undefined;
+}
+
+/**
+ * The discussion a comment goes to, the columns that place it there, and the references it may cite (the post's
+ * or the problem's); or why there is none.
+ */
+async function findDiscussion({ problemSlug, postSlug, contributionKey }: { problemSlug?: string; postSlug?: string; contributionKey?: string }): Promise<
+  { on: Discussion; columns: Pick<typeof comment.$inferInsert, "problemId" | "postId" | "contributionId">; cited: Pick<Problem, "references"> } | { error: string }
+> {
+  if (postSlug) {
+    const post = await getPost(postSlug);
+    return post ? { on: { postId: post.id }, columns: { postId: post.id }, cited: post } : { error: "This blog post does not exist." };
+  }
+  if (contributionKey) {
+    const target = await commentableContribution(contributionKey);
+    const problem = target && (await getProblemById(target.problemId));
+    if (!target || !problem) return { error: "This contribution is no longer available." };
+    return { on: { contributionId: target.id }, columns: { problemId: problem.id, contributionId: target.id }, cited: problem };
+  }
+  const problem = await getProblem(problemSlug ?? "");
+  return problem ? { on: { problemId: problem.id }, columns: { problemId: problem.id }, cited: problem } : { error: "This problem does not exist." };
+}
+
+/** A comment on a problem, a published blog post or an accepted contribution, or a reply to one. */
 export async function submitComment(_: FormState, formData: FormData): Promise<FormState> {
   const values = readForm(formData);
   const parsed = commentSchema.safeParse(values);
   if (!parsed.success) return invalid(parsed.error, values);
-  const { problemSlug, postSlug, body } = parsed.data;
-
-  if (postSlug) {
-    const { user, error } = await guard(values);
-    if (error) return error;
-    const post = await getPost(postSlug);
-    if (!post) return { status: "error", message: "This blog post does not exist.", values };
-    const citeError = citeErrors(values, post, { body });
-    if (citeError) return citeError;
-    const parentId = parsed.data.parentId ? await replyParent(parsed.data.parentId, { postId: post.id }) : null;
-    if (parentId === undefined) return { status: "error", message: NO_PARENT, values };
-    return save(values, () => db.insert(comment).values({ body, postId: post.id, parentId, authorId: user.id }));
-  }
-
-  const { user, problem, error } = await guardProblem(values, problemSlug ?? "");
+  const { user, error } = await guard(values);
   if (error) return error;
-  const citeError = citeErrors(values, problem, { body });
+
+  const discussion = await findDiscussion(parsed.data);
+  if ("error" in discussion) return { status: "error", message: discussion.error, values };
+  const { body } = parsed.data;
+  const citeError = citeErrors(values, discussion.cited, { body });
   if (citeError) return citeError;
-  const parentId = parsed.data.parentId ? await replyParent(parsed.data.parentId, { problemId: problem.id }) : null;
+  const parentId = parsed.data.parentId ? await replyParent(parsed.data.parentId, discussion.on) : null;
   if (parentId === undefined) return { status: "error", message: NO_PARENT, values };
-  return save(values, () => db.insert(comment).values({ body, problemId: problem.id, parentId, authorId: user.id }));
+  return save(values, () => db.insert(comment).values({ body, ...discussion.columns, parentId, authorId: user.id }));
 }
 
 export async function submitResult(_: FormState, formData: FormData): Promise<FormState> {

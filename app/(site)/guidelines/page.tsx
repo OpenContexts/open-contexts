@@ -162,6 +162,12 @@ export default function GuidelinesPage() {
         a result or a reference. Comments are discussion and are not counted as contributions.
       </p>
       <p>
+        Each result can be discussed on its own page, and signed-in readers can vote on it: up if it is useful,
+        down if it is not. Votes are a signal for readers, not a verdict: a claimed solution counts as verified
+        only through the verifications recorded with it. Nobody votes on their own work, and suggested references
+        are not voted on.
+      </p>
+      <p>
         Within the database, credit for solving a problem goes primarily to those who understand and verify its
         solution, and to those who make it understandable. Being the first to submit an AI-generated claimed
         solution therefore carries only moderate weight, and prompting an AI does not entitle anyone to sole credit

@@ -8,7 +8,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 import { cacheLife, cacheTag } from "next/cache";
 import { type AiUse, PERMALINK_KINDS, type PermalinkTarget } from "@/lib/constants";
 import { BLOG_TAG, getPostById } from "@/lib/data/blog";
-import { communityTag } from "@/lib/data/community";
+import { type Comment, communityTag, getApprovedComments, getVoteTotals, NO_VOTES, type Votes } from "@/lib/data/community";
 import { getProblemById, type Problem } from "@/lib/data/problems";
 import { db, isDbConfigured } from "@/lib/db";
 import { contribution, permalink, problemVersion, type Reference } from "@/lib/db/schema";
@@ -175,6 +175,9 @@ export type ResolvedContribution = {
   submitted: Date;
   /** When it was accepted; the date it is cited by. */
   accepted: Date;
+  votes: Votes;
+  /** Its discussion, newest first. */
+  comments: Comment[];
 };
 
 export type ResolvedVersion = {
@@ -248,7 +251,12 @@ export async function resolvePermalink(key: string): Promise<Resolved | undefine
       const problem = row && (await getProblemById(row.problemId));
       if (!row || row.status !== "approved" || !problem) return gone;
       const { id, kind, title, summary, url, aiUse, credit } = row;
-      return { type: "contribution", contribution: { key, id, kind, title, summary, url, aiUse, credit, submitted: row.createdAt, accepted: row.reviewedAt ?? row.createdAt }, problem };
+      const [votes, comments] = await Promise.all([getVoteTotals([id]), getApprovedComments("contribution", id)]);
+      return {
+        type: "contribution",
+        contribution: { key, id, kind, title, summary, url, aiUse, credit, submitted: row.createdAt, accepted: row.reviewedAt ?? row.createdAt, votes: votes.get(id) ?? NO_VOTES, comments },
+        problem,
+      };
     }
     default:
       throw new Error(`Unknown permalink target: ${link.target satisfies never}`);

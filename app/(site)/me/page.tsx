@@ -9,7 +9,7 @@ import { MODERATION_STATUSES, type ModerationStatus, type SubmissionType } from 
 import { getPosts } from "@/lib/data/blog";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { getMySubmissions, markSubmissionsSeen, type MySubmission } from "@/lib/data/submissions";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatNames, plural } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { SITE } from "@/lib/site";
 
@@ -66,6 +66,7 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
   const passed = readSince(sinceParam);
   const since = passed === undefined ? seenBefore : passed;
   const isNew = (s: MySubmission) => !!s.reviewedAt && (!since || s.reviewedAt > since);
+  const newComments = (s: MySubmission) => (s.comments ?? []).filter((at) => !since || at > since).length;
   const problems = new Map(problemList.map((p) => [p.id, p]));
   // Published posts only: a pending or rejected post has no page to link to.
   const posts = new Map(postList.map((p) => [p.id, p]));
@@ -81,17 +82,22 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
 
   const shown = status ? items.filter((s) => s.status === status) : items;
   const news = items.filter(isNew).length;
+  const comments = items.reduce((n, s) => n + newComments(s), 0);
   const tab = (s?: ModerationStatus) => {
-    const query = new URLSearchParams({ ...(s && { status: s }), ...(news > 0 && { since: since?.toISOString() ?? "never" }) });
+    const query = new URLSearchParams({ ...(s && { status: s }), ...(news + comments > 0 && { since: since?.toISOString() ?? "never" }) });
     return query.size ? `/me?${query}` : "/me";
   };
   return (
     <>
-      {news > 0 && (
+      {news + comments > 0 && (
         <p className="mb-5 text-center text-[0.98rem]">
           <AppleIcon className="mr-1.5" />
-          {news === 1 ? "One of your submissions has" : `${news} of your submissions have`} been reviewed since your last
-          visit; {news === 1 ? "it is" : "they are"} marked below.
+          Since your last visit:{" "}
+          {formatNames([
+            ...(news ? [news === 1 ? "one of your submissions was reviewed" : `${news} of your submissions were reviewed`] : []),
+            ...(comments ? [comments === 1 ? "one new comment on your contributions" : `${comments} new comments on your contributions`] : []),
+          ])}
+          . They are marked below.
         </p>
       )}
       <Tabs label="Filter by review status" className="mb-6">
@@ -107,7 +113,7 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
       {shown.length ? (
         <ul className="space-y-4">
           {shown.map((s) => (
-            <SubmissionCard key={`${s.type}-${s.id}`} item={s} isNew={isNew(s)} problem={s.problemId ? problems.get(s.problemId) : undefined} post={s.postId ? posts.get(s.postId) : undefined} />
+            <SubmissionCard key={`${s.type}-${s.id}`} item={s} isNew={isNew(s)} newComments={newComments(s)} problem={s.problemId ? problems.get(s.problemId) : undefined} post={s.postId ? posts.get(s.postId) : undefined} />
           ))}
         </ul>
       ) : (
@@ -124,7 +130,20 @@ type ProblemRef = { slug: string; number: number; title: string; published: bool
  * along the top; then what it says, where it was made, its permanent link once published, and the moderators'
  * note, if any.
  */
-function SubmissionCard({ item: s, isNew, problem, post }: { item: MySubmission; isNew: boolean; problem?: ProblemRef; post?: { slug: string; title: string } }) {
+function SubmissionCard({
+  item: s,
+  isNew,
+  newComments,
+  problem,
+  post,
+}: {
+  item: MySubmission;
+  isNew: boolean;
+  /** Comments by others on a contribution since the last visit. */
+  newComments: number;
+  problem?: ProblemRef;
+  post?: { slug: string; title: string };
+}) {
   // An accepted proposal is on the site, but only among the candidates until the moderators publish it.
   const status = s.type === "proposal" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
   // Where the submission itself can be seen, if anywhere: its own page, or the problem a proposal became.
@@ -179,6 +198,18 @@ function SubmissionCard({ item: s, isNew, problem, post }: { item: MySubmission;
               <Link href={permalinkPath(s.key)} className="tabular-nums hover:text-brand hover:underline" title="Permanent link, for citing">
                 {SITE.name} {s.key}
               </Link>
+            )}
+          </p>
+        )}
+        {s.key && !!s.comments?.length && (
+          <p className="mt-2 flex items-center gap-1.5 text-[0.95rem]">
+            <Link href={`${permalinkPath(s.key)}#discussion`} className="text-brand hover:underline">
+              {plural(s.comments.length, "comment")} by others
+            </Link>
+            {newComments > 0 && (
+              <span className="flex items-center gap-1 font-sans text-xs font-bold text-brand">
+                <AppleIcon /> {newComments} new
+              </span>
             )}
           </p>
         )}

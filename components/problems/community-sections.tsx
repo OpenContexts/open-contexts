@@ -1,143 +1,62 @@
-// The parts of a problem page that users add to: contributions and the discussion.
+// The parts of a problem page that users add to: contributions (see contribution-cards.tsx) and the discussion.
 // They render data passed in by ProblemContent, which caches them; only CommentBox reads the session.
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CitationText } from "@/components/markdown/citation-text";
 import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
-import { contributionLook, KindTag } from "@/components/problems/kind-tag";
-import { CommentForm, type CommentTarget } from "@/components/submissions/comment-form";
-import { ReplyButton } from "@/components/submissions/reply-button";
-import { Clamped, ExpandableList, PartTitle, toneColors } from "@/components/ui";
-import { AI_USE_LABELS, type ContributionKind } from "@/lib/constants";
+import { ContributionItem } from "@/components/problems/contribution-cards";
+import { CommentForm, type CommentTarget, discussionPage } from "@/components/submissions/comment-form";
+import { CommentButton } from "@/components/submissions/comment-button";
+import { ButtonLink, ExpandableList, PartTitle } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/session";
-import type { getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import type { ApprovedContribution as Contribution, Comment } from "@/lib/data/community";
 import { cn } from "@/lib/cn";
-import { formatDate } from "@/lib/format";
-import { permalinkPath } from "@/lib/permalinks";
-import { displayUrl } from "@/lib/references";
-import { SITE } from "@/lib/site";
-
-type Contribution = Awaited<ReturnType<typeof getApprovedContributions>>[number];
-type Comment = Awaited<ReturnType<typeof getApprovedComments>>[number];
-
-/** What a result's link leads to, by kind: a write-up for most, code and data for computational evidence. */
-const LINK_LABELS: Record<ContributionKind, string> = {
-  claim: "Solution",
-  partial: "Write-up",
-  negative: "Write-up",
-  reformulation: "Write-up",
-  decomposition: "Write-up",
-  evidence: "Code and data",
-  verification: "Verification",
-  exposition: "Exposition",
-  challenge: "Write-up",
-  reference: "Source",
-};
+import { formatDate, plural } from "@/lib/format";
 
 /**
- * Newest first, as cards: results with their permanent key and links, and suggested references, which point to
- * the literature and so show the citation and why it matters instead. `references`: the problem's, which the
- * summaries cite with \cite{key}.
+ * How much of the list the problem page shows: the newest contributions until it has shown this many results,
+ * with the references suggested in between; never more than PREVIEW_ITEMS. All are on the contributions page.
  */
-export function ContributionsSection({ items, references }: { items: Contribution[]; references: CitableReferences }) {
+const PREVIEW_RESULTS = 4;
+const PREVIEW_ITEMS = 7;
+
+/** The newest contributions, as many as the problem page shows (see PREVIEW_RESULTS). */
+function preview(items: Contribution[]): Contribution[] {
+  const shown: Contribution[] = [];
+  let results = 0;
+  for (const c of items) {
+    if (results === PREVIEW_RESULTS || shown.length === PREVIEW_ITEMS) break;
+    shown.push(c);
+    if (c.kind !== "reference") results++;
+  }
+  return shown;
+}
+
+/**
+ * The newest contributions in one list: results as cards, with their votes and comments, and the references
+ * suggested in between as slim ones; then the way to all of them (/problems/<slug>/contributions).
+ * `references`: the problem's, which the texts cite with \cite{key}.
+ */
+export function ContributionsSection({ items, references, slug }: { items: Contribution[]; references: CitableReferences; slug: string }) {
   return (
     <>
       <PartTitle>Contributions</PartTitle>
       {items.length ? (
-        <ExpandableList limit={5} noun={["contribution", "contributions"]} className="space-y-5">
-          {items.map((c) => (c.kind === "reference" ? <ReferenceCard key={c.id} item={c} references={references} /> : <ResultCard key={c.id} item={c} references={references} />))}
-        </ExpandableList>
+        <>
+          <ol className="space-y-4">
+            {preview(items).map((c) => (
+              <ContributionItem key={c.id} item={c} references={references} />
+            ))}
+          </ol>
+          <p className="mt-5 text-right">
+            <ButtonLink href={`/problems/${slug}/contributions`} variant="quiet" size="sm">
+              All {plural(items.length, "contribution")} →
+            </ButtonLink>
+          </p>
+        </>
       ) : (
         <p className="text-ink-muted">No contributions recorded yet.</p>
       )}
     </>
-  );
-}
-
-/** The kind and date in a strip along the top of a card, tinted for the outcomes that matter (see contributionLook). */
-function CardHeader({ item: c, children }: { item: Contribution; children?: ReactNode }) {
-  const look = contributionLook(c.kind);
-  return (
-    <div className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-rule px-4 py-2", look.strong ? toneColors[look.tone].tint : "bg-surface")}>
-      <KindTag look={look} />
-      <span className="text-sm text-ink-subtle">{formatDate(c.createdAt)}</span>
-      {children}
-    </div>
-  );
-}
-
-/** A suggested reference: the citation itself as the title, its identifiers linked, the source, and why it is relevant. */
-function ReferenceCard({ item: c, references }: { item: Contribution; references: CitableReferences }) {
-  return (
-    <li className="overflow-hidden rounded-md border border-rule bg-paper">
-      <CardHeader item={c} />
-      <div className="px-4 pt-3 pb-3.5">
-        <p className="font-bold">
-          <CitationText text={c.title} url={c.url} untrusted append={false} />
-        </p>
-        <Clamped lines={3} className="mt-1.5">
-          <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] text-ink-muted [&>*:last-child]:mb-0" />
-        </Clamped>
-        <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <span className="text-ink-subtle">Suggested by {c.credit}</span>
-          {c.url && (
-            <a href={c.url} rel="nofollow ugc noopener noreferrer" className="min-w-0 max-w-full truncate text-brand hover:underline">
-              ↗ {LINK_LABELS[c.kind]}: <span className="text-ink-subtle">{displayUrl(c.url)}</span>
-            </a>
-          )}
-        </p>
-      </div>
-    </li>
-  );
-}
-
-/**
- * One result: the header with its permanent key, then the title, who takes responsibility, the summary and
- * its links.
- */
-function ResultCard({ item: c, references }: { item: Contribution; references: CitableReferences }) {
-  const page = c.key && permalinkPath(c.key);
-  return (
-    <li className="overflow-hidden rounded-md border border-rule bg-paper">
-      <CardHeader item={c}>
-        {page && (
-          <Link href={page} className="ml-auto font-sans text-xs font-bold text-ink-subtle tabular-nums hover:text-brand" title="Permanent link to this contribution">
-            {SITE.name} {c.key}
-          </Link>
-        )}
-      </CardHeader>
-      <div className="px-4 pt-3 pb-3.5">
-        <h3 className="text-[1.08rem] font-bold">
-          {page ? (
-            <Link href={page} className="text-ink hover:text-brand">
-              {c.title}
-            </Link>
-          ) : (
-            c.title
-          )}
-        </h3>
-        <p className="mt-0.5 text-sm text-ink-subtle">
-          by {c.credit} · {AI_USE_LABELS[c.aiUse]}
-        </p>
-        <Clamped lines={5} className="mt-2">
-          <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
-        </Clamped>
-        {(c.url || page) && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            {c.url && (
-              <a href={c.url} rel="nofollow ugc noopener noreferrer" className="min-w-0 max-w-full truncate text-brand hover:underline">
-                ↗ {LINK_LABELS[c.kind]}: <span className="text-ink-subtle">{displayUrl(c.url)}</span>
-              </a>
-            )}
-            {page && (
-              <Link href={page} className="ml-auto shrink-0 text-brand hover:underline">
-                Open and cite →
-              </Link>
-            )}
-          </p>
-        )}
-      </div>
-    </li>
   );
 }
 
@@ -187,7 +106,7 @@ export function DiscussionSection({
                     ))}
                   </ol>
                 )}
-                <ReplyButton on={on} parent={{ id: c.id, author: c.author.name }} references={references} />
+                <CommentButton on={on} replyTo={{ id: c.id, author: c.author.name }} references={references} />
               </div>
             </li>
           ))}
@@ -228,7 +147,7 @@ function Initials({ name, small }: { name: string; small?: boolean }) {
 /** The comment form for a problem or blog post, or a sign-in link. Reads the session. */
 export async function CommentBox({ on, references }: { on: CommentTarget; references: CitableReferences }) {
   if (await getCurrentUser()) return <CommentForm on={on} references={references} />;
-  return <SignInToComment page={on.type === "problem" ? `/problems/${on.slug}` : `/blog/${on.slug}`} />;
+  return <SignInToComment page={discussionPage(on)} />;
 }
 
 function SignInToComment({ page }: { page: string }) {

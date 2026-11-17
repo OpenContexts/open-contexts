@@ -3,9 +3,11 @@ import "server-only";
 import { asc, count, desc, eq, sql } from "drizzle-orm";
 import { connection } from "next/server";
 import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
+import { getPermalinkKeys } from "@/lib/data/permalinks";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { activityLog, blogPost, comment, contribution, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
+import { permalinkPath } from "@/lib/permalinks";
 
 export async function getPendingCounts(): Promise<Record<SubmissionType, number>> {
   await connection();
@@ -31,7 +33,10 @@ async function findMany(type: SubmissionType, status: ModerationStatus, limit: n
   const order = status === "pending" ? asc : desc;
   switch (type) {
     case "comment":
-      return { type, rows: await db.query.comment.findMany({ where: eq(comment.status, status), with: { author }, orderBy: order(comment.createdAt), limit }) };
+      return {
+        type,
+        rows: await db.query.comment.findMany({ where: eq(comment.status, status), with: { author, contribution: { columns: { title: true } } }, orderBy: order(comment.createdAt), limit }),
+      };
     case "contribution":
       return { type, rows: await db.query.contribution.findMany({ where: eq(contribution.status, status), with: { author }, orderBy: order(contribution.createdAt), limit }) };
     case "revision":
@@ -90,16 +95,24 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
   };
 
   switch (result.type) {
-    case "comment":
+    case "comment": {
+      // Comments on a contribution are shown with it, under its permanent link.
+      const keys = await getPermalinkKeys("contribution", result.rows.flatMap((r) => (r.contributionId ? [r.contributionId] : [])));
+      const onContribution = (r: (typeof result.rows)[number]) => {
+        const { on, references } = problem(r.problemId);
+        const key = r.contributionId && keys.get(r.contributionId);
+        return { on: on && r.contribution ? { label: `${on.label}, on “${r.contribution.title}”`, href: key ? permalinkPath(key) : on.href } : on, references };
+      };
       return result.rows.map((r) => ({
         id: r.id,
         title: r.parentId ? "Reply" : "Comment",
         excerpt: excerpt(r.body),
         body: r.body,
-        ...(r.postId ? post(r.postId) : problem(r.problemId)),
+        ...(r.postId ? post(r.postId) : onContribution(r)),
         author: r.author,
         createdAt: r.createdAt,
       }));
+    }
     case "contribution":
       return result.rows.map((r) => ({
         id: r.id,
@@ -135,8 +148,15 @@ export async function getSubmission(type: SubmissionType, id: string) {
   await connection();
   switch (type) {
     case "comment": {
-      // A reply is reviewed with the comment it answers.
-      const row = await db.query.comment.findFirst({ where: eq(comment.id, id), with: { author, parent: { columns: { body: true, status: true }, with: { author: { columns: { name: true } } } } } });
+      // A reply is reviewed with the comment it answers; a comment on a contribution, with that contribution.
+      const row = await db.query.comment.findFirst({
+        where: eq(comment.id, id),
+        with: {
+          author,
+          parent: { columns: { body: true, status: true }, with: { author: { columns: { name: true } } } },
+          contribution: { columns: { id: true, title: true, status: true } },
+        },
+      });
       return row && { type, row };
     }
     case "contribution": {

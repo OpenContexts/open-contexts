@@ -5,15 +5,21 @@ import { AGENDA_IDS } from "@/lib/agenda";
 import { AI_USE } from "@/lib/constants";
 import { citeIssues, commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
-/** On a problem (`problemSlug`) or on a blog post (`postSlug`); a reply also names the comment it answers. */
+/**
+ * On a problem (`problemSlug`), a blog post (`postSlug`) or a contribution (`contributionKey`, "12.3"); a reply
+ * also names the comment it answers.
+ */
 export const commentSchema = z
   .object({
     problemSlug: slug.optional(),
     postSlug: slug.optional(),
+    contributionKey: slug.optional(),
     parentId: z.uuid().optional(),
     body: text(2, 10_000, "a comment"),
   })
-  .refine((c) => !c.problemSlug !== !c.postSlug, { message: "A comment belongs to one problem or one blog post." });
+  .refine((c) => [c.problemSlug, c.postSlug, c.contributionKey].filter(Boolean).length === 1, {
+    message: "A comment belongs to one problem, blog post or contribution.",
+  });
 
 /** Kinds offered on the "Submit a result" page: every kind but references, which have their own page. */
 const RESULT_KINDS = [

@@ -9,7 +9,8 @@ import { signOut } from "@/lib/auth/client";
 
 /**
  * Dropdown for a signed-in user. Its trigger has the same width as "Sign in", so the header never shifts.
- * `news`: decisions on their submissions since they last opened /me, shown as a red apple with the number.
+ * `news`: decisions on their submissions and comments on their contributions since they last opened /me, shown
+ * as a red apple with the number.
  */
 export function AccountMenu({ name, email, moderator, news }: { name: string; email: string; moderator: boolean; news: number }) {
   const [open, setOpen] = useState(false);
@@ -50,7 +51,7 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
         {unseen > 0 && (
           <>
             <AppleCount n={unseen} className="absolute -top-2.5 -right-3.5" />
-            <span className="sr-only">, {unseen === 1 ? "a new decision" : `${unseen} new decisions`} on your submissions</span>
+            <span className="sr-only">, {unseen === 1 ? "one update" : `${unseen} updates`} on your submissions</span>
           </>
         )}
       </button>

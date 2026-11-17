@@ -30,9 +30,15 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 export function SubmissionContent({ submission, problems, references }: { submission: Submission; problems: Map<string, Problem>; references?: Reference[] }) {
   switch (submission.type) {
     case "comment": {
-      const { body, parent } = submission.row;
+      const { body, parent, contribution } = submission.row;
       return (
         <Card>
+          {contribution && (
+            <p className="mb-3 text-sm text-zinc-600">
+              On the contribution <span className="font-medium text-zinc-900">“{contribution.title}”</span>
+              {contribution.status !== "approved" && " (not published at the moment, so the comment would not be shown)"}
+            </p>
+          )}
           {parent && (
             <div className="mb-4 rounded-lg bg-zinc-50 px-4 py-3 ring-1 ring-zinc-100 ring-inset">
               <span className="mb-1 block text-xs font-medium text-zinc-500">

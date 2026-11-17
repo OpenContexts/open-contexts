@@ -71,6 +71,13 @@
       "when": 1794947440000,
       "tag": "0009_edit_credit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794949405066,
+      "tag": "0010_contribution_comments_votes",
+      "breakpoints": true
     }
   ]
 }

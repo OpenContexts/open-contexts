@@ -134,7 +134,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         <p className="text-ink-muted">No entries yet.</p>
       )}
 
-      <ContributionsSection items={contributions} references={problem.references} />
+      <ContributionsSection items={contributions} references={problem.references} slug={problem.slug} />
 
       <section className="mt-8 rounded border border-rule bg-surface px-5 pt-4 pb-3.5">
         <h3 className="mb-3 font-sans text-sm font-bold">Contribute to this problem</h3>

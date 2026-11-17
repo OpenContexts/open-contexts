@@ -4,9 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { MarkdownContent } from "@/components/markdown/markdown";
 import { ReferenceList } from "@/components/markdown/reference-list";
 import { CiteProblem } from "@/components/problems/cite-problem";
+import { CommentBox, DiscussionSection } from "@/components/problems/community-sections";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
+import { StatusBadge, StatusIcon } from "@/components/problems/status";
 import { VersionList } from "@/components/problems/version-list";
+import { VotesProvider, VoteControl } from "@/components/problems/votes";
 import { ButtonLink, Callout, PageTitle, PartTitle } from "@/components/ui";
 import { siteOrigin } from "@/lib/cite";
 import { AI_USE_LABELS } from "@/lib/constants";
@@ -43,7 +46,11 @@ export default async function PermalinkPage({ params }: PageProps<"/contribution
     case "gone":
       return <Gone permalink={resolved.key} />;
     case "contribution":
-      return <ContributionView {...resolved} />;
+      return (
+        <VotesProvider problemId={resolved.problem.id}>
+          <ContributionView {...resolved} />
+        </VotesProvider>
+      );
     case "version":
       return <VersionView {...resolved} />;
     default:
@@ -58,6 +65,31 @@ function BackLink({ problem }: { problem: Problem }) {
         ← Problem {problem.number}: {problem.title}
       </Link>
     </p>
+  );
+}
+
+/**
+ * Which problem a contribution is to, along the top of its page: the problem's apple in the colour of its
+ * status, its number and title, and its status, all linking to it.
+ */
+function ProblemContext({ problem }: { problem: Problem }) {
+  return (
+    <Link
+      href={`/problems/${problem.slug}`}
+      className="group mt-6 flex items-center gap-3.5 rounded-md border border-rule bg-surface px-4 py-3 no-underline transition hover:border-rule-strong"
+    >
+      <StatusIcon status={problem.status} candidate={!problem.published} className="size-7" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-sans text-[0.7rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">Contribution to</span>
+        <span className="block font-bold text-ink group-hover:text-brand">
+          Problem {problem.number}: {problem.title}
+        </span>
+      </span>
+      <StatusBadge status={problem.status} className="max-sm:hidden" />
+      <span aria-hidden className="text-brand transition group-hover:translate-x-0.5">
+        →
+      </span>
+    </Link>
   );
 }
 
@@ -76,6 +108,7 @@ function PermanentLink({ permalink }: { permalink: string }) {
 
 function ContributionView({ contribution: c, problem }: Extract<Resolved, { type: "contribution" }>) {
   const look = contributionLook(c.kind);
+  const on = { type: "contribution", key: c.key } as const;
   const citable = {
     key: c.key,
     kind: c.kind,
@@ -87,19 +120,22 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
   };
   return (
     <>
-      <BackLink problem={problem} />
+      <ProblemContext problem={problem} />
       <article>
-        <header className="mt-10 mb-8">
-          <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <KindTag look={look} />
-            <span className="text-sm text-ink-subtle tabular-nums">
-              {SITE.name} {c.key}
-            </span>
-          </p>
-          <h1 className="mt-2 text-[1.6rem]/tight max-sm:text-[1.35rem]">{c.title}</h1>
-          <p className="mt-2 text-ink-muted">
-            by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
-          </p>
+        <header className="mt-8 mb-8 grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-4">
+          <VoteControl id={c.id} votes={c.votes} className="-ml-1 pt-5" />
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <KindTag look={look} />
+              <span className="text-sm text-ink-subtle tabular-nums">
+                {SITE.name} {c.key}
+              </span>
+            </p>
+            <h1 className="mt-2 text-[1.6rem]/tight max-sm:text-[1.35rem]">{c.title}</h1>
+            <p className="mt-2 text-ink-muted">
+              by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
+            </p>
+          </div>
         </header>
 
         <MarkdownContent source={c.summary} untrusted references={problem.references} />
@@ -117,8 +153,13 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
         {/* The summary cites the problem's references; their list is only needed when it does. */}
         {c.summary.includes("\\cite") && <ReferenceList references={problem.references} />}
 
-        <PartTitle>Contribution to</PartTitle>
-        <ProblemBox problem={problem} link />
+        <DiscussionSection
+          on={on}
+          comments={c.comments}
+          commentBox={<CommentBox on={on} references={problem.references} />}
+          references={problem.references}
+          empty="No comments yet. Questions about this result, checks of its steps and pointers are welcome here."
+        />
       </article>
     </>
   );

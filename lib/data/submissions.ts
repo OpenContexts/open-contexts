@@ -24,7 +24,13 @@ export type MySubmission = {
   reviewedAt: Date | null;
   /** The permanent key of an accepted contribution or post ("12.3", "blog.7"), or of the version an accepted edit started ("12v3"). */
   key?: string;
+  /** Contributions: when the comments others wrote on it were published, newest first. */
+  comments?: Date[];
 };
+
+/** Published comments by others on the user's contributions (joined with `contribution`). */
+const othersOnMine = (userId: string) => and(eq(contribution.authorId, userId), eq(comment.status, "approved"), ne(comment.authorId, userId));
+const commentOnMine = { contributionId: contribution.id, at: sql<Date>`coalesce(${comment.reviewedAt}, ${comment.createdAt})`.mapWith(comment.createdAt) };
 
 const excerpt = (s: string, n = 90) => (s.length > n ? `${s.slice(0, n).trimEnd()}…` : s);
 
@@ -38,7 +44,7 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
   ]);
   const linkable = [...contributions, ...posts].map((r) => r.id);
   const edits = revisions.map((r) => r.id);
-  const [links, versions] = await Promise.all([
+  const [links, versions, othersComments] = await Promise.all([
     linkable.length ? db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(inArray(permalink.targetId, linkable)) : [],
     // An accepted edit is linked by the version of the problem it started ("12v3").
     edits.length
@@ -47,7 +53,9 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
           .from(problemVersion)
           .where(inArray(problemVersion.revisionId, edits))
       : [],
+    contributions.length ? db.select(commentOnMine).from(comment).innerJoin(contribution, eq(contribution.id, comment.contributionId)).where(othersOnMine(userId)).orderBy(desc(comment.reviewedAt)) : [],
   ]);
+  const commentsOn = Map.groupBy(othersComments, (c) => c.contributionId);
   const keys = new Map([...links.map((l) => [l.id, l.key] as const), ...versions.flatMap((v) => (v.id ? [[v.id, versionKey(v.number, v.version)] as const] : []))]);
   const common = (r: { id: string; status: ModerationStatus; reviewNote: string | null; createdAt: Date; reviewedAt: Date | null }) => ({
     id: r.id,
@@ -60,7 +68,15 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
   });
   return [
     ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), reply: !!r.parentId, problemId: r.problemId, postId: r.postId })),
-    ...contributions.map((r) => ({ ...common(r), type: "contribution" as const, title: r.title, kind: r.kind, problemId: r.problemId, postId: null })),
+    ...contributions.map((r) => ({
+      ...common(r),
+      type: "contribution" as const,
+      title: r.title,
+      kind: r.kind,
+      problemId: r.problemId,
+      postId: null,
+      comments: (commentsOn.get(r.id) ?? []).map((c) => c.at),
+    })),
     ...revisions.map((r) => ({ ...common(r), type: "revision" as const, title: r.changeSummary, problemId: r.problemId, postId: null })),
     ...proposals.map((r) => ({ ...common(r), type: "proposal" as const, title: r.title, problemId: r.problemId, postId: null })),
     ...posts.map((r) => ({ ...common(r), type: "post" as const, title: r.title, problemId: null, postId: r.id })),
@@ -68,27 +84,36 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Decisions the user has not seen yet: made since they last opened /me, counted in the account menu.
+// What the user has not seen yet: decisions and comments on their contributions since they last opened /me,
+// counted in the account menu.
 
 type Moderated = typeof comment | typeof contribution | typeof problemRevision | typeof problemProposal | typeof blogPost;
 
+/** When the user last opened /me, in SQL; the beginning of time if they never have. */
+const seenAt = (userId: string) =>
+  sql`coalesce((select ${submissionsSeen.seenAt} from ${submissionsSeen} where ${submissionsSeen.userId} = ${userId}), '-infinity'::timestamptz)`;
+
 /** The user's submissions in `t` decided since they last looked (ever, if they never have). */
 function decidedSince(t: Moderated, userId: string) {
-  const seen = sql`coalesce((select ${submissionsSeen.seenAt} from ${submissionsSeen} where ${submissionsSeen.userId} = ${userId}), '-infinity'::timestamptz)`;
   return db
     .select({ n: count() })
     .from(t)
-    .where(and(eq(t.authorId, userId), ne(t.status, "pending"), sql`${t.reviewedAt} > ${seen}`));
+    .where(and(eq(t.authorId, userId), ne(t.status, "pending"), sql`${t.reviewedAt} > ${seenAt(userId)}`));
 }
 
-/** How many of the user's submissions were decided on since they last opened /me. One round trip. */
-export async function countNewDecisions(userId: string): Promise<number> {
+/** For the account menu: decisions on the user's submissions, and comments by others on their contributions, since they last opened /me. One round trip. */
+export async function countNews(userId: string): Promise<number> {
   const counts = await db.batch([
     decidedSince(comment, userId),
     decidedSince(contribution, userId),
     decidedSince(problemRevision, userId),
     decidedSince(problemProposal, userId),
     decidedSince(blogPost, userId),
+    db
+      .select({ n: count() })
+      .from(comment)
+      .innerJoin(contribution, eq(contribution.id, comment.contributionId))
+      .where(and(othersOnMine(userId), sql`${comment.reviewedAt} > ${seenAt(userId)}`)),
   ]);
   return counts.reduce((sum, [row]) => sum + (row?.n ?? 0), 0);
 }

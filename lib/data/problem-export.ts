@@ -15,7 +15,7 @@ import {
   PROBLEM_STATUS_LABELS,
   type ProblemStatus,
 } from "@/lib/constants";
-import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { type Comment, communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { contributorsOf, getProposer, roleText } from "@/lib/data/contributors";
 import { getProblem, type Reference, statusSince } from "@/lib/data/problems";
 import { getVersions } from "@/lib/data/permalinks";
@@ -79,6 +79,10 @@ export type ProblemExport = {
     credit: string;
     aiUse: AiUse;
     aiUseLabel: string;
+    /** Votes of signed-in readers: the score is up minus down. Null for references, which get no votes. */
+    votes: { score: number; up: number; down: number } | null;
+    /** Its discussion, oldest first, each comment with its replies. */
+    comments: ExportComment[];
   }[];
   /** Oldest first, each with its replies, oldest first. */
   comments: ExportComment[];
@@ -161,13 +165,15 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       credit: c.credit,
       aiUse: c.aiUse,
       aiUseLabel: AI_USE_LABELS[c.aiUse],
+      votes: c.kind === "reference" ? null : { score: c.votes.up - c.votes.down, ...c.votes },
+      comments: threads(c.comments.toReversed()),
     })),
     comments: threads(comments.toReversed()),
   };
 }
 
 /** Top-level comments with their replies; a reply whose comment is no longer shown is left out, as on the page. */
-function threads(comments: Awaited<ReturnType<typeof getApprovedComments>>): ExportComment[] {
+function threads(comments: Comment[]): ExportComment[] {
   const entry = (c: (typeof comments)[number]) => ({ date: isoDate(c.createdAt), author: c.author.name, body: c.body.trim() });
   const replies = Map.groupBy(comments.filter((c) => c.parentId), (c) => c.parentId);
   return comments.filter((c) => !c.parentId).map((c) => ({ ...entry(c), replies: (replies.get(c.id) ?? []).map(entry) }));
@@ -236,9 +242,14 @@ export function problemExportToMarkdown({ source, problem: p, contributors, cont
       `- **AI use:** ${c.aiUseLabel}`,
       ...(c.url ? [`- **Link:** ${c.url}`] : []),
       ...(c.permalink ? [`- **Permanent link:** ${c.permalink}`] : []),
+      ...(c.votes ? [`- **Votes:** ${c.votes.score} (${c.votes.up} up, ${c.votes.down} down)`] : []),
       "",
       cite(c.summary),
     );
+    for (const x of c.comments) {
+      add(`#### Comment by ${x.author}, ${formatDate(x.date)}`, "", cite(x.body));
+      for (const r of x.replies) add(`#### Reply by ${r.author}, ${formatDate(r.date)}`, "", cite(r.body));
+    }
   });
 
   add("## Discussion", "", comments.length ? "Comments approved by the moderators, oldest first, each followed by its replies." : "No comments yet.");

@@ -9,6 +9,8 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -72,8 +74,10 @@ export const blogPost = pgTable(
 );
 
 /**
- * Discussion on a problem or on a blog post: exactly one of the two is set. A reply names the comment it answers
- * (`parentId`), which is always a top-level comment on the same page: replies go one level deep.
+ * Discussion on a problem or on a blog post: exactly one of the two is set. A comment on a contribution to a
+ * problem also names the contribution (`contributionId`); without one, it is on the problem's own discussion.
+ * A reply names the comment it answers (`parentId`), which is always a top-level comment in the same discussion:
+ * replies go one level deep.
  */
 export const comment = pgTable(
   "comment",
@@ -82,6 +86,7 @@ export const comment = pgTable(
     problemId: uuid("problem_id").references(() => problem.id, { onDelete: "cascade" }),
     postId: uuid("post_id").references(() => blogPost.id, { onDelete: "cascade" }),
     parentId: uuid("parent_id").references((): AnyPgColumn => comment.id, { onDelete: "cascade" }),
+    contributionId: uuid("contribution_id").references((): AnyPgColumn => contribution.id, { onDelete: "cascade" }),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -94,7 +99,9 @@ export const comment = pgTable(
     index("comment_post_status_idx").on(t.postId, t.status),
     index("comment_status_created_idx").on(t.status, t.createdAt),
     index("comment_parent_idx").on(t.parentId),
+    index("comment_contribution_status_idx").on(t.contributionId, t.status),
     check("comment_target_check", sql`(${t.problemId} is null) <> (${t.postId} is null)`),
+    check("comment_contribution_check", sql`${t.contributionId} is null or ${t.problemId} is not null`),
   ],
 );
 
@@ -122,6 +129,29 @@ export const contribution = pgTable(
   (t) => [
     index("contribution_problem_status_idx").on(t.problemId, t.status),
     index("contribution_status_created_idx").on(t.status, t.createdAt),
+  ],
+);
+
+/**
+ * Votes on contributions, one per person and contribution: +1 or -1. Not moderated; taking a vote back deletes
+ * it. Nobody votes on their own contribution, and votes of blocked accounts do not count.
+ */
+export const contributionVote = pgTable(
+  "contribution_vote",
+  {
+    contributionId: uuid("contribution_id")
+      .notNull()
+      .references(() => contribution.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    value: smallint("value").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.contributionId, t.userId] }),
+    index("contribution_vote_user_idx").on(t.userId),
+    check("contribution_vote_value_check", sql`${t.value} in (-1, 1)`),
   ],
 );
 
@@ -213,6 +243,7 @@ export const activityLog = pgTable(
 export const commentRelations = relations(comment, ({ one, many }) => ({
   author: one(user, { fields: [comment.authorId], references: [user.id] }),
   parent: one(comment, { fields: [comment.parentId], references: [comment.id], relationName: "replies" }),
+  contribution: one(contribution, { fields: [comment.contributionId], references: [contribution.id] }),
   replies: many(comment, { relationName: "replies" }),
   problem: one(problem, { fields: [comment.problemId], references: [problem.id] }),
   post: one(blogPost, { fields: [comment.postId], references: [blogPost.id] }),
@@ -222,9 +253,10 @@ export const blogPostRelations = relations(blogPost, ({ one }) => ({
   author: one(user, { fields: [blogPost.authorId], references: [user.id] }),
 }));
 
-export const contributionRelations = relations(contribution, ({ one }) => ({
+export const contributionRelations = relations(contribution, ({ one, many }) => ({
   author: one(user, { fields: [contribution.authorId], references: [user.id] }),
   problem: one(problem, { fields: [contribution.problemId], references: [problem.id] }),
+  comments: many(comment),
 }));
 
 export const problemRevisionRelations = relations(problemRevision, ({ one }) => ({
