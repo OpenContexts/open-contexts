@@ -2,6 +2,7 @@
 // comments on both. Every submission starts as `pending` and only `approved` rows are shown on the public site.
 import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   check,
   index,
   integer,
@@ -70,13 +71,17 @@ export const blogPost = pgTable(
   (t) => [index("blog_post_status_created_idx").on(t.status, t.createdAt)],
 );
 
-/** Discussion on a problem or on a blog post: exactly one of the two is set. */
+/**
+ * Discussion on a problem or on a blog post: exactly one of the two is set. A reply names the comment it answers
+ * (`parentId`), which is always a top-level comment on the same page: replies go one level deep.
+ */
 export const comment = pgTable(
   "comment",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     problemId: uuid("problem_id").references(() => problem.id, { onDelete: "cascade" }),
     postId: uuid("post_id").references(() => blogPost.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id").references((): AnyPgColumn => comment.id, { onDelete: "cascade" }),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -88,6 +93,7 @@ export const comment = pgTable(
     index("comment_problem_status_idx").on(t.problemId, t.status),
     index("comment_post_status_idx").on(t.postId, t.status),
     index("comment_status_created_idx").on(t.status, t.createdAt),
+    index("comment_parent_idx").on(t.parentId),
     check("comment_target_check", sql`(${t.problemId} is null) <> (${t.postId} is null)`),
   ],
 );
@@ -174,6 +180,19 @@ export const problemProposal = pgTable(
   ],
 );
 
+/**
+ * When each user last looked at their submissions (/me): decisions made since then are counted in the account
+ * menu. `newSince`: where their current visit's "new" starts, so the marks stay while they look around. No row:
+ * they never have.
+ */
+export const submissionsSeen = pgTable("submissions_seen", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull(),
+  newSince: timestamp("new_since", { withTimezone: true }),
+});
+
 /** Append-only audit trail ("Activity log"): decisions on submissions, and direct changes to problems. */
 export const activityLog = pgTable(
   "activity_log",
@@ -189,8 +208,10 @@ export const activityLog = pgTable(
   (t) => [index("activity_log_target_idx").on(t.targetType, t.targetId)],
 );
 
-export const commentRelations = relations(comment, ({ one }) => ({
+export const commentRelations = relations(comment, ({ one, many }) => ({
   author: one(user, { fields: [comment.authorId], references: [user.id] }),
+  parent: one(comment, { fields: [comment.parentId], references: [comment.id], relationName: "replies" }),
+  replies: many(comment, { relationName: "replies" }),
   problem: one(problem, { fields: [comment.problemId], references: [problem.id] }),
   post: one(blogPost, { fields: [comment.postId], references: [blogPost.id] }),
 }));

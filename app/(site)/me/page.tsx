@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { contributionLook, KindTag, type KindLook } from "@/components/problems/kind-tag";
-import { ButtonLink, PageTitle, TabLink, Tabs, Tag, type TagTone } from "@/components/ui";
+import { AppleIcon, ButtonLink, PageTitle, TabLink, Tabs, Tag, type TagTone } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { cn } from "@/lib/cn";
 import { MODERATION_STATUSES, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getPosts } from "@/lib/data/blog";
 import { getProblems, problemLabel } from "@/lib/data/problems";
-import { getMySubmissions, type MySubmission } from "@/lib/data/submissions";
+import { getMySubmissions, markSubmissionsSeen, type MySubmission } from "@/lib/data/submissions";
 import { formatDate } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { SITE } from "@/lib/site";
@@ -32,6 +32,7 @@ const TYPE_LOOKS: Record<Exclude<SubmissionType, "contribution">, KindLook> = {
 
 function typeLook(s: MySubmission): KindLook {
   if (s.type === "contribution") return s.kind ? contributionLook(s.kind) : { label: "Result", tone: "neutral" };
+  if (s.reply) return { label: "Reply", tone: "neutral" };
   return TYPE_LOOKS[s.type];
 }
 
@@ -51,7 +52,9 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
   const user = await requireUser("/me");
   const { status: param } = await searchParams;
   const status = isStatus(param) ? param : undefined;
-  const [problemList, postList, items] = await Promise.all([getProblems(), getPosts(), getMySubmissions(user.id)]);
+  // Opening the page counts as seeing every decision so far; those made since the last visit are marked as new.
+  const [problemList, postList, items, seenBefore] = await Promise.all([getProblems(), getPosts(), getMySubmissions(user.id), markSubmissionsSeen(user.id)]);
+  const isNew = (s: MySubmission) => !!s.reviewedAt && (!seenBefore || s.reviewedAt > seenBefore);
   const problems = new Map(problemList.map((p) => [p.id, p]));
   // Published posts only: a pending or rejected post has no page to link to.
   const posts = new Map(postList.map((p) => [p.id, p]));
@@ -66,8 +69,16 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
   }
 
   const shown = status ? items.filter((s) => s.status === status) : items;
+  const news = items.filter(isNew).length;
   return (
     <>
+      {news > 0 && (
+        <p className="mb-5 text-center text-[0.98rem]">
+          <AppleIcon className="mr-1.5" />
+          {news === 1 ? "One of your submissions has" : `${news} of your submissions have`} been reviewed since your last
+          visit; {news === 1 ? "it is" : "they are"} marked below.
+        </p>
+      )}
       <Tabs label="Filter by review status" className="mb-6">
         <TabLink href="/me" active={!status} count={items.length}>
           All
@@ -81,7 +92,7 @@ async function Submissions({ searchParams }: Pick<PageProps<"/me">, "searchParam
       {shown.length ? (
         <ul className="space-y-4">
           {shown.map((s) => (
-            <SubmissionCard key={`${s.type}-${s.id}`} item={s} problem={s.problemId ? problems.get(s.problemId) : undefined} post={s.postId ? posts.get(s.postId) : undefined} />
+            <SubmissionCard key={`${s.type}-${s.id}`} item={s} isNew={isNew(s)} problem={s.problemId ? problems.get(s.problemId) : undefined} post={s.postId ? posts.get(s.postId) : undefined} />
           ))}
         </ul>
       ) : (
@@ -98,7 +109,7 @@ type ProblemRef = { slug: string; number: number; title: string; published: bool
  * along the top; then what it says, where it was made, its permanent link once published, and the moderators'
  * note, if any.
  */
-function SubmissionCard({ item: s, problem, post }: { item: MySubmission; problem?: ProblemRef; post?: { slug: string; title: string } }) {
+function SubmissionCard({ item: s, isNew, problem, post }: { item: MySubmission; isNew: boolean; problem?: ProblemRef; post?: { slug: string; title: string } }) {
   // An accepted proposal is on the site, but only among the candidates until the moderators publish it.
   const status = s.type === "proposal" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
   // Where the submission itself can be seen, if anywhere: its own page, or the problem a proposal became.
@@ -118,11 +129,17 @@ function SubmissionCard({ item: s, problem, post }: { item: MySubmission; proble
     ) : undefined;
 
   return (
-    <li className="overflow-hidden rounded-md border border-rule bg-paper">
+    <li className={cn("overflow-hidden rounded-md border bg-paper", isNew ? "border-brand/50 ring-1 ring-brand/30" : "border-rule")}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b border-rule bg-surface px-4 py-2">
         <KindTag look={typeLook(s)} />
         <span className="text-sm text-ink-subtle">{formatDate(s.createdAt)}</span>
-        <Tag tone={status.tone} className="ml-auto">
+        {isNew && (
+          <span className="ml-auto flex items-center gap-1 font-sans text-xs font-bold text-brand">
+            <AppleIcon />
+            New{s.reviewedAt && <span className="font-normal text-ink-subtle"> · reviewed {formatDate(s.reviewedAt)}</span>}
+          </span>
+        )}
+        <Tag tone={status.tone} className={cn(!isNew && "ml-auto")}>
           {status.label}
         </Tag>
       </div>

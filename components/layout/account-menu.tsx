@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { AppleIcon } from "@/components/ui";
+import { cn } from "@/lib/cn";
 import { signOut } from "@/lib/auth/client";
 
-/** Dropdown for a signed-in user. Its trigger has the same width as "Sign in", so the header never shifts. */
-export function AccountMenu({ name, email, moderator }: { name: string; email: string; moderator: boolean }) {
+/**
+ * Dropdown for a signed-in user. Its trigger has the same width as "Sign in", so the header never shifts.
+ * `news`: decisions on their submissions since they last opened /me, shown as a red apple with the number.
+ */
+export function AccountMenu({ name, email, moderator, news }: { name: string; email: string; moderator: boolean; news: number }) {
   const [open, setOpen] = useState(false);
+  // Opening /me marks the decisions seen on the server, but the header is not rendered again on the way there:
+  // the count is put away here once the page is open, until the server reports a different one.
+  const pathname = usePathname();
+  const [cleared, setCleared] = useState(0);
+  if (pathname === "/me" && news !== cleared) setCleared(news);
+  const unseen = news !== cleared ? news : 0;
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
@@ -33,9 +44,15 @@ export function AccountMenu({ name, email, moderator }: { name: string; email: s
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen(!open)}
-        className="cursor-pointer text-ink hover:underline"
+        className="relative cursor-pointer text-ink hover:underline"
       >
         Account ▾
+        {unseen > 0 && (
+          <>
+            <AppleCount n={unseen} className="absolute -top-2.5 -right-3.5" />
+            <span className="sr-only">, {unseen === 1 ? "a new decision" : `${unseen} new decisions`} on your submissions</span>
+          </>
+        )}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-20 mt-2 w-60 rounded border border-ink bg-paper py-1 text-base shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
@@ -43,8 +60,14 @@ export function AccountMenu({ name, email, moderator }: { name: string; email: s
             <p className="truncate font-bold">{name}</p>
             <p className="truncate text-sm text-ink-subtle">{email}</p>
           </div>
-          <Link role="menuitem" href="/me" className={item} onClick={() => setOpen(false)}>
+          <Link role="menuitem" href="/me" className={`${item} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
             My submissions
+            {unseen > 0 && (
+              <span className="flex items-center gap-1.5 text-sm text-brand">
+                {unseen} new
+                <AppleCount n={unseen} />
+              </span>
+            )}
           </Link>
           {moderator && (
             <Link role="menuitem" href="/admin" className={item} onClick={() => setOpen(false)}>
@@ -69,5 +92,15 @@ export function AccountMenu({ name, email, moderator }: { name: string; email: s
         </div>
       )}
     </div>
+  );
+}
+
+/** A small red apple with a number on it, like the badge on an app icon. */
+function AppleCount({ n, className }: { n: number; className?: string }) {
+  return (
+    <span aria-hidden className={cn("relative inline-flex size-5 items-center justify-center", className)}>
+      <AppleIcon className="absolute inset-0 size-5" />
+      <span className="relative top-[2px] font-sans text-[0.6rem]/none font-bold text-white tabular-nums">{n > 9 ? "9+" : n}</span>
+    </span>
   );
 }

@@ -93,7 +93,7 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
     case "comment":
       return result.rows.map((r) => ({
         id: r.id,
-        title: "Comment",
+        title: r.parentId ? "Reply" : "Comment",
         excerpt: excerpt(r.body),
         body: r.body,
         ...(r.postId ? post(r.postId) : problem(r.problemId)),
@@ -135,7 +135,8 @@ export async function getSubmission(type: SubmissionType, id: string) {
   await connection();
   switch (type) {
     case "comment": {
-      const row = await db.query.comment.findFirst({ where: eq(comment.id, id), with: { author } });
+      // A reply is reviewed with the comment it answers.
+      const row = await db.query.comment.findFirst({ where: eq(comment.id, id), with: { author, parent: { columns: { body: true, status: true }, with: { author: { columns: { name: true } } } } } });
       return row && { type, row };
     }
     case "contribution": {

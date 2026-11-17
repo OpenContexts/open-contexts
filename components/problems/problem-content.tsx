@@ -127,7 +127,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </p>
       </section>
 
-      <DiscussionSection comments={comments} commentBox={commentBox} references={problem.references} />
+      <DiscussionSection on={{ type: "problem", slug: problem.slug }} comments={comments} commentBox={commentBox} references={problem.references} />
     </article>
   );
 }

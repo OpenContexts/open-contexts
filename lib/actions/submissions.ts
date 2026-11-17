@@ -85,7 +85,20 @@ async function save(values: FormState["values"], insert: () => Promise<unknown>)
   }
 }
 
-/** A comment on a problem or on a published blog post. */
+/**
+ * The comment a reply goes under: a published comment on the same page. A reply to a reply goes under the
+ * comment that one answers, so threads stay one level deep. Undefined if there is no such comment.
+ */
+async function replyParent(parentId: string, on: { problemId: string } | { postId: string }): Promise<string | undefined> {
+  const parent = await db.query.comment.findFirst({ where: eq(comment.id, parentId), columns: { id: true, parentId: true, problemId: true, postId: true, status: true } });
+  if (!parent || parent.status !== "approved") return undefined;
+  const samePage = "problemId" in on ? parent.problemId === on.problemId : parent.postId === on.postId;
+  return samePage ? (parent.parentId ?? parent.id) : undefined;
+}
+
+const NO_PARENT = "The comment you are replying to is no longer available.";
+
+/** A comment on a problem or on a published blog post, or a reply to one. */
 export async function submitComment(_: FormState, formData: FormData): Promise<FormState> {
   const values = readForm(formData);
   const parsed = commentSchema.safeParse(values);
@@ -99,14 +112,18 @@ export async function submitComment(_: FormState, formData: FormData): Promise<F
     if (!post) return { status: "error", message: "This blog post does not exist.", values };
     const citeError = citeErrors(values, post, { body });
     if (citeError) return citeError;
-    return save(values, () => db.insert(comment).values({ body, postId: post.id, authorId: user.id }));
+    const parentId = parsed.data.parentId ? await replyParent(parsed.data.parentId, { postId: post.id }) : null;
+    if (parentId === undefined) return { status: "error", message: NO_PARENT, values };
+    return save(values, () => db.insert(comment).values({ body, postId: post.id, parentId, authorId: user.id }));
   }
 
   const { user, problem, error } = await guardProblem(values, problemSlug ?? "");
   if (error) return error;
   const citeError = citeErrors(values, problem, { body });
   if (citeError) return citeError;
-  return save(values, () => db.insert(comment).values({ body, problemId: problem.id, authorId: user.id }));
+  const parentId = parsed.data.parentId ? await replyParent(parsed.data.parentId, { problemId: problem.id }) : null;
+  if (parentId === undefined) return { status: "error", message: NO_PARENT, values };
+  return save(values, () => db.insert(comment).values({ body, problemId: problem.id, parentId, authorId: user.id }));
 }
 
 export async function submitResult(_: FormState, formData: FormData): Promise<FormState> {

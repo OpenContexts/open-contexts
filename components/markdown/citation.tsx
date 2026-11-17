@@ -2,10 +2,8 @@
 
 import { Fragment, type PointerEvent, type RefObject, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { Citable } from "@/lib/references";
-
-/** "https://www.arxiv.org/abs/2401.1234" → "arxiv.org/abs/2401.1234" */
-const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+import { type Citable, displayUrl } from "@/lib/references";
+import { CitationText } from "./citation-text";
 
 /**
  * A \cite{…} in the text: "[1, 3]". Each number shows its reference in a card on hover, focus or tap; a click
@@ -149,13 +147,7 @@ function CiteMark({ citation: c }: { citation: Citable }) {
           >
             <span className="block font-sans text-[0.68rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">Reference [{c.n}]</span>
             <span className="mt-1 block">
-              {c.url ? (
-                <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-ink hover:text-brand hover:underline">
-                  {c.text}
-                </a>
-              ) : (
-                c.text
-              )}
+              <CitationText text={c.text} url={c.url} append={false} newTab />
             </span>
             {c.url && (
               <a href={c.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block truncate font-sans text-xs text-brand hover:underline">

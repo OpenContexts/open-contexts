@@ -45,7 +45,7 @@ export async function PostContent({ id, commentBox }: { id: string; commentBox: 
       <MarkdownContent source={post.body} untrusted references={post.references} />
       <ReferenceList references={post.references} untrusted />
 
-      <DiscussionSection comments={comments} commentBox={commentBox} references={post.references} empty="No comments yet." />
+      <DiscussionSection on={{ type: "post", slug: post.slug }} comments={comments} commentBox={commentBox} references={post.references} empty="No comments yet." />
     </article>
   );
 }

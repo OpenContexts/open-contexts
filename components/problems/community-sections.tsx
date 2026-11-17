@@ -2,9 +2,11 @@
 // They render data passed in by ProblemContent, which caches them; only CommentBox reads the session.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CitationText } from "@/components/markdown/citation-text";
 import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { CommentForm, type CommentTarget } from "@/components/submissions/comment-form";
+import { ReplyButton } from "@/components/submissions/reply-button";
 import { Clamped, ExpandableList, PartTitle, toneColors } from "@/components/ui";
 import { AI_USE_LABELS, type ContributionKind } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -12,13 +14,11 @@ import type { getApprovedComments, getApprovedContributions } from "@/lib/data/c
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
+import { displayUrl } from "@/lib/references";
 import { SITE } from "@/lib/site";
 
 type Contribution = Awaited<ReturnType<typeof getApprovedContributions>>[number];
 type Comment = Awaited<ReturnType<typeof getApprovedComments>>[number];
-
-/** "https://www.arxiv.org/abs/2401.1234" → "arxiv.org/abs/2401.1234" */
-const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
 /** What a result's link leads to, by kind: a write-up for most, code and data for computational evidence. */
 const LINK_LABELS: Record<ContributionKind, string> = {
@@ -66,20 +66,14 @@ function CardHeader({ item: c, children }: { item: Contribution; children?: Reac
   );
 }
 
-/** A suggested reference: the citation itself as the title, linked to the source, and why it is relevant. */
+/** A suggested reference: the citation itself as the title, its identifiers linked, the source, and why it is relevant. */
 function ReferenceCard({ item: c, references }: { item: Contribution; references: CitableReferences }) {
   return (
     <li className="overflow-hidden rounded-md border border-rule bg-paper">
       <CardHeader item={c} />
       <div className="px-4 pt-3 pb-3.5">
         <p className="font-bold">
-          {c.url ? (
-            <a href={c.url} rel="nofollow ugc noopener noreferrer" className="text-ink hover:text-brand hover:underline">
-              {c.title} <span aria-hidden className="font-normal text-brand">↗</span>
-            </a>
-          ) : (
-            c.title
-          )}
+          <CitationText text={c.title} url={c.url} untrusted append={false} />
         </p>
         <Clamped lines={3} className="mt-1.5">
           <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] text-ink-muted [&>*:last-child]:mb-0" />
@@ -148,36 +142,52 @@ function ResultCard({ item: c, references }: { item: Contribution; references: C
 }
 
 /**
- * The comment box first (`commentBox`, rendered per visitor), then the comments, newest first. They cite the
- * `references` of the problem or blog post they are on; `empty` is shown while there are none.
+ * The comment box first (`commentBox`, rendered per visitor), then the comments, newest first, each with its
+ * replies below it, oldest first, and a button to reply. They cite the `references` of the problem or blog post
+ * they are `on`; `empty` is shown while there are none.
  */
 export function DiscussionSection({
+  on,
   comments,
   commentBox,
   references,
   empty = "No comments yet. Questions about the statement and informal remarks are welcome here.",
 }: {
+  on: CommentTarget;
   comments: Comment[];
   commentBox: ReactNode;
   references: CitableReferences;
   empty?: string;
 }) {
+  const threads = comments.filter((c) => !c.parentId);
+  // A reply whose comment was taken down again goes with it.
+  const replies = Map.groupBy(comments.toReversed().filter((c) => c.parentId), (c) => c.parentId);
   return (
     <>
       <PartTitle id="discussion">
         Discussion
       </PartTitle>
       {commentBox}
-      {comments.length ? (
+      {threads.length ? (
         <ExpandableList limit={10} noun={["older comment", "older comments"]} className="mt-6 border-b border-rule">
-          {comments.map((c) => (
-            <li key={c.id} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3.5 border-t border-rule py-4">
+          {threads.map((c) => (
+            <li key={c.id} id={`comment-${c.id}`} className="grid scroll-mt-6 grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3.5 border-t border-rule py-4">
               <Initials name={c.author.name} />
               <div className="min-w-0">
-                <p className="text-sm text-ink-subtle">
-                  <strong className="text-[0.95rem] text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
-                </p>
-                <MarkdownContent source={c.body} untrusted references={references} className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
+                <CommentBody comment={c} references={references} />
+                {replies.has(c.id) && (
+                  <ol aria-label={`Replies to ${c.author.name}`} className="mt-3 space-y-3.5">
+                    {replies.get(c.id)!.map((r) => (
+                      <li key={r.id} id={`comment-${r.id}`} className="grid scroll-mt-6 grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3">
+                        <Initials name={r.author.name} small />
+                        <div className="min-w-0">
+                          <CommentBody comment={r} references={references} />
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <ReplyButton on={on} parent={{ id: c.id, author: c.author.name }} references={references} />
               </div>
             </li>
           ))}
@@ -189,10 +199,27 @@ export function DiscussionSection({
   );
 }
 
-function Initials({ name }: { name: string }) {
+function CommentBody({ comment: c, references }: { comment: Comment; references: CitableReferences }) {
+  return (
+    <>
+      <p className="text-sm text-ink-subtle">
+        <strong className="text-[0.95rem] text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
+      </p>
+      <MarkdownContent source={c.body} untrusted references={references} className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
+    </>
+  );
+}
+
+function Initials({ name, small }: { name: string; small?: boolean }) {
   const letters = name.split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
   return (
-    <span aria-hidden className="flex size-9 items-center justify-center rounded-full bg-surface font-sans text-[0.8rem] font-bold text-ink-muted ring-1 ring-rule-strong">
+    <span
+      aria-hidden
+      className={cn(
+        "flex items-center justify-center rounded-full bg-surface font-sans font-bold text-ink-muted ring-1 ring-rule-strong",
+        small ? "size-7 text-[0.68rem]" : "size-9 text-[0.8rem]",
+      )}
+    >
       {letters}
     </span>
   );

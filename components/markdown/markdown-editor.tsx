@@ -20,6 +20,7 @@ export function MarkdownEditor({
   placeholder,
   invalid,
   describedBy,
+  autoFocus,
 }: {
   id: string;
   name: string;
@@ -28,6 +29,7 @@ export function MarkdownEditor({
   placeholder?: string;
   invalid?: boolean;
   describedBy?: string;
+  autoFocus?: boolean;
 }) {
   const [mode, setMode] = useState<"write" | "preview">("write");
   const [value, setValue] = useState(defaultValue);
@@ -64,6 +66,7 @@ export function MarkdownEditor({
           placeholder={placeholder}
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
+          autoFocus={autoFocus}
           onInput={(e) => setValue(e.currentTarget.value)}
           className={cn(mode === "preview" && "hidden")}
         />

@@ -67,9 +67,11 @@ export type ProblemExport = {
     aiUse: AiUse;
     aiUseLabel: string;
   }[];
-  /** Oldest first. */
-  comments: { date: string; author: string; body: string }[];
+  /** Oldest first, each with its replies, oldest first. */
+  comments: ExportComment[];
 };
+
+type ExportComment = { date: string; author: string; body: string; replies: Omit<ExportComment, "replies">[] };
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -136,8 +138,15 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       aiUse: c.aiUse,
       aiUseLabel: AI_USE_LABELS[c.aiUse],
     })),
-    comments: comments.toReversed().map((c) => ({ date: isoDate(c.createdAt), author: c.author.name, body: c.body.trim() })),
+    comments: threads(comments.toReversed()),
   };
+}
+
+/** Top-level comments with their replies; a reply whose comment is no longer shown is left out, as on the page. */
+function threads(comments: Awaited<ReturnType<typeof getApprovedComments>>): ExportComment[] {
+  const entry = (c: (typeof comments)[number]) => ({ date: isoDate(c.createdAt), author: c.author.name, body: c.body.trim() });
+  const replies = Map.groupBy(comments.filter((c) => c.parentId), (c) => c.parentId);
+  return comments.filter((c) => !c.parentId).map((c) => ({ ...entry(c), replies: (replies.get(c.id) ?? []).map(entry) }));
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -201,8 +210,11 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
     );
   });
 
-  add("## Discussion", "", comments.length ? "Comments approved by the moderators, oldest first." : "No comments yet.");
-  for (const c of comments) add(`### ${c.author}, ${formatDate(c.date)}`, "", cite(c.body));
+  add("## Discussion", "", comments.length ? "Comments approved by the moderators, oldest first, each followed by its replies." : "No comments yet.");
+  for (const c of comments) {
+    add(`### ${c.author}, ${formatDate(c.date)}`, "", cite(c.body));
+    for (const r of c.replies) add(`#### Reply by ${r.author}, ${formatDate(r.date)}`, "", cite(r.body));
+  }
 
   add("## How to cite", "", "```bibtex", bibtex, "```");
 
@@ -231,7 +243,7 @@ export function problemExportToMarkdown({ source, problem: p, contributions, com
     agenda: p.agenda.map((a) => a.id),
     tags: p.tags,
     contributions: contributions.length,
-    comments: comments.length,
+    comments: comments.reduce((n, c) => n + 1 + c.replies.length, 0),
     license: source.license,
   }, yaml);
 }

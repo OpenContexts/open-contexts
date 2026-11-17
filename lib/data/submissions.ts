@@ -1,9 +1,9 @@
 // A user's own submissions, for /me. Includes pending and rejected ones.
 import "server-only";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { ContributionKind, ModerationStatus, SubmissionType } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { blogPost, comment, contribution, permalink, problemProposal, problemRevision } from "@/lib/db/schema";
+import { blogPost, comment, contribution, permalink, problemProposal, problemRevision, submissionsSeen } from "@/lib/db/schema";
 
 export type MySubmission = {
   type: SubmissionType;
@@ -14,9 +14,13 @@ export type MySubmission = {
   problemId: string | null;
   /** The blog post it is (a post) or is on (a comment on a post). */
   postId: string | null;
+  /** For comments: whether it replies to another comment. */
+  reply?: boolean;
   status: ModerationStatus;
   reviewNote: string | null;
   createdAt: Date;
+  /** When the moderators decided on it; null while pending. */
+  reviewedAt: Date | null;
   /** The permanent key of an accepted contribution or post ("12.3", "blog.7"), if it has one. */
   key?: string;
 };
@@ -34,19 +38,68 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
   const linkable = [...contributions, ...posts].map((r) => r.id);
   const links = linkable.length ? await db.select({ id: permalink.targetId, key: permalink.key }).from(permalink).where(inArray(permalink.targetId, linkable)) : [];
   const keys = new Map(links.map((l) => [l.id, l.key]));
-  const common = (r: { id: string; status: ModerationStatus; reviewNote: string | null; createdAt: Date }) => ({
+  const common = (r: { id: string; status: ModerationStatus; reviewNote: string | null; createdAt: Date; reviewedAt: Date | null }) => ({
     id: r.id,
     status: r.status,
     reviewNote: r.reviewNote,
     createdAt: r.createdAt,
+    reviewedAt: r.status === "pending" ? null : r.reviewedAt,
     // A reopened or rejected submission keeps its key, but its page is not public then.
     key: r.status === "approved" ? keys.get(r.id) : undefined,
   });
   return [
-    ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), problemId: r.problemId, postId: r.postId })),
+    ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), reply: !!r.parentId, problemId: r.problemId, postId: r.postId })),
     ...contributions.map((r) => ({ ...common(r), type: "contribution" as const, title: r.title, kind: r.kind, problemId: r.problemId, postId: null })),
     ...revisions.map((r) => ({ ...common(r), type: "revision" as const, title: r.changeSummary, problemId: r.problemId, postId: null })),
     ...proposals.map((r) => ({ ...common(r), type: "proposal" as const, title: r.title, problemId: r.problemId, postId: null })),
     ...posts.map((r) => ({ ...common(r), type: "post" as const, title: r.title, problemId: null, postId: r.id })),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Decisions the user has not seen yet: made since they last opened /me, counted in the account menu.
+
+type Moderated = typeof comment | typeof contribution | typeof problemRevision | typeof problemProposal | typeof blogPost;
+
+/** The user's submissions in `t` decided since they last looked (ever, if they never have), and not by themselves. */
+function decidedSince(t: Moderated, userId: string) {
+  const seen = sql`coalesce((select ${submissionsSeen.seenAt} from ${submissionsSeen} where ${submissionsSeen.userId} = ${userId}), '-infinity'::timestamptz)`;
+  return db
+    .select({ n: count() })
+    .from(t)
+    .where(and(eq(t.authorId, userId), ne(t.status, "pending"), sql`${t.reviewedAt} > ${seen}`, sql`${t.reviewedById} is distinct from ${userId}`));
+}
+
+/** How many of the user's submissions were decided on since they last opened /me. One round trip. */
+export async function countNewDecisions(userId: string): Promise<number> {
+  const counts = await db.batch([
+    decidedSince(comment, userId),
+    decidedSince(contribution, userId),
+    decidedSince(problemRevision, userId),
+    decidedSince(problemProposal, userId),
+    decidedSince(blogPost, userId),
+  ]);
+  return counts.reduce((sum, [row]) => sum + (row?.n ?? 0), 0);
+}
+
+/** Views of /me this close together are one visit: what was new at its start stays marked, e.g. across the tabs. */
+const VISIT = "30 minutes";
+
+/**
+ * Records that the user looked at their submissions now, and returns where "new" starts for this visit: their
+ * previous visit (null: they never looked).
+ */
+export async function markSubmissionsSeen(userId: string): Promise<Date | null> {
+  const [row] = await db
+    .insert(submissionsSeen)
+    .values({ userId })
+    .onConflictDoUpdate({
+      target: submissionsSeen.userId,
+      set: {
+        newSince: sql`case when ${submissionsSeen.seenAt} < now() - ${VISIT}::interval then ${submissionsSeen.seenAt} else ${submissionsSeen.newSince} end`,
+        seenAt: sql`now()`,
+      },
+    })
+    .returning({ newSince: submissionsSeen.newSince });
+  return row?.newSince ?? null;
 }

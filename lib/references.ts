@@ -124,3 +124,63 @@ export function citesToText(text: string, refs: { text: string; key?: string }[]
     .map((p) => (typeof p === "string" ? p : `[${p.keys.map((k) => numbers.get(k) ?? "?").join(", ")}]`))
     .join("");
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// Links in a citation: only its identifiers are links (a URL, a DOI, an arXiv number), not the whole text.
+
+/** A piece of a citation: plain text, or an identifier with where it leads. */
+export type CitationPart = { text: string; href?: string };
+
+/** A URL, a DOI ("doi:10.1000/xyz", "10.1000/xyz") or an arXiv number ("arXiv:2401.01234v2", "arXiv:math/0601001"). */
+const IDENTIFIER = /(https?:\/\/[^\s<>]+)|(?:doi:\s*|DOI:?\s+)?(10\.\d{4,9}\/\S+)|arXiv:\s*((?:[a-z-]+(?:\.[A-Z]{2})?\/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?)/gi;
+
+/** "…/abc)." → "…/abc": punctuation after a URL or DOI belongs to the sentence; a closing bracket only if unmatched. */
+function trimEnd(s: string): string {
+  const t = s.replace(/[.,;:]+$/, "");
+  if (t.endsWith(")") && t.split("(").length < t.split(")").length) return trimEnd(t.slice(0, -1));
+  return t;
+}
+
+/** "https://www.arxiv.org/abs/2401.1234/" → "arxiv.org/abs/2401.1234" */
+export const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+
+/** What to show for a link the citation does not contain: its arXiv number or DOI if it is one, else the address. */
+function linkLabel(url: string): string {
+  const arxiv = url.match(/arxiv\.org\/(?:abs|pdf)\/([^?#]+?)(?:\.pdf)?\/?$/i)?.[1];
+  if (arxiv) return `arXiv:${arxiv}`;
+  const doi = url.match(/doi\.org\/(10\.\d{4,9}\/[^?#\s]+)/i)?.[1];
+  if (doi) return `doi:${decodeURIComponent(doi)}`;
+  return displayUrl(url);
+}
+
+const sameDoi = (url: string, doi: string) => decodeURIComponent(url).toLowerCase().includes(doi.toLowerCase());
+const sameArxiv = (url: string, id: string) => /arxiv\.org\//i.test(url) && url.includes(id.replace(/v\d+$/, ""));
+
+/**
+ * The citation in pieces, with its identifiers as links: to the reference's `url` where that is the same work,
+ * else to where the identifier resolves (doi.org, arxiv.org). With `append`, a `url` that none of them is gets
+ * its own link at the end, so the link is never lost.
+ */
+export function citationParts(text: string, url?: string, { append = true } = {}): CitationPart[] {
+  const parts: CitationPart[] = [];
+  let last = 0;
+  let used = false;
+  for (const m of text.matchAll(IDENTIFIER)) {
+    const [whole, link, doi, arxiv] = m;
+    const raw = link ?? doi ?? whole;
+    const id = trimEnd(raw);
+    // A "doi:" before it is part of the link; punctuation after it is not.
+    const shown = whole.slice(0, whole.length - (raw.length - id.length));
+    let href: string;
+    if (link) href = id;
+    else if (doi) href = url && sameDoi(url, id) ? url : `https://doi.org/${id}`;
+    else href = url && sameArxiv(url, arxiv) ? url : `https://arxiv.org/abs/${arxiv}`;
+    used ||= href === url;
+    if (m.index > last) parts.push({ text: text.slice(last, m.index) });
+    parts.push({ text: shown, href });
+    last = m.index + shown.length;
+  }
+  if (last < text.length) parts.push({ text: text.slice(last) });
+  if (append && url && !used) parts.push({ text: parts.length ? " " : "" }, { text: linkLabel(url), href: url });
+  return parts.filter((p) => p.text);
+}

@@ -29,14 +29,27 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 /** `problems` is keyed by id. `references`: what comments, results and edits cite, those of their problem or post. */
 export function SubmissionContent({ submission, problems, references }: { submission: Submission; problems: Map<string, Problem>; references?: Reference[] }) {
   switch (submission.type) {
-    case "comment":
+    case "comment": {
+      const { body, parent } = submission.row;
       return (
         <Card>
+          {parent && (
+            <div className="mb-4 rounded-lg bg-zinc-50 px-4 py-3 ring-1 ring-zinc-100 ring-inset">
+              <span className="mb-1 block text-xs font-medium text-zinc-500">
+                In reply to {parent.author.name}
+                {parent.status !== "approved" && " (that comment is not published at the moment, so the reply would not be shown)"}
+              </span>
+              <SitePreview>
+                <MarkdownContent source={parent.body} untrusted references={references} className="text-zinc-600 [&>*:last-child]:mb-0" />
+              </SitePreview>
+            </div>
+          )}
           <SitePreview>
-            <MarkdownContent source={submission.row.body} untrusted references={references} />
+            <MarkdownContent source={body} untrusted references={references} />
           </SitePreview>
         </Card>
       );
+    }
 
     case "contribution": {
       const c = submission.row;
