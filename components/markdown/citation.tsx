@@ -147,7 +147,7 @@ function CiteMark({ citation: c }: { citation: Citable }) {
           >
             <span className="block font-sans text-[0.68rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">Reference [{c.n}]</span>
             <span className="mt-1 block">
-              <CitationText text={c.text} url={c.url} append={false} newTab />
+              <CitationText text={c.text} url={c.url} attach={false} newTab />
             </span>
             {c.url && (
               <a href={c.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 block truncate font-sans text-xs text-brand hover:underline">

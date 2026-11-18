@@ -11,13 +11,29 @@ import { cn } from "@/lib/cn";
 import { type Citable, citables, splitCites } from "@/lib/references";
 import { Citation } from "./citation";
 
-const remarkPlugins: Options["remarkPlugins"] = [remarkGfm, remarkMath];
+/**
+ * $$…$$ is display math, as in LaTeX, also on one line or within a paragraph, where remark-math reads it as
+ * inline math. Display math can number its equations with \tag{…}, which KaTeX refuses inline.
+ */
+function remarkDisplayDollars() {
+  const walk = (node: MdNode, source: string) => {
+    for (const child of node.children ?? []) {
+      const start = child.position?.start.offset;
+      if (child.type === "inlineMath" && start !== undefined && source.startsWith("$$", start)) {
+        child.data = { ...child.data, hProperties: { className: ["language-math", "math-display"] } };
+      } else walk(child, source);
+    }
+  };
+  return (tree: MdNode, file: { value: unknown }) => walk(tree, String(file.value));
+}
+
+const remarkPlugins: Options["remarkPlugins"] = [remarkGfm, remarkMath, remarkDisplayDollars];
 const rehypePlugins: Options["rehypePlugins"] = [[rehypeKatex, { trust: false, strict: "ignore", throwOnError: false }]];
 
 /** What a text can cite: the references of its problem (or proposal), with or without their keys. */
 export type CitableReferences = { text: string; url?: string; key?: string }[];
 
-type MdNode = { type: string; value?: string; children?: MdNode[]; data?: Record<string, unknown> };
+type MdNode = { type: string; value?: string; children?: MdNode[]; data?: Record<string, unknown>; position?: { start: { offset?: number } } };
 
 /**
  * Turns each \cite{a, b} in the text into a <cite> element carrying its keys, which `components.cite` renders.

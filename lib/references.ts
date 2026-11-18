@@ -144,24 +144,47 @@ function trimEnd(s: string): string {
 /** "https://www.arxiv.org/abs/2401.1234/" → "arxiv.org/abs/2401.1234" */
 export const displayUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 
-/** What to show for a link the citation does not contain: its arXiv number or DOI if it is one, else the address. */
-function linkLabel(url: string): string {
+/** "arXiv:2401.01234" or "doi:10.1103/…" for a link to arxiv.org or doi.org; undefined for any other. */
+function identifierLabel(url: string): string | undefined {
   const arxiv = url.match(/arxiv\.org\/(?:abs|pdf)\/([^?#]+?)(?:\.pdf)?\/?$/i)?.[1];
   if (arxiv) return `arXiv:${arxiv}`;
   const doi = url.match(/doi\.org\/(10\.\d{4,9}\/[^?#\s]+)/i)?.[1];
-  if (doi) return `doi:${decodeURIComponent(doi)}`;
-  return displayUrl(url);
+  return doi && `doi:${decodeURIComponent(doi)}`;
 }
 
 const sameDoi = (url: string, doi: string) => decodeURIComponent(url).toLowerCase().includes(doi.toLowerCase());
 const sameArxiv = (url: string, id: string) => /arxiv\.org\//i.test(url) && url.includes(id.replace(/v\d+$/, ""));
 
 /**
- * The citation in pieces, with its identifiers as links: to the reference's `url` where that is the same work,
- * else to where the identifier resolves (doi.org, arxiv.org). With `append`, a `url` that none of them is gets
- * its own link at the end, so the link is never lost.
+ * Where a journal is cited in a citation: "Phys. Rev. Lett. 125, 260404 (2020)", "J. Math. Phys. 38(5),
+ * 2832–2838, 1997", "Nature 299 (1982) 802". The journal's name is a run of capitalised words and abbreviations,
+ * with "of", "and", "&" … between them; then the volume, the page or article number, and the year if given.
  */
-export function citationParts(text: string, url?: string, { append = true } = {}): CitationPart[] {
+const NAME_WORD = String.raw`(?:\p{Lu}[\p{L}'’-]*\.?)`;
+const JOINING_WORD = String.raw`(?:of|and|the|in|on|for|&|für|de|des|der|la|le|du|di)`;
+const PAGE = String.raw`(?:[A-Za-z]{0,2}\d+(?:\s*[–—-]\s*[A-Za-z]{0,2}\d+)?)`;
+const YEAR = String.raw`(?:1[6-9]|20)\d{2}`;
+const JOURNAL = new RegExp(
+  String.raw`(?<![\p{L}\d])${NAME_WORD}(?:\s+(?:${NAME_WORD}|${JOINING_WORD}(?=\s+\p{Lu})))*,?\s+(?:vol\.\s*)?\d+(?:\s*\(\d+\))?(?:,\s*(?:pp?\.\s*)?${PAGE}(?:\s*\(${YEAR}\)|,\s*${YEAR})?|\s+\(${YEAR}\),?\s*${PAGE})`,
+  "gu",
+);
+
+const HAS_JOURNAL = new RegExp(JOURNAL.source, "u");
+
+/** "… , " → ["…", ", "]: what is around a piece of text that a link should not cover (spaces and punctuation). */
+function linkable(text: string): [before: string, core: string, after: string] {
+  const m = /^([\s,;:.]*)([^]*?)([\s,;:.]*)$/u.exec(text)!;
+  return [m[1], m[2], m[3]];
+}
+
+/**
+ * The citation in pieces, with its identifiers as links: to the reference's `url` where that is the same work,
+ * else to where the identifier resolves (doi.org, arxiv.org). With `attach`, a `url` that none of them is goes on
+ * the journal the citation names ("Phys. Rev. Lett. 125, 260404 (2020)"); without one, an arXiv or DOI link is
+ * added at the end as its identifier ("arXiv:2401.01234"), and any other goes on all of the citation's other
+ * text. So the link is never lost.
+ */
+export function citationParts(text: string, url?: string, { attach = true } = {}): CitationPart[] {
   const parts: CitationPart[] = [];
   let last = 0;
   let used = false;
@@ -181,6 +204,26 @@ export function citationParts(text: string, url?: string, { append = true } = {}
     last = m.index + shown.length;
   }
   if (last < text.length) parts.push({ text: text.slice(last) });
-  if (append && url && !used) parts.push({ text: parts.length ? " " : "" }, { text: linkLabel(url), href: url });
-  return parts.filter((p) => p.text);
+  return (attach && url && !used ? attachLink(parts, url) : parts).filter((p) => p.text);
+}
+
+/** Puts `url` on the journal reference in the plain parts; without one, after them if it is an arXiv or DOI link, else on all of them. */
+function attachLink(parts: CitationPart[], url: string): CitationPart[] {
+  const journal = parts.findIndex((p) => !p.href && HAS_JOURNAL.test(p.text));
+  if (journal >= 0) {
+    const { text } = parts[journal];
+    // The last journal in the text: a citation names its authors and title first.
+    const m = [...text.matchAll(JOURNAL)].at(-1)!;
+    const [before, core, after] = linkable(m[0]);
+    const start = m.index + before.length;
+    const end = start + core.length;
+    return parts.toSpliced(journal, 1, { text: text.slice(0, start) }, { text: core, href: url }, { text: after + text.slice(end + after.length) });
+  }
+  const label = identifierLabel(url);
+  if (label) return [...parts, { text: parts.length ? " " : "" }, { text: label, href: url }];
+  return parts.flatMap((p) => {
+    if (p.href) return [p];
+    const [before, core, after] = linkable(p.text);
+    return [{ text: before }, { text: core, href: url }, { text: after }];
+  });
 }

@@ -12,6 +12,18 @@ export const SITE = {
     authors: "Wagner et al.",
     year: "2026",
     url: "",
+    /** For its BibTeX entry on /about (paperBibtex). Fill in what is known; empty fields are left empty in the entry. */
+    bibtex: {
+      key: "wagner2026accelerating",
+      /** BibTeX's author list: "Last, First and Last, First". */
+      author: "",
+      journal: "",
+      volume: "",
+      pages: "",
+      doi: "",
+      /** The arXiv number, e.g. "2601.01234". */
+      eprint: "",
+    },
   },
 } as const;
 

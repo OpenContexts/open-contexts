@@ -10,7 +10,11 @@ export const problemStatus = pgEnum("problem_status", PROBLEM_STATUSES);
 /** `key` is what the text cites it by, \cite{key}; references stored before keys existed get one on reading (withKeys). */
 export type Reference = { key?: string; text: string; url?: string };
 /** `version`: the version of the text the change started ("12v3"), for entries that record one. */
-export type HistoryEntry = { date: string; kind: HistoryKind; text: string; status?: ProblemStatus; version?: number };
+/**
+ * One entry of a problem's "Progress and history". `version`: the version of the text an edit started;
+ * `contribution`: the permanent key ("12.3") of the accepted contribution the entry records.
+ */
+export type HistoryEntry = { date: string; kind: HistoryKind; text: string; status?: ProblemStatus; version?: number; contribution?: string };
 
 export const problem = pgTable("problem", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -51,7 +51,7 @@ function SaveButton({ label }: { label: string }) {
  * Creates a problem (no `id`) or edits one. `version` guards against overwriting someone else's change.
  * New problems get the next free number and a URL name made from the title; neither changes later.
  */
-export function ProblemForm({ initial, id, version, nextNumber }: { initial: ProblemFormValues; id?: string; version?: number; nextNumber?: number }) {
+export function ProblemForm({ initial, id, number, version, nextNumber }: { initial: ProblemFormValues; id?: string; number?: number; version?: number; nextNumber?: number }) {
   const [state, action] = useActionState(id ? updateProblem : createProblem, initialFormState);
   const value = (name: Exclude<keyof ProblemFormValues, "history" | "agenda" | "references" | "published">) => valueOf(state, name, String(initial[name] ?? ""));
   const error = (name: string) => errorOf(state, name);
@@ -103,7 +103,7 @@ export function ProblemForm({ initial, id, version, nextNumber }: { initial: Pro
           </Card>
 
           <Card title="Progress and history">
-            <HistoryField initial={initial.history} error={error("history")} />
+            <HistoryField initial={initial.history} number={number} error={error("history")} />
           </Card>
         </div>
 

@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { CopyBlock, PageTitle, SectionTitle } from "@/components/ui";
 import { isPlaceholderEmail } from "@/lib/auth/orcid";
 import { getModerators } from "@/lib/data/moderators";
-import { databaseBibtex, databaseCitation, siteOrigin, todayIso } from "@/lib/cite";
+import { databaseBibtex, databaseCitation, paperBibtex, siteOrigin, todayIso } from "@/lib/cite";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "About" };
@@ -54,8 +54,11 @@ export default function AboutPage() {
           ) : (
             <em>{SITE.paper.title}</em>
           )}
-          , {SITE.paper.authors} ({SITE.paper.year}).
+          , {SITE.paper.authors} ({SITE.paper.year}). To cite it:
         </p>
+      </div>
+      <CopyBlock label="BibTeX" text={paperBibtex()} className="mt-4" />
+      <div className="prose-oc">
 
         <SectionTitle>How to cite</SectionTitle>
         <p>

@@ -35,6 +35,7 @@ const SECTIONS: { title: string; rows: Row[]; cite?: boolean }[] = [
     rows: [
       { type: "$\\rho \\otimes \\sigma$", get: rendered("$\\rho \\otimes \\sigma$") },
       { type: "$$\n\\int_0^1 f(x)\\,\\mathrm{d}x\n$$", get: rendered("$$\n\\int_0^1 f(x)\\,\\mathrm{d}x\n$$") },
+      { type: "$$E = mc^2 \\tag{1}$$", get: rendered("$$E = mc^2 \\tag{1}$$") },
       { type: "\\$5", get: "A dollar sign that is not math: $5" },
     ],
   },

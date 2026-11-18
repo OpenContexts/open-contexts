@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AGENDA_IDS } from "@/lib/agenda";
 import { AI_USE, HISTORY_KINDS, type HistoryKind, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry } from "@/lib/db/schema";
+import { parsePermalinkKey } from "@/lib/permalinks";
 import { citeIssues, commaList, referenceRows, text, toReferences } from "./fields";
 
 const PARTIAL_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
@@ -15,6 +16,8 @@ const historyRows = {
   "historyStatus[]": z.array(z.string()).default([]),
   /** The version an entry links to, kept as it is: set when the change is saved, not in the editor. */
   "historyVersion[]": z.array(z.string()).default([]),
+  /** The contribution an entry records, by its key, kept as it is: set when the contribution is accepted. */
+  "historyContribution[]": z.array(z.string()).default([]),
 };
 
 export const problemSchema = z
@@ -54,13 +57,14 @@ export const problemSchema = z
       .optional()
       .transform((v) => v === "on"),
   })
-  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "historyVersion[]": versions, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
+  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "historyVersion[]": versions, "historyContribution[]": contributions, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
     dates.forEach((date, i) => {
       const kind = kinds[i] as HistoryKind;
       const entryText = texts[i] ?? "";
       const status = statuses[i] as ProblemStatus | "";
       const version = Number(versions[i]);
+      const contribution = contributions[i] ?? "";
       const problem = !PARTIAL_DATE.test(date)
         ? "needs a date like 2019, 2019-07 or 2019-07-04"
         : !HISTORY_KINDS.includes(kind)
@@ -76,6 +80,7 @@ export const problemSchema = z
           text: entryText,
           ...(status && PROBLEM_STATUSES.includes(status) && { status }),
           ...(Number.isInteger(version) && version > 0 && { version }),
+          ...(parsePermalinkKey(contribution)?.type === "contribution" && { contribution }),
         });
     });
     const { references, errors } = toReferences(refTexts, refUrls, refKeys);

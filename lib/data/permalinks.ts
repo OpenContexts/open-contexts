@@ -41,27 +41,31 @@ async function nextSeq(target: PermalinkTarget, problemNumber?: number): Promise
   return (row?.n ?? 0) + 1;
 }
 
-async function hasPermalink(target: PermalinkTarget, targetId: string): Promise<boolean> {
+/** The key the target already has, if any. */
+async function existingKey(target: PermalinkTarget, targetId: string): Promise<string | undefined> {
   const row = await db.query.permalink.findFirst({ where: and(eq(permalink.target, target), eq(permalink.targetId, targetId)), columns: { key: true } });
-  return !!row;
+  return row?.key;
 }
 
 /**
- * The key an accepted contribution gets, "12.3", if its kind gets one (PERMALINK_KINDS) and it has none yet:
- * a contribution that is reopened and accepted again keeps its key. Two acceptances at the same moment can pick
- * the same number; the primary key then fails the second, which can simply be tried again.
+ * The key of an accepted contribution, "12.3", if its kind gets one (PERMALINK_KINDS). On its first acceptance
+ * `query` creates it; a contribution that is reopened and accepted again keeps its key. Two acceptances at the
+ * same moment can pick the same number; the primary key then fails the second, which can simply be tried again.
  */
-export async function contributionPermalink(contributionId: string): Promise<{ query: Query } | undefined> {
+export async function contributionPermalink(contributionId: string): Promise<{ key: string; query?: Query } | undefined> {
   const row = await db.query.contribution.findFirst({ where: eq(contribution.id, contributionId), columns: { kind: true }, with: { problem: { columns: { number: true } } } });
-  if (!row || !PERMALINK_KINDS.includes(row.kind) || (await hasPermalink("contribution", contributionId))) return undefined;
+  if (!row || !PERMALINK_KINDS.includes(row.kind)) return undefined;
+  const existing = await existingKey("contribution", contributionId);
+  if (existing) return { key: existing };
   const number = row.problem.number;
   const seq = await nextSeq("contribution", number);
-  return { query: db.insert(permalink).values({ key: contributionKey(number, seq), target: "contribution", targetId: contributionId, problemNumber: number, seq }) };
+  const key = contributionKey(number, seq);
+  return { key, query: db.insert(permalink).values({ key, target: "contribution", targetId: contributionId, problemNumber: number, seq }) };
 }
 
 /** The key a blog post gets on its first approval, "blog.7". */
 export async function postPermalink(postId: string): Promise<{ query: Query } | undefined> {
-  if (await hasPermalink("post", postId)) return undefined;
+  if (await existingKey("post", postId)) return undefined;
   const seq = await nextSeq("post");
   return { query: db.insert(permalink).values({ key: postKey(seq), target: "post", targetId: postId, seq }) };
 }

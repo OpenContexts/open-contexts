@@ -17,6 +17,8 @@ export type MySubmission = {
   postId: string | null;
   /** For comments: whether it replies to another comment. */
   reply?: boolean;
+  /** For comments: the whole text, in markdown (`title` is the start of it, as plain text). */
+  body?: string;
   status: ModerationStatus;
   reviewNote: string | null;
   createdAt: Date;
@@ -67,7 +69,7 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
     key: r.status === "approved" ? keys.get(r.id) : undefined,
   });
   return [
-    ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), reply: !!r.parentId, problemId: r.problemId, postId: r.postId })),
+    ...comments.map((r) => ({ ...common(r), type: "comment" as const, title: excerpt(r.body), body: r.body, reply: !!r.parentId, problemId: r.problemId, postId: r.postId })),
     ...contributions.map((r) => ({
       ...common(r),
       type: "contribution" as const,

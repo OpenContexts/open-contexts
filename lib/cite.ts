@@ -50,9 +50,9 @@ function longDate(iso: string): string {
   return [d && Number(d), MONTH_NAMES[Number(m) - 1], y].filter(Boolean).join(" ");
 }
 
-function entry(key: string, fields: [string, string | undefined][]): string {
-  const lines = fields.filter(([, v]) => v !== undefined).map(([k, v]) => `  ${k.padEnd(12)} = ${v}`);
-  return `@misc{${key},\n${lines.join(",\n")}\n}`;
+function entry(key: string, fields: [string, string | undefined][], type = "misc"): string {
+  const lines = fields.filter(([, v]) => v !== undefined).map(([k, v]) => `  ${k.padEnd(13)} = ${v}`);
+  return `@${type}{${key},\n${lines.join(",\n")}\n}`;
 }
 
 /**
@@ -127,6 +127,27 @@ export function databaseBibtex({ origin, today }: CiteContext): string {
     ["url", `{${origin}}`],
     ["urldate", `{${today}}`],
   ]);
+}
+
+/** The companion paper's entry, from SITE.paper. What is not known yet stays an empty field, to be filled in there. */
+export function paperBibtex(): string {
+  const { title, year, url, bibtex: b } = SITE.paper;
+  return entry(
+    b.key,
+    [
+      ["author", `{${b.author}}`],
+      ["title", `{{${escape(title)}}}`],
+      ["journal", `{${b.journal}}`],
+      ["volume", `{${b.volume}}`],
+      ["pages", `{${b.pages}}`],
+      ["year", `{${year}}`],
+      ["doi", `{${b.doi}}`],
+      ["eprint", `{${b.eprint}}`],
+      ["archivePrefix", "{arXiv}"],
+      ["url", `{${url}}`],
+    ],
+    "article",
+  );
 }
 
 /** The site's public address: BETTER_AUTH_URL, which the sign-in links depend on too. Server only. */

@@ -1,8 +1,9 @@
 // The parts of /me, /me/contributions and /me/comments: what a user submitted and where it stands.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { type CitableReferences, MarkdownContent, MarkdownInline } from "@/components/markdown/markdown";
 import { contributionLook, type KindLook, KindTag } from "@/components/problems/kind-tag";
-import { AppleIcon, SegmentLink, Segmented, TabLink, Tabs, type TagTone, toneColors } from "@/components/ui";
+import { AppleIcon, Clamped, SegmentLink, Segmented, TabLink, Tabs, type TagTone, toneColors } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { cn } from "@/lib/cn";
 import { MODERATION_STATUSES, type ModerationStatus, type SubmissionType } from "@/lib/constants";
@@ -15,7 +16,8 @@ import { SITE } from "@/lib/site";
 
 export type MyPage = "/me" | "/me/contributions" | "/me/comments";
 
-type ProblemRef = { slug: string; number: number; title: string; published: boolean };
+type ProblemRef = { slug: string; number: number; title: string; published: boolean; references: CitableReferences };
+type PostRef = { slug: string; title: string; references: CitableReferences };
 
 /** Everything the /me pages show, and what is new on them. */
 export type Mine = {
@@ -23,7 +25,7 @@ export type Mine = {
   isNew: (s: MySubmission) => boolean;
   newComments: (s: MySubmission) => number;
   problems: Map<string, ProblemRef>;
-  posts: Map<string, { slug: string; title: string }>;
+  posts: Map<string, PostRef>;
   /** A link to one of the /me pages that keeps the marks of what is new (see loadMine). */
   link: (page: MyPage, status?: ModerationStatus) => string;
 };
@@ -177,6 +179,9 @@ function SubmissionItem({ item: s, mine, card }: { item: MySubmission; mine: Min
   const fresh = mine.newComments(s);
   const comment = s.type === "comment";
   const on = s.reply ? "Reply on" : "On";
+  // What the texts can cite: the references of the problem or post they are on. A citation the page does not know
+  // shows its key.
+  const references = problem?.references ?? post?.references ?? [];
   const context: ReactNode =
     s.type === "proposal" ? (
       problem && <>Became {problemLink(problem)}</>
@@ -213,26 +218,20 @@ function SubmissionItem({ item: s, mine, card }: { item: MySubmission; mine: Min
       )}
       <div className={cn("px-4 pb-3.5", comment || card ? "pt-3" : "pt-1.5")}>
         {comment ? (
-          <div className="flex items-baseline gap-x-3">
-            <p className="min-w-0 flex-1 text-ink-muted italic">
-              {href ? (
-                <Link href={href} className="text-inherit hover:text-brand">
-                  “{s.title}”
-                </Link>
-              ) : (
-                <>“{s.title}”</>
-              )}
-            </p>
-            {marks}
+          <div className="flex items-start gap-x-3">
+            <Clamped lines={4} className="min-w-0 flex-1">
+              <MarkdownContent source={s.body ?? s.title} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
+            </Clamped>
+            <span className="mt-1 flex shrink-0 items-center gap-x-2.5">{marks}</span>
           </div>
         ) : (
           <p className="text-[1.02rem] font-bold">
             {href ? (
               <Link href={href} className="text-ink hover:text-brand">
-                {s.title}
+                <MarkdownInline source={s.title} references={references} />
               </Link>
             ) : (
-              s.title
+              <MarkdownInline source={s.title} references={references} />
             )}
           </p>
         )}
@@ -322,13 +321,22 @@ export function NewsList({ mine, news }: { mine: Mine; news: News[] }) {
                   <Link href={href} className="font-bold text-brand hover:underline">
                     {plural(n.comments, "new comment")}
                   </Link>{" "}
-                  on your {noun} “{s.title}”
+                  on your {noun} “<MarkdownInline source={s.title} references={problem?.references} />”
+                </>
+              ) : isComment(s) ? (
+                // A comment has no title; it shows on its own page.
+                <>
+                  Your{" "}
+                  <Link href={href} className="text-ink hover:text-brand hover:underline">
+                    {noun}
+                  </Link>{" "}
+                  <StatusWord item={s} problem={problem} />
                 </>
               ) : (
                 <>
                   Your {noun}{" "}
                   <Link href={href} className="text-ink hover:text-brand hover:underline">
-                    “{s.title}”
+                    “<MarkdownInline source={s.title} references={problem?.references} />”
                   </Link>{" "}
                   <StatusWord item={s} problem={problem} />
                 </>

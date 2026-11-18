@@ -87,6 +87,23 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   reference: "Relevant literature not yet cited on the page.",
 };
 
+/**
+ * The entry an accepted contribution of each kind adds to its problem's "Progress and history", linked to it;
+ * null for none. References go into the problem's list of references instead.
+ */
+export const CONTRIBUTION_HISTORY_KINDS: Record<ContributionKind, HistoryKind | null> = {
+  claim: "advance",
+  partial: "advance",
+  negative: "advance",
+  evidence: "advance",
+  verification: "advance",
+  reformulation: "posed",
+  decomposition: "posed",
+  exposition: "note",
+  challenge: "note",
+  reference: null,
+};
+
 /** What a permanent link (lib/permalinks.ts) can point to. Problem versions have keys of their own, from problem_version. */
 export const PERMALINK_TARGETS = ["problem", "contribution", "post"] as const;
 export type PermalinkTarget = (typeof PERMALINK_TARGETS)[number];

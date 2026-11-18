@@ -2,11 +2,11 @@ import { citationParts } from "@/lib/references";
 
 /**
  * A citation with only its identifiers as links (a URL, a DOI, an arXiv number), see citationParts. `untrusted`:
- * written by users and not edited by moderators, so the links get no endorsement. `append`: whether a link the
- * text does not contain is added at its end; off where the link is shown separately.
+ * written by users and not edited by moderators, so the links get no endorsement. `attach`: whether a link the
+ * text does not contain goes on its journal reference (or all of it); off where the link is shown separately.
  */
-export function CitationText({ text, url, untrusted, append, newTab }: { text: string; url?: string | null; untrusted?: boolean; append?: boolean; newTab?: boolean }) {
-  return citationParts(text, url ?? undefined, { append }).map((p, i) =>
+export function CitationText({ text, url, untrusted, attach, newTab }: { text: string; url?: string | null; untrusted?: boolean; attach?: boolean; newTab?: boolean }) {
+  return citationParts(text, url ?? undefined, { attach }).map((p, i) =>
     p.href ? (
       <a
         key={i}

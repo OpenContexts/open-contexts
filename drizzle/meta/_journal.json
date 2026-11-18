@@ -78,6 +78,13 @@
       "when": 1794949405066,
       "tag": "0010_contribution_comments_votes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795036212316,
+      "tag": "0011_history_contributions",
+      "breakpoints": true
     }
   ]
 }

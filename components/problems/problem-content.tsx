@@ -15,11 +15,13 @@ import { ContributeBox } from "@/components/submissions/contribute-options";
 import { ButtonAnchor, ButtonLink, Chip, ChipList, DownloadIcon, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
-import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
+import { type ApprovedContribution, communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
 import { activeContributors, type Contributor, contributorsOf, getProposer } from "@/lib/data/contributors";
 import { getVersions, type VersionSummary } from "@/lib/data/permalinks";
 import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
+import { AI_USE_LABELS } from "@/lib/constants";
+import { SITE } from "@/lib/site";
 import { formatDate, formatNames } from "@/lib/format";
 import { permalinkPath, problemKey } from "@/lib/permalinks";
 
@@ -51,6 +53,8 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   const history = problem.history.map((h, i) => ({ ...h, i })).toSorted((a, b) => b.date.localeCompare(a.date) || b.i - a.i);
   // The versions the entries started, which they link to with who made the change.
   const versions = new Map(versionList.map((v) => [v.version, v]));
+  // The accepted contributions the entries record, which they link to with who made them.
+  const byKey = new Map(contributions.flatMap((c) => (c.key ? [[c.key, c] as const] : [])));
   const contributors = activeContributors(contributorsOf({ problem, contributions, versions: versionList, proposer }));
 
   return (
@@ -128,6 +132,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
                   <KindTag look={look} className="relative -top-px mr-2" />
                   <MarkdownInline source={h.text} references={problem.references} />
                   {h.version && versions.has(h.version) && <VersionLine version={versions.get(h.version)!} />}
+                  {h.contribution && byKey.has(h.contribution) && <ContributionLine contribution={byKey.get(h.contribution)!} />}
                 </div>
               </li>
             );
@@ -191,6 +196,18 @@ function VersionLine({ version: v }: { version: VersionSummary }) {
         Version {v.version}
       </Link>{" "}
       {versionCredit(v)}
+    </p>
+  );
+}
+
+/** Under a history entry that records an accepted contribution: the link to it, and who made it. */
+function ContributionLine({ contribution: c }: { contribution: ApprovedContribution }) {
+  return (
+    <p className="mt-1 text-sm text-ink-subtle">
+      <Link href={permalinkPath(c.key!)} className="text-brand tabular-nums hover:underline" title="This contribution, with its own permanent link">
+        {SITE.name} {c.key}
+      </Link>{" "}
+      by {c.credit} · {AI_USE_LABELS[c.aiUse]}
     </p>
   );
 }

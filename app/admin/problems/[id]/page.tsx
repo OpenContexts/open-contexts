@@ -75,6 +75,7 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
       <ProblemForm
         key={problem.version}
         id={problem.id}
+        number={problem.number}
         version={problem.version}
         initial={{
           title: problem.title,

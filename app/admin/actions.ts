@@ -5,7 +5,7 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
-import { MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
+import { CONTRIBUTION_HISTORY_KINDS, CONTRIBUTION_KIND_LABELS, MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
 import { BLOG_TAG } from "@/lib/data/blog";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
@@ -129,6 +129,23 @@ async function citeReference(problemId: string, ref: Reference, change: "add" | 
   );
 }
 
+/**
+ * An accepted contribution is recorded in its problem's "Progress and history", as the kind of entry its kind
+ * makes (CONTRIBUTION_HISTORY_KINDS), linked by its key, which shows who made it. Reopening it takes the entry out
+ * again; accepting it again puts it back with the new date. Returns undefined when the history stays as it is.
+ */
+async function recordInHistory(contributionId: string, key: string, change: "add" | "remove") {
+  const row = await db.query.contribution.findFirst({ where: eq(contribution.id, contributionId), columns: { problemId: true, kind: true, title: true } });
+  const kind = row && CONTRIBUTION_HISTORY_KINDS[row.kind];
+  const current = kind ? await readProblem(row.problemId) : undefined;
+  if (!row || !kind || !current) return undefined;
+  const others = current.history.filter((h) => h.contribution !== key);
+  if (change === "remove" && others.length === current.history.length) return undefined;
+  const label = CONTRIBUTION_KIND_LABELS[row.kind].replace(/^./, (c) => c.toUpperCase());
+  const history = change === "add" ? [...others, { date: today(), kind, text: `${label}: ${row.title}`, contribution: key }] : others;
+  return { queries: [db.update(problem).set({ history, ...(change === "add" && { updatedAt: new Date() }) }).where(eq(problem.id, row.problemId))] };
+}
+
 /** Approving a proposal creates the problem, with the next free number, its first version and its key. */
 async function publishProposal(id: string, problemId: string) {
   const proposal = await db.query.problemProposal.findFirst({ where: eq(problemProposal.id, id) });
@@ -206,25 +223,28 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
   const problemId = type === "proposal" && action === "approve" ? crypto.randomUUID() : undefined;
   const publish = action !== "approve" ? undefined : type === "revision" ? await applyRevision(id) : problemId ? await publishProposal(id, problemId) : undefined;
 
-  const referenceChange = action === "approve" ? "add" : current.status === "approved" ? "remove" : undefined;
-  const cite = current.reference && referenceChange ? await citeReference(current.pages[0], current.reference, referenceChange) : undefined;
+  const problemChange = action === "approve" ? "add" : current.status === "approved" ? "remove" : undefined;
+  const cite = current.reference && problemChange ? await citeReference(current.pages[0], current.reference, problemChange) : undefined;
 
   const publication = type === "post" && action === "approve" ? await postPublication(id) : {};
   // Accepted contributions (of the kinds in PERMALINK_KINDS) and posts get their permanent key on the first approval.
-  const key =
-    action !== "approve" ? undefined : type === "contribution" ? await contributionPermalink(id) : type === "post" ? await postPermalink(id) : undefined;
+  // Reopening looks the contribution's key up too, to take its entry out of the history.
+  const contributionKey = type === "contribution" && problemChange ? await contributionPermalink(id) : undefined;
+  const key = contributionKey ?? (type === "post" && action === "approve" ? await postPermalink(id) : undefined);
+  const history = contributionKey && problemChange ? await recordInHistory(id, contributionKey.key, problemChange) : undefined;
   const update = reviewQuery(type, id, { ...review, ...(problemId && { problemId }), ...publication });
   const log = db.insert(activityLog).values({ targetType: type, targetId: id, action, moderatorId: moderator.id, note: note || null });
   // Publishing runs first: the proposal's problem_id must point at an existing problem.
-  // An approved edit or proposal changes the problem, and so may an approved reference (never both at once).
-  const change: Query[] = publish?.queries ?? cite?.queries ?? [];
-  await runBatch([...change, update, log, ...(key ? [key.query] : [])]);
+  // An approved edit or proposal changes the problem, and so does an approved contribution: a reference its
+  // references, any other kind its history.
+  const change: Query[] = publish?.queries ?? cite?.queries ?? history?.queries ?? [];
+  await runBatch([...change, update, log, ...(key?.query ? [key.query] : [])]);
 
   // Problem pages are cached until something on them changes: an approval adds to them, reopening an
   // approved submission takes it off again. Rejecting a pending one changes nothing that is public.
   if (action === "approve" || current.status === "approved") {
-    if (type === "revision" || type === "proposal" || cite) updateTag("problems");
-    if (key || type === "proposal") updateTag(PERMALINKS_TAG);
+    if (type === "revision" || type === "proposal" || cite || history) updateTag("problems");
+    if (key?.query || type === "proposal") updateTag(PERMALINKS_TAG);
     if (type === "post") updateTag(BLOG_TAG);
     for (const problemId of current.pages) updateTag(communityTag(problemId));
     if (current.pages.length) updateTag(COUNTS_TAG); // the counts in the problem lists

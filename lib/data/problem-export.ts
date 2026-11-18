@@ -62,6 +62,8 @@ export type ProblemExport = {
       status: ProblemStatus | null;
       text: string;
       version: { number: number; permalink: string; credit: string | null; aiUse: AiUse | null } | null;
+      /** The accepted contribution the entry records, with who made it. */
+      contribution: { key: string; permalink: string; credit: string; aiUse: AiUse } | null;
     }[];
   };
   /** Everyone who posed or proposed the problem, edited its text, or added a result or reference; comments do not count. */
@@ -104,6 +106,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
   // The versions change only together with the problem, whose "problems" tag getProblem gives this entry.
   const [contributions, comments, versions, proposer] = await Promise.all([getApprovedContributions(p.id), getApprovedComments("problem", p.id), getVersions(p.id), getProposer(p.id)]);
   const byNumber = new Map(versions.map((v) => [v.version, v]));
+  const byKey = new Map(contributions.map((c) => [c.key, c]));
   const version = versions.at(-1)?.version ?? 1;
   const origin = siteOrigin();
 
@@ -143,12 +146,14 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
         .toSorted((a, b) => a.date.localeCompare(b.date))
         .map((h) => {
           const v = h.version ? byNumber.get(h.version) : undefined;
+          const c = h.contribution ? byKey.get(h.contribution) : undefined;
           return {
             date: h.date,
             kind: h.kind,
             status: h.status ?? null,
             text: h.text,
             version: v ? { number: v.version, permalink: `${origin}${permalinkPath(v.key)}`, credit: v.credit, aiUse: v.aiUse } : null,
+            contribution: c?.key ? { key: c.key, permalink: `${origin}${permalinkPath(c.key)}`, credit: c.credit, aiUse: c.aiUse } : null,
           };
         }),
     },
@@ -222,7 +227,7 @@ export function problemExportToMarkdown({ source, problem: p, contributors, cont
   add(
     "## Progress and history",
     "",
-    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${cite(h.text)}${h.version ? ` ([version ${h.version.number}](${h.version.permalink}), by ${h.version.credit ?? "the editors"})` : ""}`).join("\n") : "No entries yet.",
+    p.history.length ? p.history.map((h) => `- ${formatDate(h.date)}, ${historyLabel(h)}: ${cite(h.text)}${h.version ? ` ([version ${h.version.number}](${h.version.permalink}), by ${h.version.credit ?? "the editors"})` : ""}${h.contribution ? ` ([${SITE.name} ${h.contribution.key}](${h.contribution.permalink}), by ${h.contribution.credit})` : ""}`).join("\n") : "No entries yet.",
   );
 
   add(

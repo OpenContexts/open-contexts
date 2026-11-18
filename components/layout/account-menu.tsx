@@ -50,7 +50,7 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
         Account ▾
         {unseen > 0 && (
           <>
-            <AppleCount n={unseen} className="absolute -top-2.5 -right-3.5" />
+            <AppleCount n={unseen} large className="absolute -top-3 -right-4" />
             <span className="sr-only">, {unseen === 1 ? "one update" : `${unseen} updates`} on your submissions</span>
           </>
         )}
@@ -97,12 +97,12 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
   );
 }
 
-/** A small red apple with a number on it, like the badge on an app icon. */
-function AppleCount({ n, className }: { n: number; className?: string }) {
+/** A small red apple with a number on it, like the badge on an app icon. `large`: on the menu's trigger, with room for "9+". */
+function AppleCount({ n, large, className }: { n: number; large?: boolean; className?: string }) {
   return (
-    <span aria-hidden className={cn("relative inline-flex size-5 items-center justify-center", className)}>
-      <AppleIcon className="absolute inset-0 size-5" />
-      <span className="relative top-[2px] font-sans text-[0.6rem]/none font-bold text-white tabular-nums">{n > 9 ? "9+" : n}</span>
+    <span aria-hidden className={cn("relative inline-flex items-center justify-center", large ? "size-[1.45rem]" : "size-5", className)}>
+      <AppleIcon className="absolute inset-0 size-full" />
+      <span className={cn("relative top-[2px] font-sans font-bold text-white tabular-nums", large ? "text-[0.64rem]/none" : "text-[0.6rem]/none")}>{n > 9 ? "9+" : n}</span>
     </span>
   );
 }
