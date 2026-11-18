@@ -7,11 +7,12 @@ import { ReferenceList } from "@/components/markdown/reference-list";
 import { CiteProblem } from "@/components/problems/cite-problem";
 import { ContributionsSection, DiscussionSection } from "@/components/problems/community-sections";
 import { historyLook, KindTag } from "@/components/problems/kind-tag";
+import { PermanentLink } from "@/components/problems/permanent-link";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { versionCredit } from "@/components/problems/version-list";
 import { StatusBadge } from "@/components/problems/status";
-import { ContributeOptions } from "@/components/submissions/contribute-options";
-import { ButtonAnchor, ButtonLink, Chip, ChipList, FramedBox, PartTitle, toneColors } from "@/components/ui";
+import { ContributeBox } from "@/components/submissions/contribute-options";
+import { ButtonAnchor, ButtonLink, Chip, ChipList, DownloadIcon, ExpandableList, FramedBox, PartTitle, toneColors } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { siteOrigin } from "@/lib/cite";
 import { communityTag, getApprovedComments, getApprovedContributions } from "@/lib/data/community";
@@ -19,9 +20,11 @@ import { activeContributors, type Contributor, contributorsOf, getProposer } fro
 import { getVersions, type VersionSummary } from "@/lib/data/permalinks";
 import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
-import { SITE } from "@/lib/site";
 import { formatDate, formatNames } from "@/lib/format";
 import { permalinkPath, problemKey } from "@/lib/permalinks";
+
+/** How many entries of the history show before "Show more"; the newest. */
+const HISTORY_SHOWN = 8;
 
 /**
  * Rendered once and reused for every visitor until something on the page changes: the problem
@@ -107,13 +110,13 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
         </ButtonLink>
         <DownloadLinks slug={problem.slug} number={problem.number} />
       </CiteProblem>
-      <PermanentLink number={problem.number} />
+      <PermanentLink permalink={problemKey(problem.number)} />
 
       <ReferenceList references={problem.references} />
 
       <PartTitle>Progress and history</PartTitle>
       {history.length ? (
-        <ol>
+        <ExpandableList limit={HISTORY_SHOWN} noun={["older entry", "older entries"]} ordered>
           {history.map((h, i) => {
             const look = historyLook(h);
             return (
@@ -129,21 +132,14 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
               </li>
             );
           })}
-        </ol>
+        </ExpandableList>
       ) : (
         <p className="text-ink-muted">No entries yet.</p>
       )}
 
       <ContributionsSection items={contributions} references={problem.references} slug={problem.slug} />
 
-      <section className="mt-8 rounded border border-rule bg-surface px-5 pt-4 pb-3.5">
-        <h3 className="mb-3 font-sans text-sm font-bold">Contribute to this problem</h3>
-        <ContributeOptions slug={problem.slug} />
-        <p className="mt-2.5 text-sm text-ink-subtle">
-          You need to be signed in. Every contribution is reviewed by a moderator before it appears, and is credited
-          to the people you name.
-        </p>
-      </section>
+      <ContributeBox slug={problem.slug} />
 
       <DiscussionSection on={{ type: "problem", slug: problem.slug }} comments={comments} commentBox={commentBox} references={problem.references} />
     </article>
@@ -165,7 +161,7 @@ function DownloadLinks({ slug, number }: { slug: string; number: number }) {
       size="sm"
       title={`The statement, text, references, history, contributions and discussion, ${f.hint}.`}
     >
-      <span aria-hidden className="text-base/none">↓</span>
+      <DownloadIcon className="size-3.5" />
       {f.label}
     </ButtonAnchor>
   ));
@@ -195,18 +191,6 @@ function VersionLine({ version: v }: { version: VersionSummary }) {
         Version {v.version}
       </Link>{" "}
       {versionCredit(v)}
-    </p>
-  );
-}
-
-/** The problem's permanent link ("12"), which keeps working if the page's URL changes. */
-function PermanentLink({ number }: { number: number }) {
-  return (
-    <p className="mt-3 text-sm text-ink-subtle">
-      Permanent link:{" "}
-      <Link href={permalinkPath(problemKey(number))} className="text-brand hover:underline">
-        {SITE.name} {number}
-      </Link>
     </p>
   );
 }

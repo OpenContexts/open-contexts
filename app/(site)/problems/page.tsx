@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ProblemList } from "@/components/problems/problem-list";
 import { SortSelect } from "@/components/problems/sort-select";
 import { StatusIcon } from "@/components/problems/status";
-import { Button, ChipLink, Input, PageTitle, TabLink, Tabs } from "@/components/ui";
+import { Button, ButtonLink, ChipLink, HourglassIcon, Input, PageTitle, TabLink, Tabs } from "@/components/ui";
 import { AGENDA, type AgendaId } from "@/lib/agenda";
 import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import { getCandidateProblems, getPublishedProblems, searchProblems } from "@/lib/data/problems";
@@ -115,12 +115,15 @@ async function ProblemResults(filters: Filters) {
       <ProblemList problems={list} empty={q ? `No problems match “${q}”.` : "No problems in this selection yet."} />
 
       {candidates.length > 0 && (
-        <p className="mt-8 text-center text-[0.95rem] text-ink-muted">
-          {plural(candidates.length, "further problem")} {candidates.length === 1 ? "has" : "have"} been accepted but {candidates.length === 1 ? "is" : "are"} not part of this list yet.{" "}
-          <Link href="/candidates" className="text-brand hover:underline">
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
+          <p className="text-[0.95rem] text-ink-muted">
+            {plural(candidates.length, "further problem")} {candidates.length === 1 ? "has" : "have"} been accepted but {candidates.length === 1 ? "is" : "are"} not part of this list yet.
+          </p>
+          <ButtonLink href="/candidates" variant="secondary">
+            <HourglassIcon variant="grey" />
             See the candidate problems →
-          </Link>
-        </p>
+          </ButtonLink>
+        </div>
       )}
     </>
   );

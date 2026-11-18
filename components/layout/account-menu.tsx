@@ -14,11 +14,11 @@ import { signOut } from "@/lib/auth/client";
  */
 export function AccountMenu({ name, email, moderator, news }: { name: string; email: string; moderator: boolean; news: number }) {
   const [open, setOpen] = useState(false);
-  // Opening /me marks the decisions seen on the server, but the header is not rendered again on the way there:
+  // Opening /me (or a page under it) marks the decisions seen on the server, but the header is not rendered again on the way there:
   // the count is put away here once the page is open, until the server reports a different one.
   const pathname = usePathname();
   const [cleared, setCleared] = useState(0);
-  if (pathname === "/me" && news !== cleared) setCleared(news);
+  if ((pathname === "/me" || pathname.startsWith("/me/")) && news !== cleared) setCleared(news);
   const unseen = news !== cleared ? news : 0;
   const [pending, startTransition] = useTransition();
   const router = useRouter();

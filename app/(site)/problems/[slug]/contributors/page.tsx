@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { contributionLook, type KindLook, KindTag } from "@/components/problems/kind-tag";
+import { ProblemContext } from "@/components/problems/problem-context";
 import { PageTitle } from "@/components/ui";
 import { CONTRIBUTION_KIND_LABELS } from "@/lib/constants";
 import { type Contributor, getContributors, type Role } from "@/lib/data/contributors";
@@ -23,16 +24,10 @@ export default async function ContributorsPage({ params }: PageProps<"/problems/
 
   return (
     <>
-      <p className="mt-6 text-[0.92rem]">
-        <Link href={`/problems/${slug}`} className="text-brand hover:underline">
-          ← Problem {problem.number}: {problem.title}
-        </Link>
-      </p>
-      <PageTitle className="mt-5">Contributors to Problem {problem.number}</PageTitle>
+      <ProblemContext problem={problem} label="Contributors to" />
+      <PageTitle className="mt-10">Contributors</PageTitle>
       <p className="mb-6">
-        Everyone who posed or proposed the problem, edited its text, or added a result or a reference, in the order
-        they first contributed, as credited when the moderators accepted their work. Comments are part of the
-        discussion and not listed here.
+        Everyone who posed, proposed, edited or added to the problem, in the order they first did, as credited.
       </p>
       {contributors.length ? (
         <ol className="space-y-4">

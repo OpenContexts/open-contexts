@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import Form from "next/form";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ContributionItem } from "@/components/problems/contribution-cards";
+import { ProblemContext } from "@/components/problems/problem-context";
+import { FilterSelect } from "@/components/problems/sort-select";
 import { VotesProvider } from "@/components/problems/votes";
-import { PageTitle, TabLink, Tabs } from "@/components/ui";
-import { cn } from "@/lib/cn";
+import { ContributeBox } from "@/components/submissions/contribute-options";
+import { SignedInProvider } from "@/components/submissions/signed-in";
+import { Button, PageTitle, SegmentLink, Segmented } from "@/components/ui";
+import { isSignedIn } from "@/lib/auth/session";
 import type { ContributionKind } from "@/lib/constants";
 import { type ApprovedContribution, getCachedContributions } from "@/lib/data/community";
 import { getProblem, problemLabel } from "@/lib/data/problems";
@@ -14,7 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/problems/[slug]/c
   return problem ? { title: `Contributions to ${problemLabel(problem)}` } : {};
 }
 
-/** The tabs: everything, the results by what they do for the problem, and the suggested references. */
+/** What the menu shows: everything, the results by what they do for the problem, and the suggested references. */
 const GROUPS = [
   {
     id: "all",
@@ -60,6 +65,7 @@ export default async function ContributionsPage({ params, searchParams }: PagePr
   const page = Math.min(pages, Math.max(1, Number(query.page) || 1));
   const shown = listed.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
+  const action = `/problems/${slug}/contributions`;
   const href = (next: { kind?: GroupId; sort?: Sort; page?: number }) => {
     const kind = next.kind ?? group.id;
     const params = new URLSearchParams({
@@ -67,52 +73,64 @@ export default async function ContributionsPage({ params, searchParams }: PagePr
       ...((next.sort ?? sort) === "votes" && kind !== "references" && { sort: "votes" }),
       ...(next.page && next.page > 1 && { page: String(next.page) }),
     });
-    return params.size ? `?${params}` : `/problems/${slug}/contributions`;
+    return params.size ? `?${params}` : action;
   };
 
   return (
     <>
-      <p className="mt-6 text-[0.92rem]">
-        <Link href={`/problems/${slug}`} className="text-brand hover:underline">
-          ← Problem {problem.number}: {problem.title}
-        </Link>
-      </p>
-      <PageTitle className="mt-5">Contributions to Problem {problem.number}</PageTitle>
+      <ProblemContext problem={problem} label="Contributions to" />
+      <PageTitle className="mt-10">Contributions</PageTitle>
       <p>
         Everything submitted on the problem and accepted by the moderators. Each result has its own page, with its
         permanent link, the full discussion and a citation; vote on the ones you find useful, or not.
       </p>
 
-      <Tabs label="Kinds of contribution">
-        {GROUPS.map((g) => {
-          const n = inGroup(g).length;
-          // Kinds nobody has contributed yet stay out of the way; the current tab always shows.
-          return n > 0 || g.id === group.id || g.id === "all" ? (
-            <TabLink key={g.id} href={href({ kind: g.id, page: 1 })} active={g.id === group.id} count={n}>
-              {g.label}
-            </TabLink>
-          ) : null;
-        })}
-      </Tabs>
-      {group.id !== "references" && listed.length > 1 && (
-        <p className="mb-4 flex justify-end gap-3 font-sans text-xs">
-          <span className="text-ink-subtle">Sort by</span>
-          {(["new", "votes"] as const).map((s) => (
-            <Link key={s} href={href({ sort: s, page: 1 })} aria-current={s === sort ? "true" : undefined} className={cn(s === sort ? "font-bold text-ink" : "text-brand hover:underline")}>
-              {s === "new" ? "Newest" : "Most votes"}
-            </Link>
-          ))}
-        </p>
-      )}
+      {/* What to show, from a menu, and in which order: one row above the list. */}
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 border-b border-rule pb-3">
+        <Form action={action} className="flex items-center gap-2">
+          {sort === "votes" && <input type="hidden" name="sort" value="votes" />}
+          <label htmlFor="kind" className="sr-only">
+            Show
+          </label>
+          <FilterSelect id="kind" name="kind" defaultValue={group.id} key={group.id}>
+            {GROUPS.map((g) => {
+              const n = inGroup(g).length;
+              // Kinds nobody has contributed yet stay out of the way; the current one always shows.
+              return n > 0 || g.id === group.id || g.id === "all" ? (
+                <option key={g.id} value={g.id}>
+                  {`${g.id === "all" ? "All contributions" : g.label} (${n})`}
+                </option>
+              ) : null;
+            })}
+          </FilterSelect>
+          <noscript>
+            <Button type="submit" variant="quiet" size="sm">
+              Show
+            </Button>
+          </noscript>
+        </Form>
+        {group.id !== "references" && listed.length > 1 && (
+          <Segmented label="Sort by">
+            <SegmentLink href={href({ sort: "new", page: 1 })} active={sort === "new"}>
+              Newest
+            </SegmentLink>
+            <SegmentLink href={href({ sort: "votes", page: 1 })} active={sort === "votes"}>
+              Most votes
+            </SegmentLink>
+          </Segmented>
+        )}
+      </div>
 
       {shown.length ? (
-        <VotesProvider problemId={problem.id}>
-          <ol className="mt-4 space-y-4">
-            {shown.map((c) => (
-              <ContributionItem key={c.id} item={c} references={problem.references} />
-            ))}
-          </ol>
-        </VotesProvider>
+        <SignedInProvider signedIn={isSignedIn()}>
+          <VotesProvider problemId={problem.id}>
+            <ol className="mt-5 space-y-4">
+              {shown.map((c) => (
+                <ContributionItem key={c.id} item={c} references={problem.references} />
+              ))}
+            </ol>
+          </VotesProvider>
+        </SignedInProvider>
       ) : (
         <p className="mt-6 text-ink-muted">Nothing here yet.</p>
       )}
@@ -138,6 +156,8 @@ export default async function ContributionsPage({ params, searchParams }: PagePr
           )}
         </nav>
       )}
+
+      <ContributeBox slug={slug} className="mt-12" />
     </>
   );
 }

@@ -2,13 +2,15 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "quiet" | "ghost";
+type Variant = "primary" | "secondary" | "quiet" | "ghost";
 type Size = "sm" | "md";
 
 type ButtonStyleProps = { variant?: Variant; size?: Size; className?: string };
 
 const variants: Record<Variant, string> = {
   primary: "border-brand-dark bg-brand-strong text-white hover:brightness-110",
+  // Grey: a clear button for a way on that is not the page's main action.
+  secondary: "border-rule-strong bg-surface text-ink hover:border-ink-subtle hover:bg-rule/60",
   quiet: "border-ink bg-paper text-ink hover:bg-surface",
   ghost: "border-transparent bg-transparent text-ink hover:bg-surface",
 };

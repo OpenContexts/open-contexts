@@ -2,16 +2,16 @@
 // cards, with their votes and newest comments, and suggested references as single lines. Rendered inside cached
 // pages; the votes and comment forms they hold load what depends on the visitor in the browser.
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { CitationText } from "@/components/markdown/citation-text";
 import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
+import { CommentThread } from "@/components/problems/comment-thread";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { VoteControl } from "@/components/problems/votes";
 import { CommentButton } from "@/components/submissions/comment-button";
-import { Clamped, toneColors } from "@/components/ui";
+import { Clamped, CommentIcon, toneColors } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { AI_USE_LABELS, type ContributionKind } from "@/lib/constants";
-import type { ApprovedContribution, Comment } from "@/lib/data/community";
+import type { ApprovedContribution } from "@/lib/data/community";
 import { formatDate, plural } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { displayUrl } from "@/lib/references";
@@ -34,65 +34,67 @@ const LINK_LABELS: Record<ContributionKind, string> = {
 /** How many of a result's comments its card shows; the rest are on its own page. */
 const PREVIEW_COMMENTS = 5;
 
-/** The kind and date in a strip along the top of a card, tinted for the outcomes that matter (see contributionLook). */
-function CardHeader({ item: c, children }: { item: ApprovedContribution; children?: ReactNode }) {
-  const look = contributionLook(c.kind);
-  return (
-    <div className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-rule px-4 py-2", look.strong ? toneColors[look.tone].tint : "bg-surface")}>
-      <KindTag look={look} />
-      <span className="text-sm text-ink-subtle">{formatDate(c.createdAt)}</span>
-      {children}
-    </div>
-  );
-}
-
 /**
- * One result: the header with its permanent key; its votes beside the title, who takes responsibility, the
- * summary and its links; then its newest comments. `references`: the problem's, which the texts cite.
+ * One result, laid out like an answer on a forum: a strip along the top tinted in the colour of its kind (see
+ * contributionLook), with its permanent key and date; the votes and the number of comments in a column on the
+ * left; the title, who takes responsibility, the summary and its link. All of that opens the result's own page.
+ * Below it, the newest comments. `references`: the problem's, which the texts cite.
  */
 export function ResultCard({ item: c, references }: { item: ApprovedContribution; references: CitableReferences }) {
   const page = c.key && permalinkPath(c.key);
+  const look = contributionLook(c.kind);
+  const tone = toneColors[look.tone];
   return (
     <li className="overflow-hidden rounded-md border border-rule bg-paper">
-      <CardHeader item={c}>
-        {page && (
-          <Link href={page} className="ml-auto font-sans text-xs font-bold text-ink-subtle tabular-nums hover:text-brand" title="Permanent link to this contribution">
-            {SITE.name} {c.key}
-          </Link>
-        )}
-      </CardHeader>
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 px-4 pt-3 pb-3.5">
-        <VoteControl id={c.id} votes={c.votes} className="-ml-1" />
-        <div className="min-w-0">
-          <h3 className="text-[1.08rem] font-bold">
-            {page ? (
-              <Link href={page} className="text-ink hover:text-brand">
-                {c.title}
-              </Link>
-            ) : (
-              c.title
+      {/* The other links and buttons inside sit above the title's link, which covers the card. */}
+      <div className={cn("relative", page && "group/card transition-colors hover:bg-surface/60 [&_a:not([data-cover])]:relative [&_a:not([data-cover])]:z-10 [&_button]:relative [&_button]:z-10")}>
+        <div className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-2", tone.tint, look.strong ? tone.border : "border-rule")}>
+          <KindTag look={look} />
+          {c.key && <span className="font-sans text-xs font-bold text-ink-subtle tabular-nums">{SITE.name} {c.key}</span>}
+          <span className="ml-auto text-sm text-ink-subtle">{formatDate(c.createdAt)}</span>
+        </div>
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 px-4 pt-3 pb-3.5">
+          <div className="relative z-10 flex flex-col items-center gap-2 self-start">
+            <VoteControl id={c.id} votes={c.votes} />
+            {page && (
+              <span className="flex items-center gap-1 font-sans text-xs text-ink-subtle tabular-nums" title={plural(c.comments.length, "comment")}>
+                <CommentIcon className="size-3.5" />
+                {c.comments.length}
+                <span className="sr-only"> comments</span>
+              </span>
             )}
-          </h3>
-          <p className="mt-0.5 text-sm text-ink-subtle">
-            by {c.credit} · {AI_USE_LABELS[c.aiUse]}
-          </p>
-          <Clamped lines={5} className="mt-2">
-            <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
-          </Clamped>
-          {(c.url || page) && (
-            <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              {c.url && (
-                <a href={c.url} rel="nofollow ugc noopener noreferrer" className="min-w-0 max-w-full truncate text-brand hover:underline">
-                  ↗ {LINK_LABELS[c.kind]}: <span className="text-ink-subtle">{displayUrl(c.url)}</span>
-                </a>
-              )}
-              {page && (
-                <Link href={page} className="ml-auto shrink-0 text-brand hover:underline">
-                  Open and cite →
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[1.1rem]/snug font-bold">
+              {page ? (
+                <Link href={page} data-cover className="text-ink group-hover/card:text-brand after:absolute after:inset-0">
+                  {c.title}
                 </Link>
+              ) : (
+                c.title
               )}
+            </h3>
+            <p className="mt-0.5 text-sm text-ink-subtle">
+              by {c.credit} · {AI_USE_LABELS[c.aiUse]}
             </p>
-          )}
+            <Clamped lines={4} className="mt-2">
+              <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
+            </Clamped>
+            {(c.url || page) && (
+              <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                {c.url && (
+                  <a href={c.url} rel="nofollow ugc noopener noreferrer" className="min-w-0 max-w-full truncate text-brand hover:underline">
+                    ↗ {LINK_LABELS[c.kind]}: <span className="text-ink-subtle">{displayUrl(c.url)}</span>
+                  </a>
+                )}
+                {page && (
+                  <span aria-hidden className="ml-auto shrink-0 font-sans text-xs font-bold text-ink-subtle transition group-hover/card:text-brand">
+                    Open, discuss and cite <span className="inline-block transition group-hover/card:translate-x-0.5">→</span>
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
         </div>
       </div>
       {c.key && <CardComments item={c} contributionKey={c.key} references={references} />}
@@ -100,12 +102,9 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
   );
 }
 
-/** How many replies to each previewed comment its card shows. */
-const PREVIEW_REPLIES = 3;
-
 /**
- * The newest comments on a result, each shortened, with its first replies and a button to reply, and the button
- * to add a comment. The full discussion is on the result's own page.
+ * The newest comments on a result, in the style of the discussion below, a little smaller, with the button to add
+ * one. The full discussion is on the result's own page.
  */
 function CardComments({ item: c, contributionKey, references }: { item: ApprovedContribution; contributionKey: string; references: CitableReferences }) {
   const page = permalinkPath(contributionKey);
@@ -115,34 +114,12 @@ function CardComments({ item: c, contributionKey, references }: { item: Approved
   const replies = Map.groupBy(c.comments.toReversed().filter((x) => x.parentId), (x) => x.parentId);
   const shown = threads.slice(0, PREVIEW_COMMENTS);
   return (
-    <div className="border-t border-rule bg-surface/50 px-4 pt-2.5 pb-3">
+    <div className="border-t border-rule px-4 pt-3 pb-3">
       {shown.length > 0 && (
-        <ol aria-label="Newest comments" className="mb-1.5 divide-y divide-rule">
-          {shown.map((x) => {
-            const answers = replies.get(x.id) ?? [];
-            return (
-              <li key={x.id} className="py-2.5 first:pt-0.5">
-                <PreviewComment comment={x} references={references} />
-                {answers.length > 0 && (
-                  <ol aria-label={`Replies to ${x.author.name}`} className="mt-2 space-y-2 pl-5">
-                    {answers.slice(0, PREVIEW_REPLIES).map((r) => (
-                      <li key={r.id}>
-                        <PreviewComment comment={r} references={references} />
-                      </li>
-                    ))}
-                    {answers.length > PREVIEW_REPLIES && (
-                      <li>
-                        <Link href={`${page}#comment-${x.id}`} className="font-sans text-xs text-brand hover:underline">
-                          {plural(answers.length - PREVIEW_REPLIES, "more reply", "more replies")} →
-                        </Link>
-                      </li>
-                    )}
-                  </ol>
-                )}
-                <CommentButton on={on} replyTo={{ id: x.id, author: x.author.name }} references={references} />
-              </li>
-            );
-          })}
+        <ol aria-label="Newest comments" className="mb-2 space-y-3.5">
+          {shown.map((x) => (
+            <CommentThread key={x.id} comment={x} replies={replies.get(x.id) ?? []} on={on} references={references} compact />
+          ))}
         </ol>
       )}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
@@ -157,27 +134,13 @@ function CardComments({ item: c, contributionKey, references }: { item: Approved
   );
 }
 
-/** One comment in a card: who, when, and the text shortened to a few lines. */
-function PreviewComment({ comment: x, references }: { comment: Comment; references: CitableReferences }) {
-  return (
-    <>
-      <p className="text-sm text-ink-subtle">
-        <strong className="text-ink">{x.author.name}</strong> · {formatDate(x.createdAt)}
-      </p>
-      <Clamped lines={3}>
-        <MarkdownContent source={x.body} untrusted references={references} className="text-[0.95rem] [&>*:last-child]:mb-0" />
-      </Clamped>
-    </>
-  );
-}
-
 /**
- * A suggested reference, as a slim card in the same list as the results: the citation with its link, who
+ * A suggested reference, as a slim line in the same list as the results: the citation with its link, who
  * suggested it and when, and why it is relevant on request. References get no votes, comments or permanent link.
  */
 export function ReferenceLine({ item: c, references }: { item: ApprovedContribution; references: CitableReferences }) {
   return (
-    <li className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 rounded-md border border-rule bg-paper px-4 py-2.5">
+    <li className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 px-1 py-1">
       <KindTag look={contributionLook("reference")} className="relative -top-px" />
       <div className="min-w-0">
         <p className="text-[0.98rem]">

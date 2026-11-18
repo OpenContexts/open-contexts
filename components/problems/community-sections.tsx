@@ -2,15 +2,15 @@
 // They render data passed in by ProblemContent, which caches them; only CommentBox reads the session.
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
+import type { CitableReferences } from "@/components/markdown/markdown";
+import { CommentThread } from "@/components/problems/comment-thread";
 import { ContributionItem } from "@/components/problems/contribution-cards";
-import { CommentForm, type CommentTarget, discussionPage } from "@/components/submissions/comment-form";
-import { CommentButton } from "@/components/submissions/comment-button";
+import { CommentForm } from "@/components/submissions/comment-form";
+import { type CommentTarget, discussionPage } from "@/components/submissions/comment-target";
 import { ButtonLink, ExpandableList, PartTitle } from "@/components/ui";
 import { getCurrentUser } from "@/lib/auth/session";
 import type { ApprovedContribution as Contribution, Comment } from "@/lib/data/community";
-import { cn } from "@/lib/cn";
-import { formatDate, plural } from "@/lib/format";
+import { plural } from "@/lib/format";
 
 /**
  * How much of the list the problem page shows: the newest contributions until it has shown this many results,
@@ -62,7 +62,7 @@ export function ContributionsSection({ items, references, slug }: { items: Contr
 
 /**
  * The comment box first (`commentBox`, rendered per visitor), then the comments, newest first, each with its
- * replies below it, oldest first, and a button to reply. They cite the `references` of the problem or blog post
+ * replies below it, oldest first, and a button to reply (CommentThread). They cite the `references` of the problem or blog post
  * they are `on`; `empty` is shown while there are none.
  */
 export function DiscussionSection({
@@ -90,57 +90,13 @@ export function DiscussionSection({
       {threads.length ? (
         <ExpandableList limit={10} noun={["older comment", "older comments"]} className="mt-6 border-b border-rule">
           {threads.map((c) => (
-            <li key={c.id} id={`comment-${c.id}`} className="grid scroll-mt-6 grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3.5 border-t border-rule py-4">
-              <Initials name={c.author.name} />
-              <div className="min-w-0">
-                <CommentBody comment={c} references={references} />
-                {replies.has(c.id) && (
-                  <ol aria-label={`Replies to ${c.author.name}`} className="mt-3 space-y-3.5">
-                    {replies.get(c.id)!.map((r) => (
-                      <li key={r.id} id={`comment-${r.id}`} className="grid scroll-mt-6 grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3">
-                        <Initials name={r.author.name} small />
-                        <div className="min-w-0">
-                          <CommentBody comment={r} references={references} />
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                <CommentButton on={on} replyTo={{ id: c.id, author: c.author.name }} references={references} />
-              </div>
-            </li>
+            <CommentThread key={c.id} comment={c} replies={replies.get(c.id) ?? []} on={on} references={references} className="border-t border-rule py-4" />
           ))}
         </ExpandableList>
       ) : (
         <p className="mt-5 text-ink-muted">{empty}</p>
       )}
     </>
-  );
-}
-
-function CommentBody({ comment: c, references }: { comment: Comment; references: CitableReferences }) {
-  return (
-    <>
-      <p className="text-sm text-ink-subtle">
-        <strong className="text-[0.95rem] text-ink">{c.author.name}</strong> · {formatDate(c.createdAt)}
-      </p>
-      <MarkdownContent source={c.body} untrusted references={references} className="mt-1 text-[0.98rem] [&>*:last-child]:mb-0" />
-    </>
-  );
-}
-
-function Initials({ name, small }: { name: string; small?: boolean }) {
-  const letters = name.split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "flex items-center justify-center rounded-full bg-surface font-sans font-bold text-ink-muted ring-1 ring-rule-strong",
-        small ? "size-7 text-[0.68rem]" : "size-9 text-[0.8rem]",
-      )}
-    >
-      {letters}
-    </span>
   );
 }
 

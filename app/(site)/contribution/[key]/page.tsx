@@ -7,16 +7,18 @@ import { CiteProblem } from "@/components/problems/cite-problem";
 import { CommentBox, DiscussionSection } from "@/components/problems/community-sections";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
-import { StatusBadge, StatusIcon } from "@/components/problems/status";
+import { PermanentLink } from "@/components/problems/permanent-link";
+import { ProblemContext } from "@/components/problems/problem-context";
 import { VersionList } from "@/components/problems/version-list";
 import { VotesProvider, VoteControl } from "@/components/problems/votes";
+import { SignedInProvider } from "@/components/submissions/signed-in";
 import { ButtonLink, Callout, PageTitle, PartTitle } from "@/components/ui";
+import { isSignedIn } from "@/lib/auth/session";
 import { siteOrigin } from "@/lib/cite";
 import { AI_USE_LABELS } from "@/lib/constants";
 import { type Resolved, type ResolvedVersion, resolvePermalink } from "@/lib/data/permalinks";
 import { type Problem, problemLabel } from "@/lib/data/problems";
 import { formatDate } from "@/lib/format";
-import { permalinkPath } from "@/lib/permalinks";
 import { SITE } from "@/lib/site";
 
 // Permanent links (lib/permalinks.ts): a problem's ("12") and a blog post's ("blog.7") redirect to their
@@ -47,9 +49,11 @@ export default async function PermalinkPage({ params }: PageProps<"/contribution
       return <Gone permalink={resolved.key} />;
     case "contribution":
       return (
-        <VotesProvider problemId={resolved.problem.id}>
-          <ContributionView {...resolved} />
-        </VotesProvider>
+        <SignedInProvider signedIn={isSignedIn()}>
+          <VotesProvider problemId={resolved.problem.id}>
+            <ContributionView {...resolved} />
+          </VotesProvider>
+        </SignedInProvider>
       );
     case "version":
       return <VersionView {...resolved} />;
@@ -63,44 +67,6 @@ function BackLink({ problem }: { problem: Problem }) {
     <p className="mt-6 text-[0.92rem]">
       <Link href={`/problems/${problem.slug}`} className="text-brand hover:underline">
         ← Problem {problem.number}: {problem.title}
-      </Link>
-    </p>
-  );
-}
-
-/**
- * Which problem a contribution is to, along the top of its page: the problem's apple in the colour of its
- * status, its number and title, and its status, all linking to it.
- */
-function ProblemContext({ problem }: { problem: Problem }) {
-  return (
-    <Link
-      href={`/problems/${problem.slug}`}
-      className="group mt-6 flex items-center gap-3.5 rounded-md border border-rule bg-surface px-4 py-3 no-underline transition hover:border-rule-strong"
-    >
-      <StatusIcon status={problem.status} candidate={!problem.published} className="size-7" />
-      <span className="min-w-0 flex-1">
-        <span className="block font-sans text-[0.7rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">Contribution to</span>
-        <span className="block font-bold text-ink group-hover:text-brand">
-          Problem {problem.number}: {problem.title}
-        </span>
-      </span>
-      <StatusBadge status={problem.status} className="max-sm:hidden" />
-      <span aria-hidden className="text-brand transition group-hover:translate-x-0.5">
-        →
-      </span>
-    </Link>
-  );
-}
-
-/** "Permanent link: OpenContext 12.3", with the full address to copy. */
-function PermanentLink({ permalink }: { permalink: string }) {
-  return (
-    <p className="mt-3 text-sm text-ink-subtle">
-      Permanent link:{" "}
-      <Link href={permalinkPath(permalink)} className="text-brand hover:underline">
-        {siteOrigin().replace(/^https?:\/\//, "")}
-        {permalinkPath(permalink)}
       </Link>
     </p>
   );
@@ -120,7 +86,7 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
   };
   return (
     <>
-      <ProblemContext problem={problem} />
+      <ProblemContext problem={problem} label="Contribution to" />
       <article>
         <header className="mt-8 mb-8 grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-4">
           <VoteControl id={c.id} votes={c.votes} className="-ml-1 pt-5" />

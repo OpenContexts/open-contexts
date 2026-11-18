@@ -5,6 +5,8 @@ import { CommentBox } from "@/components/problems/community-sections";
 import { ModeratorEditLink } from "@/components/problems/moderator-link";
 import { ProblemContent } from "@/components/problems/problem-content";
 import { VotesProvider } from "@/components/problems/votes";
+import { SignedInProvider } from "@/components/submissions/signed-in";
+import { isSignedIn } from "@/lib/auth/session";
 import { Callout } from "@/components/ui";
 import { getProblem, problemLabel } from "@/lib/data/problems";
 
@@ -17,8 +19,8 @@ export async function generateMetadata({ params }: PageProps<"/problems/[slug]">
 }
 
 // Rendered per request from the cache: the problem list and the page's content (ProblemContent) are only
-// read and rendered again after a change. Only the moderator link and the comment box depend on the visitor, and
-// the votes, which load in the browser (VotesProvider).
+// read and rendered again after a change. Only the moderator link, the comment box and whether the comment buttons
+// ask to sign in (SignedInProvider) depend on the visitor, and the votes, which load in the browser (VotesProvider).
 export default async function ProblemPage({ params }: PageProps<"/problems/[slug]">) {
   const { slug } = await params;
   const problem = await getProblem(slug);
@@ -39,9 +41,11 @@ export default async function ProblemPage({ params }: PageProps<"/problems/[slug
         </Callout>
       )}
       {/* The key: the cached content places this slot among its own children, and React needs one there. */}
-      <VotesProvider problemId={problem.id}>
-        <ProblemContent id={problem.id} commentBox={<CommentBox key="comment-box" on={{ type: "problem", slug: problem.slug }} references={problem.references} />} />
-      </VotesProvider>
+      <SignedInProvider signedIn={isSignedIn()}>
+        <VotesProvider problemId={problem.id}>
+          <ProblemContent id={problem.id} commentBox={<CommentBox key="comment-box" on={{ type: "problem", slug: problem.slug }} references={problem.references} />} />
+        </VotesProvider>
+      </SignedInProvider>
     </>
   );
 }

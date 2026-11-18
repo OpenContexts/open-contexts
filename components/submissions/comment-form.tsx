@@ -7,22 +7,12 @@ import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { Button, Callout, SubmitButton } from "@/components/ui";
 import { errorOf, initialFormState, valueOf } from "@/lib/actions/form-state";
 import { submitComment } from "@/lib/actions/submissions";
-import { permalinkPath } from "@/lib/permalinks";
+import type { CommentTarget, ReplyTarget } from "./comment-target";
 import { FormMessage } from "./form-parts";
-
-/** What a comment is on: a problem or a blog post, by its URL name, or a contribution, by its key ("12.3"). */
-export type CommentTarget = { type: "problem" | "post"; slug: string } | { type: "contribution"; key: string };
-
-/** The page a discussion is on. */
-export const discussionPage = (on: CommentTarget) =>
-  on.type === "contribution" ? permalinkPath(on.key) : on.type === "problem" ? `/problems/${on.slug}` : `/blog/${on.slug}`;
 
 /** The form field that says where the comment goes. */
 const targetField = (on: CommentTarget) =>
   on.type === "contribution" ? { name: "contributionKey", value: on.key } : { name: on.type === "problem" ? "problemSlug" : "postSlug", value: on.slug };
-
-/** The comment a reply answers: its id and its author's name. */
-export type ReplyTarget = { id: string; author: string };
 
 /**
  * `references`: the problem's or post's, which the comment can cite with \cite{key}. With `replyTo`, a reply to

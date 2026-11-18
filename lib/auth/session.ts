@@ -2,6 +2,7 @@
 // through here (pages, server actions, route handlers), never through layouts alone.
 import "server-only";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { MODERATOR_ROLES, type Role } from "@/lib/constants";
@@ -16,9 +17,10 @@ export type CurrentUser = {
 
 /**
  * The signed-in user, or null.
- * Visitors without a session cookie cost no database query; signed-in ones cost one session lookup.
+ * Visitors without a session cookie cost no database query; signed-in ones cost one session lookup, once per
+ * request however many parts of the page ask.
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<CurrentUser | null> {
   // Request time only. Without this, Next.js pre-runs the session lookup while prerendering
   // with the session cookie, and Better Auth's expiry check (`new Date()`) and database query
   // fail there.
@@ -27,7 +29,10 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (!session || session.user.banned) return null;
   const { id, name, email, role } = session.user;
   return { id, name, email, role: (role as Role | null | undefined) ?? "user" };
-}
+});
+
+/** Whether anyone is signed in, for SignedInProvider. */
+export const isSignedIn = async () => !!(await getCurrentUser());
 
 export function isModerator(user: CurrentUser | null): boolean {
   return !!user && MODERATOR_ROLES.includes(user.role);
