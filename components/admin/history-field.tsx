@@ -1,6 +1,6 @@
 "use client";
 
-import { type KeyboardEvent, useId, useState } from "react";
+import { type KeyboardEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import { AdminButton, AdminInput, AdminSelect } from "@/components/admin/ui";
 import { HISTORY_KINDS, type HistoryKind } from "@/lib/constants";
 import type { HistoryEntry } from "@/lib/db/schema";
@@ -29,6 +29,13 @@ function EntryInputs({
   onKeyDown?: (e: KeyboardEvent) => void;
   label: string;
 }) {
+  // React selects the kind but leaves the options' defaults alone, and after a save it resets the form, which shows the
+  // first kind ("Posed") in every row while the state keeps the real one; the next save then sends "Posed" for all.
+  // Making the chosen kind the default keeps it through a reset.
+  const kind = useRef<HTMLSelectElement>(null);
+  useLayoutEffect(() => {
+    for (const option of kind.current?.options ?? []) option.defaultSelected = option.value === entry.kind;
+  }, [entry.kind]);
   return (
     <>
       <AdminInput
@@ -41,6 +48,7 @@ function EntryInputs({
         className="w-32 flex-none tabular-nums"
       />
       <AdminSelect
+        ref={kind}
         name={names ? "historyKind[]" : undefined}
         value={entry.kind}
         onChange={(e) => onChange({ kind: e.target.value as HistoryKind })}

@@ -85,6 +85,13 @@
       "when": 1795036212316,
       "tag": "0011_history_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795104199373,
+      "tag": "0012_history_kind_repair",
+      "breakpoints": true
     }
   ]
 }
