@@ -12,6 +12,7 @@ import { Clamped, CommentIcon, toneColors } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { AI_USE_LABELS, type ContributionKind } from "@/lib/constants";
 import type { ApprovedContribution } from "@/lib/data/community";
+import { excerpt } from "@/lib/excerpt";
 import { formatDate, plural } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { displayUrl } from "@/lib/references";
@@ -31,6 +32,12 @@ const LINK_LABELS: Record<ContributionKind, string> = {
   reference: "Source",
 };
 
+/**
+ * About how much of a result's summary its card carries, in characters of markdown. The card shows a few lines; the
+ * rest, often pages of math, would only make the page slow, and is on the result's own page.
+ */
+const CARD_SUMMARY = 1200;
+
 /** How many of a result's comments its card shows; the rest are on its own page. */
 const PREVIEW_COMMENTS = 5;
 
@@ -44,6 +51,7 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
   const page = c.key && permalinkPath(c.key);
   const look = contributionLook(c.kind);
   const tone = toneColors[look.tone];
+  const summary = page ? excerpt(c.summary, CARD_SUMMARY) : { text: c.summary, cut: false };
   return (
     <li className="overflow-hidden rounded-md border border-rule bg-paper">
       {/* The other links and buttons inside sit above the title's link, which covers the card. */}
@@ -77,8 +85,8 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
             <p className="mt-0.5 text-sm text-ink-subtle">
               by {c.credit} · {AI_USE_LABELS[c.aiUse]}
             </p>
-            <Clamped lines={4} className="mt-2">
-              <MarkdownContent source={c.summary} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
+            <Clamped lines={4} more={(summary.cut && page) || undefined} className="mt-2">
+              <MarkdownContent source={summary.text} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
             </Clamped>
             {(c.url || page) && (
               <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
