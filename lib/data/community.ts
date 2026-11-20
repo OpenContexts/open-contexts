@@ -5,6 +5,7 @@ import "server-only";
 import { and, count, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db, isDbConfigured } from "@/lib/db";
+import type { ContributionKind } from "@/lib/constants";
 import { comment, contribution, contributionVote, permalink, user } from "@/lib/db/schema";
 
 /**
@@ -74,9 +75,30 @@ export async function getVoteTotals(ids: string[]): Promise<Map<string, Votes>> 
   return new Map(rows.map(({ id, ...votes }) => [id, votes]));
 }
 
+/** An accepted result as other results refer to it: what a verification or challenge is about, or one that is. */
+export type LinkedResult = { id: string; key: string; kind: ContributionKind; title: string; credit: string; withdrawn: boolean };
+
+/** How the accepted results of one problem refer to each other: the one each is about, and those about each. */
+export function linkResults<R extends { id: string; key?: string; kind: ContributionKind; title: string; credit: string; targetId: string | null; withdrawnAt: Date | null }>(rows: R[]) {
+  const linked = new Map(
+    rows.flatMap((r) => (r.key ? [[r.id, { id: r.id, key: r.key, kind: r.kind, title: r.title, credit: r.credit, withdrawn: !!r.withdrawnAt }] as const] : [])),
+  );
+  const about = Map.groupBy(
+    rows.filter((r) => r.targetId && linked.has(r.id)),
+    (r) => r.targetId!,
+  );
+  return {
+    /** The result this one verifies or challenges, if it is public. */
+    target: (r: R) => (r.targetId ? linked.get(r.targetId) : undefined),
+    /** The verifications and challenges of this one, oldest first. */
+    responses: (r: R) => (about.get(r.id) ?? []).map((x) => linked.get(x.id)!).toReversed(),
+  };
+}
+
 /**
  * Newest first, each with its permanent key ("12.3") if its kind gets one (PERMALINK_KINDS), its votes and its
- * comments, newest first. References get neither votes nor comments.
+ * comments, newest first, the result it verifies or challenges (`target`) and the verifications and challenges of
+ * it (`responses`). References get neither votes nor comments.
  */
 export async function getApprovedContributions(problemId: string) {
   const rows = await db.query.contribution.findMany({
@@ -98,10 +120,34 @@ export async function getApprovedContributions(problemId: string) {
   ]);
   const keys = new Map(links.map((l) => [l.id, l.key]));
   const byContribution = Map.groupBy(comments, (c) => c.contributionId);
-  return rows.map((r) => ({ ...r, key: keys.get(r.id), votes: votes.get(r.id) ?? NO_VOTES, comments: byContribution.get(r.id) ?? [] }));
+  const withKeys = rows.map((r) => ({ ...r, key: keys.get(r.id) }));
+  const { target, responses } = linkResults(withKeys);
+  return withKeys.map((r) => ({ ...r, votes: votes.get(r.id) ?? NO_VOTES, comments: byContribution.get(r.id) ?? [], target: target(r), responses: responses(r) }));
 }
 
 export type ApprovedContribution = Awaited<ReturnType<typeof getApprovedContributions>>[number];
+
+/** linkResults for the accepted results of one problem, without their texts, votes and comments: for a single result's page. */
+export async function getResultLinks(problemId: string) {
+  const rows = await db
+    .select({ id: contribution.id, kind: contribution.kind, title: contribution.title, credit: contribution.credit, targetId: contribution.targetId, withdrawnAt: contribution.withdrawnAt, key: permalink.key })
+    .from(contribution)
+    .innerJoin(permalink, and(eq(permalink.target, "contribution"), eq(permalink.targetId, contribution.id)))
+    .where(and(eq(contribution.problemId, problemId), eq(contribution.status, "approved")))
+    .orderBy(desc(contribution.createdAt));
+  const links = linkResults(rows);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return {
+    target: (id: string) => {
+      const r = byId.get(id);
+      return r && links.target(r);
+    },
+    responses: (id: string) => {
+      const r = byId.get(id);
+      return r ? links.responses(r) : [];
+    },
+  };
+}
 
 /** getApprovedContributions, cached like the problem page, for the pages that list them (/problems/<slug>/contributions). */
 export async function getCachedContributions(problemId: string): Promise<ApprovedContribution[]> {

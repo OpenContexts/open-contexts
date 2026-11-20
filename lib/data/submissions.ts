@@ -28,6 +28,8 @@ export type MySubmission = {
   key?: string;
   /** Contributions: when the comments others wrote on it were published, newest first. */
   comments?: Date[];
+  /** Contributions: when the user withdrew it. */
+  withdrawnAt?: Date | null;
 };
 
 /** Published comments by others on the user's contributions (joined with `contribution`). */
@@ -75,6 +77,7 @@ export async function getMySubmissions(userId: string): Promise<MySubmission[]> 
       type: "contribution" as const,
       title: r.title,
       kind: r.kind,
+      withdrawnAt: r.withdrawnAt,
       problemId: r.problemId,
       postId: null,
       comments: (commentsOn.get(r.id) ?? []).map((c) => c.at),

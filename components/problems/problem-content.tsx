@@ -144,7 +144,7 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
 
       <ContributionsSection items={contributions} references={problem.references} slug={problem.slug} />
 
-      <ContributeBox slug={problem.slug} />
+      <ContributeBox slug={problem.slug} status={problem.status} />
 
       <DiscussionSection on={{ type: "problem", slug: problem.slug }} comments={comments} commentBox={commentBox} references={problem.references} />
     </article>

@@ -20,7 +20,7 @@ import {
   runBatch,
   versionQuery,
 } from "@/lib/data/permalinks";
-import { nextProblemNumber, slugify, today, uniqueSlug } from "@/lib/data/problem-writes";
+import { nextProblemNumber, slugify, today, uniqueSlug, withdrawalEntry } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { activityLog, blogPost, comment, contribution, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
@@ -135,14 +135,16 @@ async function citeReference(problemId: string, ref: Reference, change: "add" | 
  * again; accepting it again puts it back with the new date. Returns undefined when the history stays as it is.
  */
 async function recordInHistory(contributionId: string, key: string, change: "add" | "remove") {
-  const row = await db.query.contribution.findFirst({ where: eq(contribution.id, contributionId), columns: { problemId: true, kind: true, title: true } });
+  const row = await db.query.contribution.findFirst({ where: eq(contribution.id, contributionId), columns: { problemId: true, kind: true, title: true, withdrawnAt: true } });
   const kind = row && CONTRIBUTION_HISTORY_KINDS[row.kind];
   const current = kind ? await readProblem(row.problemId) : undefined;
   if (!row || !kind || !current) return undefined;
   const others = current.history.filter((h) => h.contribution !== key);
   if (change === "remove" && others.length === current.history.length) return undefined;
   const label = CONTRIBUTION_KIND_LABELS[row.kind].replace(/^./, (c) => c.toUpperCase());
-  const history = change === "add" ? [...others, { date: today(), kind, text: `${label}: ${row.title}`, contribution: key }] : others;
+  // A result withdrawn by its authors and accepted again keeps the record of the withdrawal.
+  const withdrawal = row.withdrawnAt ? [withdrawalEntry({ ...row, withdrawnAt: row.withdrawnAt }, key)] : [];
+  const history = change === "add" ? [...others, { date: today(), kind, text: `${label}: ${row.title}`, contribution: key }, ...withdrawal] : others;
   return { queries: [db.update(problem).set({ history, ...(change === "add" && { updatedAt: new Date() }) }).where(eq(problem.id, row.problemId))] };
 }
 
@@ -170,7 +172,7 @@ async function publishProposal(id: string, problemId: string) {
 }
 
 /** The submission's status; `pages`: the problem pages that show it once approved; `reference`: what an approved reference adds to its problem. */
-async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; reference?: Reference } | undefined> {
+async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; reference?: Reference; withdrawn?: boolean } | undefined> {
   const columns = { status: true } as const;
   switch (type) {
     case "comment": {
@@ -179,10 +181,10 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
       return row && { status: row.status, pages: [row.problemId ?? row.postId].filter((page) => page !== null) };
     }
     case "contribution": {
-      const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true, kind: true, title: true, url: true } });
+      const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true, kind: true, title: true, url: true, withdrawnAt: true } });
       // Only references with a link are cited on the problem; without one they stay a contribution.
       const reference = row?.kind === "reference" && row.url ? { text: row.title, url: row.url } : undefined;
-      return row && { status: row.status, pages: [row.problemId], reference };
+      return row && { status: row.status, pages: [row.problemId], reference, withdrawn: !!row.withdrawnAt };
     }
     // Edits and proposals change the problems themselves, which are cached under the "problems" tag.
     case "revision": {
@@ -213,6 +215,8 @@ async function applyDecision(formData: FormData): Promise<{ type: SubmissionType
 
   const current = await currentState(type, id);
   if (!current || (action === "reopen") !== (current.status !== "pending")) return { type, action, applied: false };
+  // Its author took it back before anyone decided on it.
+  if (current.withdrawn && current.status === "pending") return { type, action, applied: false };
   // Approved edits and proposals have changed the problem itself; undo those in the problem editor.
   if (action === "reopen" && current.status === "approved" && (type === "revision" || type === "proposal")) return { type, action, applied: false };
 

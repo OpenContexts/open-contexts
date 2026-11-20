@@ -166,10 +166,24 @@ Needed so that the site behaves as the Guidelines already describe.
 The rules exist on `/guidelines`; the data model and the interface should support them. This needs a
 database migration.
 
-- [ ] **Contributions refer to contributions**: a verification, challenge, exposition or revision points to
-      the claimed solution it is about (`contribution.parentId`), and the problem page groups them under it.
-- [ ] **Understanding declaration** on every result: "we claim full understanding" or "partial
-      understanding" (solved condition (i); best practice "Be honest").
+- [x] **What can be submitted depends on the status** (`RESULT_KINDS_BY_STATUS` in `lib/constants.ts`): under
+      revision no decompositions, and a solution is offered as an "independent solution"; once solved only
+      verifications, challenges, expositions and replications. Edits can't change the statement once a
+      solution is claimed (`STATEMENT_EDITABLE`). The server checks both.
+- [x] **Verifications and challenges name the result they are about** (`contribution.targetId`), chosen from
+      a drop-down of the problem's accepted results, or preset by "Verify this result" / "Challenge this
+      result" on a result's page. Cards show "Verifies 12.3: …" and "2 verifications · 1 challenge"; a
+      result's page lists them; the downloads include them.
+- [ ] The same for **expositions and replications** (evidence), which could point to the result they explain
+      or re-run, and the problem page could group everything under the claim it is about.
+- [ ] **Declarations required by the guidelines**, as checkboxes on the forms, shown on the result and to
+      the moderators (postponed, November 2026):
+  - every result, and a claimed solution in particular: "at least one of us claims full understanding" or
+    "partial understanding" (solved condition (i); best practice "Be honest");
+  - a claimed solution: a link to a preprint with a DOI (solved condition (i));
+  - a verification: independent of the authors, no conflict of interest, understands the solution and
+    agrees with it (condition (ii); see also the verifier declaration below);
+  - a challenge: backed by a researcher who claims to understand it fully (the rule for reopening).
 - [ ] **Provisional flag**: material can be submitted explicitly as provisional and flagged for revision
       (Box II).
 - [ ] **Type of material**, separate from the kind of contribution: written argument, proof, code,
@@ -184,12 +198,30 @@ database migration.
 - [ ] **Seconding challenges**: a challenge to a solved problem can be seconded by an independent
       researcher; a seconded challenge prompts the moderators to reopen. **Disputes** get an open or
       resolved state.
-- [ ] **Withdrawing a claim**: authors can withdraw their claimed solution, which keeps it attached as a
-      provisional or negative result and returns the problem to open.
+- [x] **Withdrawing**: authors withdraw a contribution from `/me`. One waiting for review leaves the queue;
+      an accepted result stays on the problem, marked as withdrawn, with its credit and a dated history
+      entry, and the withdrawal is in the activity log.
+- [ ] After a claimed solution is withdrawn, **prompt the moderators** to reconsider the status (the
+      problem does not go back to open by itself, since another claim may stand): e.g. count it in the gold
+      apple until they have looked.
+- [ ] **Response to a challenge**: the authors' answer, as a contribution linked to the challenge rather than
+      a comment, so that a dispute can be "resolved within the community" on the record.
+- [ ] **Flaw in the statement**: a challenge aimed at the statement rather than at a result, on open problems
+      and those under revision. The guidelines credit whoever finds one, and it is the way back to open
+      with a revised statement.
+- [ ] **Report a solution published elsewhere**, for open problems: point to a preprint that claims a solution
+      without claiming to be its author; the moderators then place the problem under revision. Today this only
+      fits as a reference. (Related: moderators adding submissions for others, Phase 6.)
+- [ ] **Alternative or simpler proof**, for solved problems, in place of the claimed solution, which is no
+      longer offered there.
+- [ ] **Follow-up problem**: from a solved (or open) problem, the proposal form preset with "follows from
+      Problem N", for generalizations and modified statements (see "Links between problems" below).
+- [ ] **Pending submissions when the status changes** are kept; the review page already warns when the
+      problem no longer takes their kind. A moderator could also be offered to turn them into another kind.
 - [ ] **Public statement versions**: earlier versions of a statement stay readable (and citable), with a diff,
       and the person who found a flaw is credited in the history.
 - [ ] Approving a claimed solution offers to move the problem to "under revision".
-- [ ] Approved results appear in "Progress and history" too.
+- [x] Approved results appear in "Progress and history" too.
 - [ ] Links between problems: "derived from" and "split into", for weakened statements and decompositions.
 
 ### Phase 6: credit and coordination (Sec. I.C, II.D)
@@ -252,7 +284,8 @@ database migration.
 - **A map of the field** (Sec. IV.C): definitions, examples, counterexamples, lemmas and theorems with their
   relations and provenance, with the open problems at its boundary.
 - **Formalization**: an optional field for a formal statement (for instance in Lean) and links to
-  machine-checked proofs. This strengthens verification but does not replace it.
+  machine-checked proofs, either as a kind of result of its own or as a flag on verifications and
+  computational evidence. This strengthens verification but does not replace it.
 - **Apprenticeship**: progressively harder tasks for students, from verifying known results to the open
   problems.
 - **Preprint servers**: show the AI-use labels of Hexagon deposits, and watch the arXiv for preprints that

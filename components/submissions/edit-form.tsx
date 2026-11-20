@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
-import type { CitableReferences } from "@/components/markdown/markdown";
+import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
 import { errorOf, initialFormState, valueOf } from "@/lib/actions/form-state";
@@ -13,10 +13,13 @@ import { AI_CHOICES } from "./result-form";
 export function EditForm({
   problem,
   defaultCredit,
+  statementLocked,
 }: {
   /** `references`: the problem's, which the statement and the text can cite with \cite{key}. */
   problem: { slug: string; title: string; statement: string; body: string; version: number; references: CitableReferences };
   defaultCredit: string;
+  /** Why the statement can't be changed, if it can't (see STATEMENT_EDITABLE); it is then shown, and sent, as it is. */
+  statementLocked?: string;
 }) {
   const [state, action] = useActionState(submitRevision, initialFormState);
   if (state.status === "success") return <SubmissionReceived noun="suggested edit" back={{ href: `/problems/${problem.slug}`, label: "back to the problem" }} />;
@@ -37,9 +40,18 @@ export function EditForm({
         <Field label="Title" htmlFor="title" error={errorOf(state, "title")}>
           <Input id="title" name="title" defaultValue={valueOf(state, "title", problem.title)} required />
         </Field>
-        <Field label="Statement (the boxed problem)" htmlFor="statement" error={errorOf(state, "statement")}>
-          <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement", problem.statement.trim())} invalid={!!errorOf(state, "statement")} />
-        </Field>
+        {statementLocked ? (
+          <Field label="Statement (the boxed problem)" htmlFor="statement" error={errorOf(state, "statement")} hint={statementLocked}>
+            <input type="hidden" id="statement" name="statement" value={problem.statement.trim()} />
+            <div className="rounded-sm border border-dashed border-rule-strong bg-surface px-4 py-3 text-ink-muted">
+              <MarkdownContent source={problem.statement} references={problem.references} className="[&>*:last-child]:mb-0" />
+            </div>
+          </Field>
+        ) : (
+          <Field label="Statement (the boxed problem)" htmlFor="statement" error={errorOf(state, "statement")}>
+            <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement", problem.statement.trim())} invalid={!!errorOf(state, "statement")} />
+          </Field>
+        )}
         <Field label="Background, relevance and significance" htmlFor="body" error={errorOf(state, "body")} hint="Use “## Heading” to start a section.">
           <MarkdownEditor id="body" name="body" rows={18} defaultValue={valueOf(state, "body", problem.body.trim())} invalid={!!errorOf(state, "body")} />
         </Field>

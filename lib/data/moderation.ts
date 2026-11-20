@@ -1,6 +1,6 @@
 // Reads for the admin dashboard. Callers must have checked requireModerator().
 import "server-only";
-import { asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { connection } from "next/server";
 import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getPermalinkKeys } from "@/lib/data/permalinks";
@@ -9,11 +9,14 @@ import { db } from "@/lib/db";
 import { activityLog, blogPost, comment, contribution, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 import { permalinkPath } from "@/lib/permalinks";
 
+/** Contributions with this status; those waiting for review only while their author has not withdrawn them. */
+const waitingContributions = (status: ModerationStatus) => (status === "pending" ? and(eq(contribution.status, status), isNull(contribution.withdrawnAt)) : eq(contribution.status, status));
+
 export async function getPendingCounts(): Promise<Record<SubmissionType, number>> {
   await connection();
   const [[c], [k], [r], [p], [b]] = await db.batch([
     db.select({ n: count() }).from(comment).where(eq(comment.status, "pending")),
-    db.select({ n: count() }).from(contribution).where(eq(contribution.status, "pending")),
+    db.select({ n: count() }).from(contribution).where(waitingContributions("pending")),
     db.select({ n: count() }).from(problemRevision).where(eq(problemRevision.status, "pending")),
     db.select({ n: count() }).from(problemProposal).where(eq(problemProposal.status, "pending")),
     db.select({ n: count() }).from(blogPost).where(eq(blogPost.status, "pending")),
@@ -38,7 +41,7 @@ async function findMany(type: SubmissionType, status: ModerationStatus, limit: n
         rows: await db.query.comment.findMany({ where: eq(comment.status, status), with: { author, contribution: { columns: { title: true } } }, orderBy: order(comment.createdAt), limit }),
       };
     case "contribution":
-      return { type, rows: await db.query.contribution.findMany({ where: eq(contribution.status, status), with: { author }, orderBy: order(contribution.createdAt), limit }) };
+      return { type, rows: await db.query.contribution.findMany({ where: waitingContributions(status), with: { author }, orderBy: order(contribution.createdAt), limit }) };
     case "revision":
       return { type, rows: await db.query.problemRevision.findMany({ where: eq(problemRevision.status, status), with: { author }, orderBy: order(problemRevision.createdAt), limit }) };
     case "proposal":
@@ -160,8 +163,13 @@ export async function getSubmission(type: SubmissionType, id: string) {
       return row && { type, row };
     }
     case "contribution": {
-      const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), with: { author } });
-      return row && { type, row };
+      // A verification or challenge is reviewed with the result it is about.
+      const row = await db.query.contribution.findFirst({
+        where: eq(contribution.id, id),
+        with: { author, target: { columns: { id: true, kind: true, title: true, status: true, withdrawnAt: true } } },
+      });
+      const targetKey = row?.target && (await getPermalinkKeys("contribution", [row.target.id])).get(row.target.id);
+      return row && { type, row: { ...row, targetKey } };
     }
     case "revision": {
       const row = await db.query.problemRevision.findFirst({ where: eq(problemRevision.id, id), with: { author } });
@@ -216,7 +224,10 @@ export async function getProblemActivity(): Promise<Map<string, ProblemActivity>
   const pending = sql<number>`count(*) filter (where status = 'pending')::int`;
   const [comments, contributions, edits] = await db.batch([
     db.select({ id: comment.problemId, n: count(), pending }).from(comment).groupBy(comment.problemId),
-    db.select({ id: contribution.problemId, n: count(), pending }).from(contribution).groupBy(contribution.problemId),
+    db
+      .select({ id: contribution.problemId, n: count(), pending: sql<number>`count(*) filter (where status = 'pending' and withdrawn_at is null)::int` })
+      .from(contribution)
+      .groupBy(contribution.problemId),
     db.select({ id: problemRevision.problemId, n: count(), pending }).from(problemRevision).groupBy(problemRevision.problemId),
   ]);
   const activity = new Map<string, ProblemActivity>();

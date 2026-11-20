@@ -157,7 +157,7 @@ export default async function ContributionsPage({ params, searchParams }: PagePr
         </nav>
       )}
 
-      <ContributeBox slug={slug} className="mt-12" />
+      <ContributeBox slug={slug} status={problem.status} className="mt-12" />
     </>
   );
 }

@@ -10,13 +10,14 @@ import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { PermanentLink } from "@/components/problems/permanent-link";
 import { ProblemContext } from "@/components/problems/problem-context";
+import { ResponseCounts, ResponseList, TargetLine, WithdrawnTag } from "@/components/problems/result-links";
 import { VersionList } from "@/components/problems/version-list";
 import { VotesProvider, VoteControl } from "@/components/problems/votes";
 import { SignedInProvider } from "@/components/submissions/signed-in";
 import { ButtonLink, Callout, PageTitle, PartTitle } from "@/components/ui";
 import { isSignedIn } from "@/lib/auth/session";
 import { siteOrigin } from "@/lib/cite";
-import { AI_USE_LABELS } from "@/lib/constants";
+import { AI_USE_LABELS, RESULT_KINDS_BY_STATUS } from "@/lib/constants";
 import { type Resolved, type ResolvedVersion, resolvePermalink } from "@/lib/data/permalinks";
 import { type Problem, problemLabel } from "@/lib/data/problems";
 import { formatDate } from "@/lib/format";
@@ -85,6 +86,9 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
     accepted: c.accepted.toISOString().slice(0, 10),
     problem: { number: problem.number, title: problem.title },
   };
+  // Whether the problem's status still takes verifications and challenges, and the result can still be checked.
+  const checkable = !c.withdrawnAt && (["verification", "challenge"] as const).filter((k) => RESULT_KINDS_BY_STATUS[problem.status].includes(k));
+  const respond = (kind: string) => `/problems/${problem.slug}/contribute/result?kind=${kind}&target=${encodeURIComponent(c.key)}`;
   return (
     <>
       <ProblemContext problem={problem} label="Contribution to" />
@@ -94,18 +98,30 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <KindTag look={look} />
+              {c.withdrawnAt && <WithdrawnTag />}
               <span className="text-sm text-ink-subtle tabular-nums">
                 {SITE.name} {c.key}
               </span>
             </p>
+            <TargetLine kind={c.kind} target={c.target} className="mt-2" />
             <h1 className="mt-2 text-[1.6rem]/tight max-sm:text-[1.35rem]">
               <MathText text={c.title} />
             </h1>
-            <p className="mt-2 text-ink-muted">
-              by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
+            <p className="mt-2 flex flex-wrap items-baseline gap-x-3 text-ink-muted">
+              <span>
+                by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
+              </span>
+              <ResponseCounts responses={c.responses} />
             </p>
           </div>
         </header>
+
+        {c.withdrawnAt && (
+          <Callout className="mb-6">
+            Withdrawn by its authors on {formatDate(c.withdrawnAt)}. It stays here as part of the record, with its
+            credit, but no longer stands as a result.
+          </Callout>
+        )}
 
         <MarkdownContent source={c.summary} untrusted references={problem.references} />
         {c.url && (
@@ -113,6 +129,22 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
             <a href={c.url} rel="nofollow ugc noopener noreferrer" className="break-all text-brand hover:underline">
               ↗ {c.url}
             </a>
+          </p>
+        )}
+
+        <ResponseList responses={c.responses} />
+        {checkable && checkable.length > 0 && (
+          <p className="mt-5 flex flex-wrap gap-2">
+            {checkable.includes("verification") && (
+              <ButtonLink href={respond("verification")} variant="secondary" size="sm">
+                Verify this result
+              </ButtonLink>
+            )}
+            {checkable.includes("challenge") && (
+              <ButtonLink href={respond("challenge")} variant="secondary" size="sm">
+                Challenge this result
+              </ButtonLink>
+            )}
           </p>
         )}
 

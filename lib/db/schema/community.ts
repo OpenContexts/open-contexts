@@ -123,12 +123,23 @@ export const contribution = pgTable(
     aiUse: aiUse("ai_use").default("none").notNull(),
     /** Names (and affiliations) credited publicly, which may differ from the submitting account. */
     credit: text("credit").notNull(),
+    /**
+     * For verifications and challenges (TARGETED_KINDS): the accepted result on the same problem they check or
+     * dispute. Null for the other kinds, and once that result is deleted.
+     */
+    targetId: uuid("target_id").references((): AnyPgColumn => contribution.id, { onDelete: "set null" }),
+    /**
+     * When its author withdrew it. A withdrawn submission waiting for review leaves the queue; an accepted one
+     * stays on the problem, marked as withdrawn, as the guidelines ask (IV).
+     */
+    withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
     ...moderation(),
     ...timestamps(),
   },
   (t) => [
     index("contribution_problem_status_idx").on(t.problemId, t.status),
     index("contribution_status_created_idx").on(t.status, t.createdAt),
+    index("contribution_target_idx").on(t.targetId),
   ],
 );
 
@@ -256,6 +267,7 @@ export const blogPostRelations = relations(blogPost, ({ one }) => ({
 export const contributionRelations = relations(contribution, ({ one, many }) => ({
   author: one(user, { fields: [contribution.authorId], references: [user.id] }),
   problem: one(problem, { fields: [contribution.problemId], references: [problem.id] }),
+  target: one(contribution, { fields: [contribution.targetId], references: [contribution.id], relationName: "target" }),
   comments: many(comment),
 }));
 

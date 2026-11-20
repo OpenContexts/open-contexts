@@ -2,13 +2,19 @@
 
 // Every user submission enters the database as `pending`. Nothing here publishes anything;
 // moderators do that in app/admin.
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
+import { refresh, updateTag } from "next/cache";
+import { z } from "zod";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth/session";
 import { getPost } from "@/lib/data/blog";
+import { communityTag } from "@/lib/data/community";
+import { existingKey, type Query, runBatch } from "@/lib/data/permalinks";
+import { withdrawalEntry } from "@/lib/data/problem-writes";
 import { getProblem, getProblemById, type Problem, readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { unknownCitesError } from "@/lib/references";
-import { blogPost, comment, contribution, permalink, problemProposal, problemRevision } from "@/lib/db/schema";
+import { canWithdraw, PROBLEM_STATUS_LABELS, RESULT_KINDS_BY_STATUS, STATEMENT_EDITABLE, TARGETED_KINDS } from "@/lib/constants";
+import { activityLog, blogPost, comment, contribution, permalink, problem, problemProposal, problemRevision } from "@/lib/db/schema";
 import {
   commentSchema,
   postSchema,
@@ -25,7 +31,7 @@ const MAX_PENDING = 20;
 async function pendingCount(userId: string): Promise<number> {
   const counts = await db.batch([
     db.select({ n: count() }).from(comment).where(and(eq(comment.authorId, userId), eq(comment.status, "pending"))),
-    db.select({ n: count() }).from(contribution).where(and(eq(contribution.authorId, userId), eq(contribution.status, "pending"))),
+    db.select({ n: count() }).from(contribution).where(and(eq(contribution.authorId, userId), eq(contribution.status, "pending"), isNull(contribution.withdrawnAt))),
     db.select({ n: count() }).from(problemRevision).where(and(eq(problemRevision.authorId, userId), eq(problemRevision.status, "pending"))),
     db.select({ n: count() }).from(problemProposal).where(and(eq(problemProposal.authorId, userId), eq(problemProposal.status, "pending"))),
     db.select({ n: count() }).from(blogPost).where(and(eq(blogPost.authorId, userId), eq(blogPost.status, "pending"))),
@@ -109,6 +115,16 @@ async function replyParent(parentId: string, on: Discussion): Promise<string | u
 
 const NO_PARENT = "The comment you are replying to is no longer available.";
 
+/**
+ * The accepted result with this key ("12.3") on the given problem, if a verification or challenge can be about it:
+ * not a reference, and not withdrawn.
+ */
+async function targetableResult(key: string, problemId: string) {
+  const link = await db.query.permalink.findFirst({ where: and(eq(permalink.key, key), eq(permalink.target, "contribution")) });
+  const row = link && (await db.query.contribution.findFirst({ where: eq(contribution.id, link.targetId), columns: { id: true, problemId: true, kind: true, status: true, withdrawnAt: true } }));
+  return row && row.problemId === problemId && row.status === "approved" && row.kind !== "reference" && !row.withdrawnAt ? row : undefined;
+}
+
 /** The accepted contribution with this key ("12.3"), if it can be commented on: not a reference. */
 async function commentableContribution(key: string) {
   const link = await db.query.permalink.findFirst({ where: and(eq(permalink.key, key), eq(permalink.target, "contribution")) });
@@ -162,10 +178,20 @@ export async function submitResult(_: FormState, formData: FormData): Promise<Fo
   const { user, problem, error } = await guardProblem(values, parsed.data.problemSlug);
   if (error) return error;
 
-  const { kind, title, summary, url, aiUse, credit } = parsed.data;
+  const { kind, title, summary, url, aiUse, credit, target } = parsed.data;
+  // The form only offers what the problem's status allows, but it may have changed since the form was opened.
+  if (!RESULT_KINDS_BY_STATUS[problem.status].includes(kind)) {
+    return { status: "error", message: `This problem is now ${PROBLEM_STATUS_LABELS[problem.status]}, so it no longer takes this kind of result.`, errors: { kind: ["Please choose another kind."] }, values };
+  }
+  let targetId: string | null = null;
+  if (TARGETED_KINDS.includes(kind)) {
+    const row = target ? await targetableResult(target, problem.id) : undefined;
+    if (!row) return { status: "error", message: "Please check the highlighted fields.", errors: { target: ["Please choose the result this is about."] }, values };
+    targetId = row.id;
+  }
   const citeError = citeErrors(values, problem, { summary });
   if (citeError) return citeError;
-  return save(values, () => db.insert(contribution).values({ kind, title, summary, url, aiUse, credit, problemId: problem.id, authorId: user.id }));
+  return save(values, () => db.insert(contribution).values({ kind, title, summary, url, aiUse, credit, targetId, problemId: problem.id, authorId: user.id }));
 }
 
 export async function submitReference(_: FormState, formData: FormData): Promise<FormState> {
@@ -194,6 +220,14 @@ export async function submitRevision(_: FormState, formData: FormData): Promise<
   if (title === current.title && statement === current.statement.trim() && body === current.body.trim()) {
     return { status: "error", message: "You have not changed anything yet.", values };
   }
+  if (!STATEMENT_EDITABLE[current.status] && statement !== current.statement.trim()) {
+    return {
+      status: "error",
+      message: "Please check the highlighted fields.",
+      errors: { statement: [`The statement stays as it is while the problem is ${PROBLEM_STATUS_LABELS[current.status]}. If it is flawed, please say so in the discussion or submit a challenge.`] },
+      values,
+    };
+  }
   const citeError = citeErrors(values, current, { statement, body });
   if (citeError) return citeError;
   return save(values, () =>
@@ -220,4 +254,36 @@ export async function submitPost(_: FormState, formData: FormData): Promise<Form
   if (error) return error;
 
   return save(values, () => db.insert(blogPost).values({ ...parsed.data, authorId: user.id }));
+}
+
+/**
+ * The author withdraws one of their contributions. One waiting for review leaves the queue. An accepted result
+ * stays on its problem, marked as withdrawn, with a dated entry in the history; as the guidelines say, it keeps
+ * the credit it earned, and a withdrawn claim does not by itself change the problem's status, which the
+ * moderators then reconsider. Accepted references are part of the problem's list and stay.
+ */
+export async function withdrawContribution(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  const id = z.uuid().safeParse(formData.get("id"));
+  if (!user || !id.success) return;
+  const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id.data) });
+  if (!row || row.authorId !== user.id || row.withdrawnAt || !canWithdraw(row)) return;
+
+  const withdrawnAt = new Date();
+  const queries: Query[] = [
+    db.update(contribution).set({ withdrawnAt }).where(eq(contribution.id, row.id)),
+    db.insert(activityLog).values({ targetType: "contribution", targetId: row.id, action: "withdraw", moderatorId: user.id }),
+  ];
+  const key = row.status === "approved" ? await existingKey("contribution", row.id) : undefined;
+  const current = key ? await readProblem(row.problemId) : undefined;
+  if (key && current) {
+    const history = [...current.history, withdrawalEntry({ ...row, withdrawnAt }, key)];
+    queries.push(db.update(problem).set({ history, updatedAt: withdrawnAt }).where(eq(problem.id, row.problemId)));
+  }
+  await runBatch(queries);
+  if (row.status === "approved") {
+    updateTag("problems");
+    updateTag(communityTag(row.problemId));
+  }
+  refresh();
 }

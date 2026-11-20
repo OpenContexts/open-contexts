@@ -2,7 +2,7 @@
 // Callers check permissions and call updateTag("problems") afterwards.
 import "server-only";
 import { max, ne } from "drizzle-orm";
-import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
+import { CONTRIBUTION_KIND_LABELS, type ContributionKind, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { type HistoryEntry, permalink, problem, problemVersion } from "@/lib/db/schema";
 
@@ -52,4 +52,13 @@ export function changeEntries({ summary, from, to, version }: { summary?: string
   const started = version && { version };
   if (from !== to) return [{ date, kind: "status", text: summary || `Status changed to ${PROBLEM_STATUS_LABELS[to]}.`, status: to, ...started }];
   return summary ? [{ date, kind: "edit", text: summary, ...started }] : [];
+}
+
+/**
+ * The entry withdrawing an accepted result adds to its problem's history ("Claimed solution withdrawn by its
+ * authors: …"), dated the day of the withdrawal and linked by the result's key like its acceptance.
+ */
+export function withdrawalEntry(row: { kind: ContributionKind; title: string; withdrawnAt: Date }, key: string): HistoryEntry {
+  const label = CONTRIBUTION_KIND_LABELS[row.kind].replace(/^./, (c) => c.toUpperCase());
+  return { date: row.withdrawnAt.toISOString().slice(0, 10), kind: "note", text: `${label} withdrawn by its authors: ${row.title}`, contribution: key };
 }

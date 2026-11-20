@@ -6,7 +6,8 @@ import { MarkdownContent } from "@/components/markdown/markdown";
 import { MathText } from "@/components/markdown/math-text";
 import { FramedBox } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
-import { AI_USE_LABELS } from "@/lib/constants";
+import { AI_USE_LABELS, CONTRIBUTION_KIND_LABELS, PROBLEM_STATUS_LABELS, RESULT_KINDS_BY_STATUS, TARGETED_KINDS } from "@/lib/constants";
+import { permalinkPath } from "@/lib/permalinks";
 import type { Reference } from "@/lib/db/schema";
 import type { Problem } from "@/lib/data/problems";
 import type { Submission } from "@/lib/data/moderation";
@@ -62,8 +63,43 @@ export function SubmissionContent({ submission, problems, references }: { submis
       const c = submission.row;
       // Only worth showing when someone else is credited than the person who sent it.
       const credit = c.credit.trim() !== c.author.name.trim() ? c.credit : undefined;
+      const problem = problems.get(c.problemId);
+      // The problem's status may have changed since this was sent, to one that no longer takes this kind.
+      const outOfPlace = c.status === "pending" && problem && c.kind !== "reference" && !RESULT_KINDS_BY_STATUS[problem.status].includes(c.kind);
+      const target = c.target;
       return (
         <Card>
+          {c.withdrawnAt && (
+            <Notice tone="warning" className="mb-4">
+              Withdrawn by its author on {formatDate(c.withdrawnAt)}.{" "}
+              {c.status === "approved" ? "It stays on the problem, marked as withdrawn; consider whether the problem's status should change." : "It no longer needs a decision."}
+            </Notice>
+          )}
+          {outOfPlace && (
+            <Notice tone="warning" className="mb-4">
+              Sent as a {CONTRIBUTION_KIND_LABELS[c.kind]}, but the problem is now {PROBLEM_STATUS_LABELS[problem.status]}, which no longer takes this kind of result.
+            </Notice>
+          )}
+          {TARGETED_KINDS.includes(c.kind) && (
+            <p className="mb-3 text-sm text-zinc-600">
+              {c.kind === "verification" ? "Verifies" : "Challenges"}{" "}
+              {target ? (
+                <>
+                  {c.targetKey ? (
+                    <a href={permalinkPath(c.targetKey)} target="_blank" rel="noopener" className="font-medium text-zinc-900 hover:underline">
+                      {c.targetKey}
+                    </a>
+                  ) : (
+                    "the"
+                  )}{" "}
+                  {CONTRIBUTION_KIND_LABELS[target.kind]} “<MathText text={target.title} />”
+                  {(target.status !== "approved" || target.withdrawnAt) && " (no longer published or since withdrawn)"}
+                </>
+              ) : (
+                "a result that no longer exists"
+              )}
+            </p>
+          )}
           <h2 className="text-lg font-semibold text-zinc-900">
             <MathText text={c.title} />
           </h2>

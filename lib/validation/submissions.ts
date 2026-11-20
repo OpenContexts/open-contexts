@@ -39,6 +39,8 @@ export const resultSchema = z.object({
   kind: z.enum(RESULT_KINDS, { error: "Please choose what kind of result this is." }),
   title: text(3, 200, "a title"),
   summary: text(20, RESULT_SUMMARY_MAX, "a summary"),
+  /** Verifications and challenges: the key ("12.3") of the result they are about. */
+  target: z.string().trim().max(40).optional(),
   url: optionalUrl,
   aiUse: z.enum(AI_USE, { error: "Please say how much AI was used." }),
   credit: text(2, 500, "the names to credit"),

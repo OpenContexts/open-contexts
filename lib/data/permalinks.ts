@@ -8,7 +8,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 import { cacheLife, cacheTag } from "next/cache";
 import { type AiUse, PERMALINK_KINDS, type PermalinkTarget } from "@/lib/constants";
 import { BLOG_TAG, getPostById } from "@/lib/data/blog";
-import { type Comment, communityTag, getApprovedComments, getVoteTotals, NO_VOTES, type Votes } from "@/lib/data/community";
+import { type Comment, communityTag, getApprovedComments, getResultLinks, getVoteTotals, type LinkedResult, NO_VOTES, type Votes } from "@/lib/data/community";
 import { getProblemById, type Problem } from "@/lib/data/problems";
 import { db, isDbConfigured } from "@/lib/db";
 import { contribution, permalink, problemVersion, type Reference } from "@/lib/db/schema";
@@ -42,7 +42,7 @@ async function nextSeq(target: PermalinkTarget, problemNumber?: number): Promise
 }
 
 /** The key the target already has, if any. */
-async function existingKey(target: PermalinkTarget, targetId: string): Promise<string | undefined> {
+export async function existingKey(target: PermalinkTarget, targetId: string): Promise<string | undefined> {
   const row = await db.query.permalink.findFirst({ where: and(eq(permalink.target, target), eq(permalink.targetId, targetId)), columns: { key: true } });
   return row?.key;
 }
@@ -182,6 +182,12 @@ export type ResolvedContribution = {
   votes: Votes;
   /** Its discussion, newest first. */
   comments: Comment[];
+  /** When its authors withdrew it; it stays public, marked as withdrawn. */
+  withdrawnAt: Date | null;
+  /** For a verification or challenge: the result it is about. */
+  target?: LinkedResult;
+  /** The verifications and challenges of it, oldest first. */
+  responses: LinkedResult[];
 };
 
 export type ResolvedVersion = {
@@ -254,11 +260,27 @@ export async function resolvePermalink(key: string): Promise<Resolved | undefine
       if (row) cacheTag(communityTag(row.problemId));
       const problem = row && (await getProblemById(row.problemId));
       if (!row || row.status !== "approved" || !problem) return gone;
-      const { id, kind, title, summary, url, aiUse, credit } = row;
-      const [votes, comments] = await Promise.all([getVoteTotals([id]), getApprovedComments("contribution", id)]);
+      const { id, kind, title, summary, url, aiUse, credit, withdrawnAt } = row;
+      const [votes, comments, links] = await Promise.all([getVoteTotals([id]), getApprovedComments("contribution", id), getResultLinks(row.problemId)]);
       return {
         type: "contribution",
-        contribution: { key, id, kind, title, summary, url, aiUse, credit, submitted: row.createdAt, accepted: row.reviewedAt ?? row.createdAt, votes: votes.get(id) ?? NO_VOTES, comments },
+        contribution: {
+          key,
+          id,
+          kind,
+          title,
+          summary,
+          url,
+          aiUse,
+          credit,
+          submitted: row.createdAt,
+          accepted: row.reviewedAt ?? row.createdAt,
+          votes: votes.get(id) ?? NO_VOTES,
+          comments,
+          withdrawnAt,
+          target: links.target(id),
+          responses: links.responses(id),
+        },
         problem,
       };
     }

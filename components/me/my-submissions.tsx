@@ -7,13 +7,14 @@ import { contributionLook, type KindLook, KindTag } from "@/components/problems/
 import { AppleIcon, Clamped, SegmentLink, Segmented, TabLink, Tabs, type TagTone, toneColors } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
 import { cn } from "@/lib/cn";
-import { MODERATION_STATUSES, type ModerationStatus, type SubmissionType } from "@/lib/constants";
+import { canWithdraw, MODERATION_STATUSES, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getPosts } from "@/lib/data/blog";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { getMySubmissions, markSubmissionsSeen, type MySubmission } from "@/lib/data/submissions";
 import { formatDate, plural } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { SITE } from "@/lib/site";
+import { WithdrawButton } from "./withdraw-button";
 
 export type MyPage = "/me" | "/me/contributions" | "/me/comments";
 
@@ -144,8 +145,12 @@ function typeLook(s: MySubmission): KindLook {
   return TYPE_LOOKS[s.type];
 }
 
-/** Where a submission stands; an accepted proposal is on the site, but only among the candidates until it is published. */
+/**
+ * Where a submission stands; an accepted proposal is on the site, but only among the candidates until it is
+ * published. A withdrawn contribution says so, whether it was published or still waiting.
+ */
 function statusOf(s: MySubmission, problem?: ProblemRef) {
+  if (s.withdrawnAt) return { label: s.status === "approved" ? "Published, withdrawn" : "Withdrawn", tone: "neutral" as const };
   return s.type === "proposal" && s.status === "approved" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
 }
 
@@ -261,6 +266,11 @@ function SubmissionItem({ item: s, mine, card }: { item: MySubmission; mine: Min
           )}
         </p>
         {s.reviewNote && <ModeratorNote note={s.reviewNote} rejected={s.status === "rejected"} />}
+        {s.type === "contribution" && s.kind && canWithdraw({ status: s.status, kind: s.kind, withdrawnAt: s.withdrawnAt ?? null }) && (
+          <div className="mt-2">
+            <WithdrawButton id={s.id} accepted={s.status === "approved"} />
+          </div>
+        )}
       </div>
     </li>
   );

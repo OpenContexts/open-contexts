@@ -7,6 +7,7 @@ import { type CitableReferences, MarkdownContent } from "@/components/markdown/m
 import { MathText } from "@/components/markdown/math-text";
 import { CommentThread } from "@/components/problems/comment-thread";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
+import { ResponseCounts, TargetLine, WithdrawnTag } from "@/components/problems/result-links";
 import { VoteControl } from "@/components/problems/votes";
 import { CommentButton } from "@/components/submissions/comment-button";
 import { Clamped, CommentIcon, toneColors } from "@/components/ui";
@@ -46,9 +47,11 @@ const PREVIEW_COMMENTS = 5;
  * One result, laid out like an answer on a forum: a strip along the top tinted in the colour of its kind (see
  * contributionLook), with its permanent key and date; the votes and the number of comments in a column on the
  * left; the title, who takes responsibility, the summary and its link. All of that opens the result's own page.
- * Below it, the newest comments. `references`: the problem's, which the texts cite.
+ * Below it, the newest comments. `references`: the problem's, which the texts cite. A result its authors withdrew
+ * gets a single grey line instead (WithdrawnCard).
  */
 export function ResultCard({ item: c, references }: { item: ApprovedContribution; references: CitableReferences }) {
+  if (c.withdrawnAt && c.key) return <WithdrawnCard item={c} withdrawnAt={c.withdrawnAt} contributionKey={c.key} />;
   const page = c.key && permalinkPath(c.key);
   const look = contributionLook(c.kind);
   const tone = toneColors[look.tone];
@@ -74,6 +77,7 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
             )}
           </div>
           <div className="min-w-0">
+            <TargetLine kind={c.kind} target={c.target} className="mb-0.5" />
             <h3 className="text-[1.1rem]/snug font-bold">
               {page ? (
                 <Link href={page} data-cover className="text-ink group-hover/card:text-brand after:absolute after:inset-0">
@@ -83,8 +87,11 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
                 <MathText text={c.title} />
               )}
             </h3>
-            <p className="mt-0.5 text-sm text-ink-subtle">
-              by {c.credit} · {AI_USE_LABELS[c.aiUse]}
+            <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2.5 text-sm text-ink-subtle">
+              <span>
+                by {c.credit} · {AI_USE_LABELS[c.aiUse]}
+              </span>
+              <ResponseCounts responses={c.responses} />
             </p>
             <Clamped lines={4} more={(summary.cut && page) || undefined} className="mt-2">
               <MarkdownContent source={summary.text} untrusted references={references} className="text-[0.98rem] [&>*:last-child]:mb-0" />
@@ -107,6 +114,33 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
         </div>
       </div>
       {c.key && <CardComments item={c} contributionKey={c.key} references={references} />}
+    </li>
+  );
+}
+
+/**
+ * A withdrawn result, greyed out and on one line: its kind, that it was withdrawn, its title, who and when. It stays
+ * on the problem as part of the record (guidelines, IV), but no longer stands as a result, so its text, votes and
+ * comments are left to its own page, which the whole line opens.
+ */
+function WithdrawnCard({ item: c, withdrawnAt, contributionKey }: { item: ApprovedContribution; withdrawnAt: Date; contributionKey: string }) {
+  return (
+    <li className="group/card relative rounded-md border border-dashed border-rule-strong bg-surface transition-colors hover:bg-rule/40">
+      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 px-4 py-2.5">
+        <KindTag look={{ label: contributionLook(c.kind).label, tone: "neutral" }} />
+        <WithdrawnTag />
+        <h3 className="min-w-0 font-bold">
+          <Link href={permalinkPath(contributionKey)} className="text-ink-muted group-hover/card:text-brand after:absolute after:inset-0">
+            <MathText text={c.title} />
+          </Link>
+        </h3>
+        <span className="text-sm text-ink-subtle">
+          by {c.credit} · withdrawn {formatDate(withdrawnAt)}
+        </span>
+        <span aria-hidden className="ml-auto text-ink-subtle transition group-hover/card:translate-x-0.5 group-hover/card:text-brand">
+          →
+        </span>
+      </div>
     </li>
   );
 }

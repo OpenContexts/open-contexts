@@ -78,6 +78,13 @@ export type ProblemExport = {
     url: string | null;
     /** The contribution's permanent link; null for kinds that get none (references). */
     permalink: string | null;
+    /** For a verification or challenge: the key of the result it is about, if that is public. */
+    about: string | null;
+    /** The keys of the verifications and challenges of it, oldest first. */
+    verifiedBy: string[];
+    challengedBy: string[];
+    /** When its authors withdrew it (YYYY-MM-DD); it then no longer stands as a result. */
+    withdrawn: string | null;
     credit: string;
     aiUse: AiUse;
     aiUseLabel: string;
@@ -167,6 +174,10 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       summary: c.summary.trim(),
       url: c.url,
       permalink: c.key ? `${origin}${permalinkPath(c.key)}` : null,
+      about: c.target?.key ?? null,
+      verifiedBy: c.responses.filter((r) => r.kind === "verification" && !r.withdrawn).map((r) => r.key),
+      challengedBy: c.responses.filter((r) => r.kind === "challenge" && !r.withdrawn).map((r) => r.key),
+      withdrawn: c.withdrawnAt ? isoDate(c.withdrawnAt) : null,
       credit: c.credit,
       aiUse: c.aiUse,
       aiUseLabel: AI_USE_LABELS[c.aiUse],
@@ -247,6 +258,10 @@ export function problemExportToMarkdown({ source, problem: p, contributors, cont
       `- **AI use:** ${c.aiUseLabel}`,
       ...(c.url ? [`- **Link:** ${c.url}`] : []),
       ...(c.permalink ? [`- **Permanent link:** ${c.permalink}`] : []),
+      ...(c.about ? [`- **About:** ${SITE.name} ${c.about}`] : []),
+      ...(c.verifiedBy.length ? [`- **Verified by:** ${c.verifiedBy.map((k) => `${SITE.name} ${k}`).join(", ")}`] : []),
+      ...(c.challengedBy.length ? [`- **Challenged by:** ${c.challengedBy.map((k) => `${SITE.name} ${k}`).join(", ")}`] : []),
+      ...(c.withdrawn ? [`- **Withdrawn by its authors:** ${formatDate(c.withdrawn)}; it no longer stands as a result.`] : []),
       ...(c.votes ? [`- **Votes:** ${c.votes.score} (${c.votes.up} up, ${c.votes.down} down)`] : []),
       "",
       cite(c.summary),

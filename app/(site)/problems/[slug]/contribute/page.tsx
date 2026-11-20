@@ -24,7 +24,7 @@ export default async function ContributeToProblemPage({ params }: PageProps<"/pr
         </Link>{" "}
         at the bottom of the problem page.
       </p>
-      <ContributeOptions slug={slug} />
+      <ContributeOptions slug={slug} status={problem.status} />
       <ReviewNote />
     </>
   );

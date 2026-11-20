@@ -41,7 +41,7 @@ export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
 /** Everything the activity log records: decisions on submissions, and direct changes to problems (publish: admitted to the list, unpublish: back to the candidates). */
 export const LOG_TARGET_TYPES = [...SUBMISSION_TYPES, "problem"] as const;
 export type LogTargetType = (typeof LOG_TARGET_TYPES)[number];
-export const LOG_ACTIONS = [...MODERATION_ACTIONS, "create", "update", "delete", "publish", "unpublish"] as const;
+export const LOG_ACTIONS = [...MODERATION_ACTIONS, "create", "update", "delete", "publish", "unpublish", "withdraw"] as const;
 export type LogAction = (typeof LOG_ACTIONS)[number];
 export const LOG_TARGET_NOUNS: Record<LogTargetType, string> = { ...SUBMISSION_TYPE_NOUNS, problem: "problem" };
 
@@ -71,7 +71,7 @@ export const CONTRIBUTION_KIND_LABELS: Record<ContributionKind, string> = {
   evidence: "computational evidence",
   verification: "independent verification",
   exposition: "explanatory exposition",
-  challenge: "challenge to a solution",
+  challenge: "challenge to a result",
   reference: "relevant reference",
 };
 export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = {
@@ -81,11 +81,55 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
   reformulation: "An equivalent or sharper statement of the problem.",
   decomposition: "A split of the problem into smaller open questions.",
   evidence: "Numerics or computer-assisted evidence for or against.",
-  verification: "An independent check of someone else's claimed result.",
+  verification: "An independent check of a result on this page, by someone who did not write it.",
   exposition: "A clear explanation of a result, for others to build on.",
-  challenge: "A gap or error in a claimed solution.",
+  challenge: "A gap or error in a result on this page.",
   reference: "Relevant literature not yet cited on the page.",
 };
+
+/**
+ * The kinds of result that can be submitted while a problem has each status, following the guidelines (IV):
+ * - open: everything;
+ * - under revision: work on the claimed solution (verifying, challenging, explaining, replicating), and
+ *   independent solutions or progress, since the claim may still fail; no decompositions;
+ * - solved: only verifying, challenging, explaining or replicating the solution. Further work on it, such as a
+ *   generalization, is a new problem.
+ * Edits and references stay possible in every state, though the statement is fixed once a solution is claimed
+ * (STATEMENT_EDITABLE).
+ */
+export const RESULT_KINDS_BY_STATUS: Record<ProblemStatus, readonly ContributionKind[]> = {
+  open: ["claim", "partial", "negative", "reformulation", "decomposition", "evidence", "verification", "exposition", "challenge"],
+  "under-revision": ["claim", "partial", "negative", "reformulation", "evidence", "verification", "exposition", "challenge"],
+  solved: ["evidence", "verification", "exposition", "challenge"],
+};
+
+/**
+ * How a kind is offered where its meaning shifts with the status: under revision, a solution is one besides the
+ * claim under review; once solved, evidence is a replication of the solution. Stored as the kind itself.
+ */
+export const KIND_CHOICES_BY_STATUS: Partial<Record<ProblemStatus, Partial<Record<ContributionKind, { label: string; description: string }>>>> = {
+  "under-revision": {
+    claim: { label: "Independent solution", description: "A solution of your own, different from the one under review." },
+    evidence: { label: "Computational evidence", description: "Numerics or computer-assisted work, such as a replication of the claim's computations." },
+  },
+  solved: {
+    evidence: { label: "Computational evidence", description: "A replication or formalization of the solution's computations or proofs." },
+  },
+};
+
+/** Whether suggested edits may change a problem's statement: not once a solution is claimed or accepted. */
+export const STATEMENT_EDITABLE: Record<ProblemStatus, boolean> = { open: true, "under-revision": false, solved: false };
+
+/**
+ * Whether its author can withdraw a contribution: while it waits for review, or once accepted, except a reference,
+ * which is then part of the problem's list of references. Not once turned down, nor twice.
+ */
+export function canWithdraw(c: { status: ModerationStatus; kind: ContributionKind; withdrawnAt: Date | null }): boolean {
+  return !c.withdrawnAt && (c.status === "pending" || (c.status === "approved" && c.kind !== "reference"));
+}
+
+/** The kinds that are about one accepted result on the same problem, chosen when submitting (`contribution.targetId`). */
+export const TARGETED_KINDS: readonly ContributionKind[] = ["verification", "challenge"];
 
 /**
  * The entry an accepted contribution of each kind adds to its problem's "Progress and history", linked to it;
