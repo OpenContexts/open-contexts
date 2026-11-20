@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MathText } from "@/components/markdown/math-text";
 import { contributionLook, type KindLook, KindTag } from "@/components/problems/kind-tag";
 import { ProblemContext } from "@/components/problems/problem-context";
 import { PageTitle } from "@/components/ui";
@@ -98,10 +99,10 @@ function RoleText({ role: r }: { role: Role }) {
     case "result":
       return r.key ? (
         <Link href={permalinkPath(r.key)} className="text-brand hover:underline" title={CONTRIBUTION_KIND_LABELS[r.contributionKind]}>
-          {r.title}
+          <MathText text={r.title} />
         </Link>
       ) : (
-        <>{r.title}</>
+        <MathText text={r.title} />
       );
     case "reference":
       return <>{r.title}</>;

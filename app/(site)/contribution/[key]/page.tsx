@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { MarkdownContent } from "@/components/markdown/markdown";
+import { mathAsPlainText, MathText } from "@/components/markdown/math-text";
 import { ReferenceList } from "@/components/markdown/reference-list";
 import { CiteProblem } from "@/components/problems/cite-problem";
 import { CommentBox, DiscussionSection } from "@/components/problems/community-sections";
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps<"/contribution/[key
   const resolved = await resolvePermalink((await params).key);
   if (!resolved || resolved.type === "redirect") return {};
   if (resolved.type === "gone") return { title: `${SITE.name} ${resolved.key}`, robots: { index: false } };
-  if (resolved.type === "contribution") return { title: `${resolved.contribution.title} (${SITE.name} ${resolved.contribution.key})` };
+  if (resolved.type === "contribution") return { title: `${mathAsPlainText(resolved.contribution.title)} (${SITE.name} ${resolved.contribution.key})` };
   const { problem, version, versions } = resolved;
   // Earlier versions are kept for citations; search engines should send readers to the problem page.
   const current = versions.at(-1)?.version === version.version;
@@ -97,7 +98,9 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
                 {SITE.name} {c.key}
               </span>
             </p>
-            <h1 className="mt-2 text-[1.6rem]/tight max-sm:text-[1.35rem]">{c.title}</h1>
+            <h1 className="mt-2 text-[1.6rem]/tight max-sm:text-[1.35rem]">
+              <MathText text={c.title} />
+            </h1>
             <p className="mt-2 text-ink-muted">
               by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
             </p>

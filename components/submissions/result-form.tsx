@@ -5,7 +5,7 @@ import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import type { CitableReferences } from "@/components/markdown/markdown";
 import { MarkdownEditor } from "@/components/markdown/markdown-editor";
 import { ChoiceCards, Field, Input, SubmitButton } from "@/components/ui";
-import { AI_USE, AI_USE_DESCRIPTIONS, AI_USE_LABELS, CONTRIBUTION_KIND_DESCRIPTIONS, CONTRIBUTION_KIND_LABELS, type ContributionKind } from "@/lib/constants";
+import { AI_USE, AI_USE_DESCRIPTIONS, AI_USE_LABELS, CONTRIBUTION_KIND_DESCRIPTIONS, CONTRIBUTION_KIND_LABELS, type ContributionKind, RESULT_SUMMARY_MAX } from "@/lib/constants";
 import { errorOf, initialFormState, valueOf } from "@/lib/actions/form-state";
 import { submitResult } from "@/lib/actions/submissions";
 import { FormMessage, SubmissionReceived } from "./form-parts";
@@ -39,7 +39,7 @@ export function ResultForm({ problemSlug, references, defaultCredit }: { problem
       </Field>
       <Field label="Summary" htmlFor="summary" error={errorOf(state, "summary")} hint="What is shown, how, and under which assumptions. Readers should understand the claim without opening the link.">
         <CitationsProvider references={references}>
-          <MarkdownEditor id="summary" name="summary" rows={10} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
+          <MarkdownEditor id="summary" name="summary" rows={10} maxLength={RESULT_SUMMARY_MAX} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
         </CitationsProvider>
       </Field>
       <Field label="Link to the full work (optional)" htmlFor="url" error={errorOf(state, "url")} hint="arXiv, journal, code repository, notebook…">

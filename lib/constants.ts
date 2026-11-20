@@ -121,6 +121,9 @@ export const PERMALINK_KINDS: readonly ContributionKind[] = [
   "challenge",
 ];
 
+/** The longest summary a result can have, in characters; the form counts towards it as one types. */
+export const RESULT_SUMMARY_MAX = 20_000;
+
 export const AI_USE = ["none", "partial", "full"] as const;
 export type AiUse = (typeof AI_USE)[number];
 export const AI_USE_LABELS: Record<AiUse, string> = {

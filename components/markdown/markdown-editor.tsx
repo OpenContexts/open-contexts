@@ -10,7 +10,9 @@ import { MarkdownHelp } from "./markdown-help";
 /**
  * A textarea with a Write / Preview toggle that renders markdown and LaTeX exactly as the
  * site will. The textarea stays uncontrolled, so React's form reset and `defaultValue` work.
- * Inside a CitationsProvider, typing \cite{ offers the references to cite.
+ * Inside a CitationsProvider, typing \cite{ offers the references to cite. `maxLength`: the most characters the
+ * server accepts, counted in the corner as one types. Not enforced here, so a pasted text that is too long is not cut
+ * off unseen; the counter turns red instead.
  */
 export function MarkdownEditor({
   id,
@@ -21,6 +23,7 @@ export function MarkdownEditor({
   invalid,
   describedBy,
   autoFocus,
+  maxLength,
 }: {
   id: string;
   name: string;
@@ -30,11 +33,14 @@ export function MarkdownEditor({
   invalid?: boolean;
   describedBy?: string;
   autoFocus?: boolean;
+  maxLength?: number;
 }) {
   const [mode, setMode] = useState<"write" | "preview">("write");
   const [value, setValue] = useState(defaultValue);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const references = useCitations();
+  // As the server counts: without the spaces and blank lines around the text.
+  const length = value.trim().length;
   const tab = (m: typeof mode, label: string) => (
     <button
       type="button"
@@ -65,11 +71,24 @@ export function MarkdownEditor({
           defaultValue={defaultValue}
           placeholder={placeholder}
           aria-invalid={invalid || undefined}
-          aria-describedby={describedBy}
+          aria-describedby={[describedBy, maxLength && `${id}-count`].filter(Boolean).join(" ") || undefined}
           autoFocus={autoFocus}
           onInput={(e) => setValue(e.currentTarget.value)}
-          className={cn(mode === "preview" && "hidden")}
+          className={cn(maxLength && "pb-6", mode === "preview" && "hidden")}
         />
+        {maxLength && mode === "write" && (
+          <p
+            id={`${id}-count`}
+            className={cn(
+              // Clear of the scrollbar and the handle that resizes the field.
+              "pointer-events-none absolute right-5 bottom-1.5 rounded-sm bg-paper/90 px-1 font-sans text-xs tabular-nums",
+              length > maxLength ? "font-bold text-brand" : "text-ink-subtle",
+            )}
+          >
+            {length.toLocaleString("en")} / {maxLength.toLocaleString("en")}
+            <span className="sr-only"> characters</span>
+          </p>
+        )}
         {references && mode === "write" && <CiteAutocomplete textarea={textarea} references={references} />}
       </div>
       {mode === "preview" && (

@@ -2,7 +2,7 @@
 // the forms show the resulting field errors.
 import { z } from "zod";
 import { AGENDA_IDS } from "@/lib/agenda";
-import { AI_USE } from "@/lib/constants";
+import { AI_USE, RESULT_SUMMARY_MAX } from "@/lib/constants";
 import { citeIssues, commaList, optionalUrl, referenceRows, slug, text, toReferences } from "./fields";
 
 /**
@@ -38,7 +38,7 @@ export const resultSchema = z.object({
   problemSlug: slug,
   kind: z.enum(RESULT_KINDS, { error: "Please choose what kind of result this is." }),
   title: text(3, 200, "a title"),
-  summary: text(20, 20_000, "a summary"),
+  summary: text(20, RESULT_SUMMARY_MAX, "a summary"),
   url: optionalUrl,
   aiUse: z.enum(AI_USE, { error: "Please say how much AI was used." }),
   credit: text(2, 500, "the names to credit"),

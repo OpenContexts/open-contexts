@@ -10,9 +10,9 @@ import { signOut } from "@/lib/auth/client";
 /**
  * Dropdown for a signed-in user. Its trigger has the same width as "Sign in", so the header never shifts.
  * `news`: decisions on their submissions and comments on their contributions since they last opened /me, shown
- * as a red apple with the number.
+ * as a red apple with the number. `toReview`: for moderators, the submissions waiting for a decision, as a gold apple.
  */
-export function AccountMenu({ name, email, moderator, news }: { name: string; email: string; moderator: boolean; news: number }) {
+export function AccountMenu({ name, email, moderator, news, toReview }: { name: string; email: string; moderator: boolean; news: number; toReview: number }) {
   const [open, setOpen] = useState(false);
   // Opening /me (or a page under it) marks the decisions seen on the server, but the header is not rendered again on the way there:
   // the count is put away here once the page is open, until the server reports a different one.
@@ -48,12 +48,15 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
         className="relative cursor-pointer text-ink hover:underline"
       >
         Account ▾
-        {unseen > 0 && (
-          <>
-            <AppleCount n={unseen} large className="absolute -top-3 -right-4" />
-            <span className="sr-only">, {unseen === 1 ? "one update" : `${unseen} updates`} on your submissions</span>
-          </>
+        {(unseen > 0 || toReview > 0) && (
+          // The red one in the corner, the gold one beside it.
+          <span className="absolute -top-3 -right-4 flex flex-row-reverse">
+            {unseen > 0 && <AppleCount n={unseen} large />}
+            {toReview > 0 && <AppleCount n={toReview} large variant="gold" />}
+          </span>
         )}
+        {unseen > 0 && <span className="sr-only">, {unseen === 1 ? "one update" : `${unseen} updates`} on your submissions</span>}
+        {toReview > 0 && <span className="sr-only">, {toReview === 1 ? "one submission" : `${toReview} submissions`} to review</span>}
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-20 mt-2 w-60 rounded border border-ink bg-paper py-1 text-base shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
@@ -72,8 +75,14 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
             )}
           </Link>
           {moderator && (
-            <Link role="menuitem" href="/admin" className={item} onClick={() => setOpen(false)}>
+            <Link role="menuitem" href="/admin" className={`${item} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
               Admin dashboard
+              {toReview > 0 && (
+                <span className="flex items-center gap-1.5 text-sm text-gold-dark">
+                  {toReview} new
+                  <AppleCount n={toReview} variant="gold" />
+                </span>
+              )}
             </Link>
           )}
           <button
@@ -97,12 +106,18 @@ export function AccountMenu({ name, email, moderator, news }: { name: string; em
   );
 }
 
-/** A small red apple with a number on it, like the badge on an app icon. `large`: on the menu's trigger, with room for "9+". */
-function AppleCount({ n, large, className }: { n: number; large?: boolean; className?: string }) {
+/**
+ * A small apple with a number on it, like the badge on an app icon: red for the user's news, gold for what waits for
+ * review. `large`: on the menu's trigger, with room for "9+".
+ */
+function AppleCount({ n, large, variant = "red", className }: { n: number; large?: boolean; variant?: "red" | "gold"; className?: string }) {
   return (
     <span aria-hidden className={cn("relative inline-flex items-center justify-center", large ? "size-[1.45rem]" : "size-5", className)}>
-      <AppleIcon className="absolute inset-0 size-full" />
-      <span className={cn("relative top-[2px] font-sans font-bold text-white tabular-nums", large ? "text-[0.64rem]/none" : "text-[0.6rem]/none")}>{n > 9 ? "9+" : n}</span>
+      <AppleIcon variant={variant} className="absolute inset-0 size-full" />
+      {/* White is too faint on the gold, which stays the same colour in the dark theme; the stem's brown is not. */}
+      <span className={cn("relative top-[2px] font-sans font-bold tabular-nums", variant === "gold" ? "text-[#5a3a1a]" : "text-white", large ? "text-[0.64rem]/none" : "text-[0.6rem]/none")}>
+        {n > 9 ? "9+" : n}
+      </span>
     </span>
   );
 }

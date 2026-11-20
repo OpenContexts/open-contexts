@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Card, Notice, Pill } from "@/components/admin/ui";
 import { MarkdownContent } from "@/components/markdown/markdown";
+import { MathText } from "@/components/markdown/math-text";
 import { FramedBox } from "@/components/ui";
 import { getAgendaItem } from "@/lib/agenda";
 import { AI_USE_LABELS } from "@/lib/constants";
@@ -35,7 +36,7 @@ export function SubmissionContent({ submission, problems, references }: { submis
         <Card>
           {contribution && (
             <p className="mb-3 text-sm text-zinc-600">
-              On the contribution <span className="font-medium text-zinc-900">“{contribution.title}”</span>
+              On the contribution <span className="font-medium text-zinc-900">“<MathText text={contribution.title} />”</span>
               {contribution.status !== "approved" && " (not published at the moment, so the comment would not be shown)"}
             </p>
           )}
@@ -63,7 +64,9 @@ export function SubmissionContent({ submission, problems, references }: { submis
       const credit = c.credit.trim() !== c.author.name.trim() ? c.credit : undefined;
       return (
         <Card>
-          <h2 className="text-lg font-semibold text-zinc-900">{c.title}</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">
+            <MathText text={c.title} />
+          </h2>
           {c.url && (
             <a href={c.url} target="_blank" rel="noopener noreferrer nofollow" className="mt-0.5 block truncate text-sm text-sky-700 hover:underline">
               ↗ {c.url}

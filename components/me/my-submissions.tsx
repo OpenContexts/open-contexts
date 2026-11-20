@@ -1,7 +1,8 @@
 // The parts of /me, /me/contributions and /me/comments: what a user submitted and where it stands.
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { type CitableReferences, MarkdownContent, MarkdownInline } from "@/components/markdown/markdown";
+import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
+import { MathText } from "@/components/markdown/math-text";
 import { contributionLook, type KindLook, KindTag } from "@/components/problems/kind-tag";
 import { AppleIcon, Clamped, SegmentLink, Segmented, TabLink, Tabs, type TagTone, toneColors } from "@/components/ui";
 import { requireUser } from "@/lib/auth/session";
@@ -228,10 +229,10 @@ function SubmissionItem({ item: s, mine, card }: { item: MySubmission; mine: Min
           <p className="text-[1.02rem] font-bold">
             {href ? (
               <Link href={href} className="text-ink hover:text-brand">
-                <MarkdownInline source={s.title} references={references} />
+                <MathText text={s.title} />
               </Link>
             ) : (
-              <MarkdownInline source={s.title} references={references} />
+              <MathText text={s.title} />
             )}
           </p>
         )}
@@ -321,7 +322,7 @@ export function NewsList({ mine, news }: { mine: Mine; news: News[] }) {
                   <Link href={href} className="font-bold text-brand hover:underline">
                     {plural(n.comments, "new comment")}
                   </Link>{" "}
-                  on your {noun} “<MarkdownInline source={s.title} references={problem?.references} />”
+                  on your {noun} “<MathText text={s.title} />”
                 </>
               ) : isComment(s) ? (
                 // A comment has no title; it shows on its own page.
@@ -336,7 +337,7 @@ export function NewsList({ mine, news }: { mine: Mine; news: News[] }) {
                 <>
                   Your {noun}{" "}
                   <Link href={href} className="text-ink hover:text-brand hover:underline">
-                    “<MarkdownInline source={s.title} references={problem?.references} />”
+                    “<MathText text={s.title} />”
                   </Link>{" "}
                   <StatusWord item={s} problem={problem} />
                 </>

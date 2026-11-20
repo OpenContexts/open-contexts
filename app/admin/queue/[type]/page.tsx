@@ -4,6 +4,7 @@ import { QuickDecision } from "@/components/admin/quick-decision";
 import { TypePill } from "@/components/admin/type-pill";
 import { AdminButtonLink, Avatar, EmptyState, PageHeader, Pill, Segmented } from "@/components/admin/ui";
 import { MarkdownContent } from "@/components/markdown/markdown";
+import { MathText } from "@/components/markdown/math-text";
 import { requireModerator } from "@/lib/auth/session";
 import {
   AI_USE_LABELS,
@@ -103,7 +104,7 @@ function QueueCard({ type, item, quick }: { type: SubmissionType; item: QueueIte
         </div>
         {type !== "comment" && (
           <Link href={review} className="mt-2.5 block text-base font-semibold text-zinc-900 hover:underline">
-            {item.title}
+            <MathText text={item.title} />
           </Link>
         )}
         {item.url && (

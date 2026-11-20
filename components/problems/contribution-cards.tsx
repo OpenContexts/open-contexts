@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { CitationText } from "@/components/markdown/citation-text";
 import { type CitableReferences, MarkdownContent } from "@/components/markdown/markdown";
+import { MathText } from "@/components/markdown/math-text";
 import { CommentThread } from "@/components/problems/comment-thread";
 import { contributionLook, KindTag } from "@/components/problems/kind-tag";
 import { VoteControl } from "@/components/problems/votes";
@@ -76,10 +77,10 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
             <h3 className="text-[1.1rem]/snug font-bold">
               {page ? (
                 <Link href={page} data-cover className="text-ink group-hover/card:text-brand after:absolute after:inset-0">
-                  {c.title}
+                  <MathText text={c.title} />
                 </Link>
               ) : (
-                c.title
+                <MathText text={c.title} />
               )}
             </h3>
             <p className="mt-0.5 text-sm text-ink-subtle">
