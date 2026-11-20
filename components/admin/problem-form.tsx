@@ -1,18 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createProblem, updateProblem } from "@/app/admin/problems/actions";
 import { MarkdownField } from "@/components/admin/markdown-field";
 import { HistoryField } from "@/components/admin/history-field";
+import { changesOf, contentChars, MINOR_CHARS, type ProblemChanges } from "@/components/admin/problem-changes";
 import { ReferencesField } from "@/components/admin/references-field";
+import { SaveDialog } from "@/components/admin/save-dialog";
 import { TagInput } from "@/components/admin/tag-input";
-import { AdminButton, AdminField, AdminInput, AdminSelect, Card } from "@/components/admin/ui";
+import { AdminButton, AdminField, AdminInput, Card } from "@/components/admin/ui";
 import { CitationsProvider } from "@/components/markdown/cite-autocomplete";
 import { useReferenceRows } from "@/components/ui/use-reference-rows";
 import { AGENDA } from "@/lib/agenda";
 import { initialFormState, errorOf, valueOf, valuesOf } from "@/lib/actions/form-state";
-import { AI_USE, AI_USE_LABELS, PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
+import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import type { HistoryEntry, Reference } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
@@ -47,8 +49,12 @@ function SaveButton({ label }: { label: string }) {
   );
 }
 
+/** The fields the save dialog asks for: an error in one of them opens it again. */
+const DIALOG_FIELDS = ["changeSummary", "credit", "aiUse", "minor"];
+
 /**
- * Creates a problem (no `id`) or edits one. `version` guards against overwriting someone else's change.
+ * Creates a problem (no `id`) or edits one. An edit is saved through a dialog (SaveDialog) that asks for what the
+ * change needs: a summary, whether it is minor, and the credit and AI use of a new version. `version` guards against overwriting someone else's change.
  * New problems get the next free number and a URL name made from the title; neither changes later.
  */
 export function ProblemForm({ initial, id, number, version, nextNumber }: { initial: ProblemFormValues; id?: string; number?: number; version?: number; nextNumber?: number }) {
@@ -60,9 +66,29 @@ export function ProblemForm({ initial, id, number, version, nextNumber }: { init
   // Kept here, so the texts can cite the references as they are while editing.
   const refs = useReferenceRows(initial.references);
 
+  // The save dialog, with what changed when it was opened.
+  const form = useRef<HTMLFormElement>(null);
+  // `opening` counts the openings: the dialog's fields start afresh with each, from `minor` (see SaveDialog).
+  const [dialog, setDialog] = useState<{ open: boolean; changes?: ProblemChanges; minor: boolean; opening: number }>({ open: false, minor: false, opening: 0 });
+  function openDialog() {
+    const el = form.current;
+    // The fields of the editor are checked first: inside the dialog the browser could not point to them.
+    if (!el?.reportValidity()) return;
+    const changes = changesOf(new FormData(el), initial);
+    setDialog((d) => ({ open: true, changes, minor: contentChars(changes) > 0 && contentChars(changes) <= MINOR_CHARS, opening: d.opening + 1 }));
+  }
+  // A failed save opens the dialog again if one of its fields was the problem, with what was ticked; any other
+  // error shows in the editor.
+  const [seen, setSeen] = useState(state);
+  if (state !== seen) {
+    setSeen(state);
+    const again = state.status === "error" && DIALOG_FIELDS.some((f) => errorOf(state, f));
+    setDialog((d) => (again ? { ...d, open: true, minor: state.values?.minor === "on", opening: d.opening + 1 } : { ...d, open: false }));
+  }
+
   return (
     <CitationsProvider references={refs.rows}>
-      <form action={action} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <form ref={form} action={action} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         {id && <input type="hidden" name="id" value={id} />}
         {version !== undefined && <input type="hidden" name="version" value={version} />}
         {!id && initial.slug && <input type="hidden" name="slug" value={initial.slug} />}
@@ -135,52 +161,15 @@ export function ProblemForm({ initial, id, number, version, nextNumber }: { init
                   </span>
                 </label>
               )}
-              {id && (
-                <AdminField
-                  label="What changed"
-                  htmlFor="changeSummary"
-                  error={error("changeSummary")}
-                  hint="Added to the problem's public history."
-                >
-                  <AdminInput id="changeSummary" name="changeSummary" defaultValue={valueOf(state, "changeSummary")} placeholder="e.g. Added the 2024 lattice results" className="w-full" />
-                </AdminField>
-              )}
-              {id && (
-                <AdminField
-                  label="Credit (optional)"
-                  htmlFor="credit"
-                  error={error("credit")}
-                  hint="Whom the new version credits, e.g. someone who sent the correction. Left empty, it reads “by the editors”. A minor change keeps the current version’s credit."
-                >
-                  <AdminInput id="credit" name="credit" defaultValue={valueOf(state, "credit")} placeholder="e.g. Jane Doe (ETH Zürich)" className="w-full" />
-                </AdminField>
-              )}
-              {id && (
-                <AdminField label="AI use in the change" htmlFor="aiUse" error={error("aiUse")}>
-                  <AdminSelect id="aiUse" name="aiUse" defaultValue={valueOf(state, "aiUse")} className="w-full">
-                    <option value="">Not stated</option>
-                    {AI_USE.map((a) => (
-                      <option key={a} value={a}>
-                        {AI_USE_LABELS[a].replace(/^./, (c) => c.toUpperCase())}
-                      </option>
-                    ))}
-                  </AdminSelect>
-                </AdminField>
-              )}
-              {id && (
-                <label className="flex cursor-pointer items-start gap-2 text-zinc-700">
-                  <input type="checkbox" name="minor" defaultChecked={state.values?.minor === "on"} className="mt-0.5 accent-zinc-900" />
-                  <span>
-                    Minor change
-                    <span className="block text-xs text-zinc-500">
-                      A typo or a broken link: corrects the current version instead of starting a new one, and needs no summary.
-                    </span>
-                  </span>
-                </label>
-              )}
             </div>
             <div className="-mx-5 mt-5 -mb-5 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4">
-              <SaveButton label={id ? "Save changes" : "Create problem"} />
+              {id ? (
+                <AdminButton variant="primary" onClick={openDialog} className="w-full">
+                  Save changes…
+                </AdminButton>
+              ) : (
+                <SaveButton label="Create problem" />
+              )}
               {!id && <p className="mt-2 text-center text-xs text-zinc-500">Appears on the site right away{nextNumber ? ` as Problem ${nextNumber}` : ""}.</p>}
             </div>
           </Card>
@@ -213,6 +202,7 @@ export function ProblemForm({ initial, id, number, version, nextNumber }: { init
             </div>
           </Card>
         </div>
+        {id && dialog.changes && <SaveDialog open={dialog.open} onClose={() => setDialog((d) => ({ ...d, open: false }))} changes={dialog.changes} minor={dialog.minor} opening={dialog.opening} state={state} />}
       </form>
     </CitationsProvider>
   );

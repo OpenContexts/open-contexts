@@ -48,7 +48,7 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
           </>
         }
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <PublishButton problem={target} />
             <AdminButtonLink href={`/problems/${problem.slug}`} target="_blank">
               View on the site ↗

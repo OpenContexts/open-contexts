@@ -124,12 +124,16 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
           {history.map((h, i) => {
             const look = historyLook(h);
             return (
-              <li key={i} className="grid grid-cols-[6.6rem_minmax(0,1fr)] gap-x-5 max-sm:grid-cols-[4.8rem_minmax(0,1fr)] max-sm:gap-x-3">
-                <span className="pt-3 text-right text-[0.95rem] text-ink-subtle tabular-nums max-sm:text-sm">{formatDate(h.date)}</span>
+              // The date in a column of its own beside the timeline; on small screens above the entry, next to its
+              // kind, so that the text has the whole width.
+              <li key={i} className="grid grid-cols-[6.6rem_minmax(0,1fr)] gap-x-5 max-sm:block">
+                <span className="pt-3 text-right text-[0.95rem] text-ink-subtle tabular-nums max-sm:hidden">{formatDate(h.date)}</span>
                 {/* A timeline: one line down the entries, with a marker in the colour of each entry's kind. */}
-                <div className="relative border-l-2 border-rule py-3 pl-5 max-sm:pl-4">
+                <div className="relative border-l-2 border-rule py-3 pl-5 max-sm:ml-1.5 max-sm:py-2.5 max-sm:pl-4 max-sm:text-[0.97rem]">
                   <span aria-hidden className={cn("absolute top-[1.15rem] -left-[7px] size-3 rounded-full ring-3 ring-paper", toneColors[look.tone].bg)} />
                   <KindTag look={look} className="relative -top-px mr-2" />
+                  <span className="mr-2 text-sm text-ink-subtle tabular-nums sm:hidden">{formatDate(h.date)}</span>
+                  <br className="sm:hidden" />
                   <MarkdownInline source={h.text} references={problem.references} />
                   {h.version && versions.has(h.version) && <VersionLine version={versions.get(h.version)!} />}
                   {h.contribution && byKey.has(h.contribution) && <ContributionLine contribution={byKey.get(h.contribution)!} />}

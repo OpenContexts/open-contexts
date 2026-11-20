@@ -9,7 +9,7 @@ import { oneLine, type ReferenceDraft } from "@/lib/references";
 const iconButton =
   "inline-flex size-8 flex-none cursor-pointer items-center justify-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 disabled:invisible";
 
-/** The two inputs of one reference, side by side: citation and link. */
+/** The two inputs of one reference, side by side: citation and link; on small screens one above the other. */
 function ReferenceInputs({
   reference,
   onChange,
@@ -45,7 +45,7 @@ function ReferenceInputs({
         onKeyDown={onKeyDown}
         placeholder="https://… (optional)"
         aria-label={`${label}: link`}
-        className="w-44 flex-none max-md:w-36"
+        className="w-44 flex-none max-md:w-36 max-sm:w-full"
       />
       <input type="hidden" name="referenceKey[]" value={reference.key ?? ""} />
     </>
@@ -71,9 +71,9 @@ export function ReferencesField({ refs, error }: { refs: ReferenceRows; error?: 
         <ol className="mb-3 space-y-2">
           {refs.rows.map((row, i) => (
             <li key={row.rowId} className="flex items-start gap-2">
-              <span className="w-6 flex-none pt-2.5 text-right text-xs text-zinc-400 tabular-nums">{i + 1}.</span>
+              <span className="w-6 flex-none pt-2.5 text-right text-xs text-zinc-400 tabular-nums max-sm:w-4">{i + 1}.</span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 max-sm:flex-col max-sm:items-stretch">
                   <ReferenceInputs
                     reference={row}
                     onChange={(patch) => refs.update(row.rowId, patch)}
@@ -84,7 +84,8 @@ export function ReferencesField({ refs, error }: { refs: ReferenceRows; error?: 
                 </div>
                 <p className="mt-0.5 font-mono text-[11px] text-zinc-400">\cite{`{${row.key}}`}</p>
               </div>
-              <div className="flex flex-none pt-0.5">
+              {/* Stacked on small screens, so that the citation keeps the width. */}
+              <div className="flex flex-none pt-0.5 max-sm:flex-col max-sm:pt-0">
                 <button type="button" onClick={() => refs.move(row.rowId, -1)} disabled={i === 0} aria-label={`Move reference ${i + 1} up`} className={iconButton}>
                   ↑
                 </button>
@@ -101,9 +102,9 @@ export function ReferencesField({ refs, error }: { refs: ReferenceRows; error?: 
       ) : (
         <p className="mb-3 text-zinc-500">No references yet.</p>
       )}
-      <div className="flex items-start gap-2 rounded-md bg-zinc-50 p-2 ring-1 ring-zinc-200 ring-inset">
+      <div className="flex items-start gap-2 rounded-md bg-zinc-50 p-2 ring-1 ring-zinc-200 ring-inset max-sm:flex-col max-sm:items-stretch">
         <ReferenceInputs reference={refs.draft} onChange={refs.setDraft} onBlur={refs.tidyDraft} onKeyDown={addOnEnter} label="New reference" />
-        <AdminButton onClick={refs.add} disabled={!refs.canAdd} aria-label="Add reference" className="flex-none">
+        <AdminButton onClick={refs.add} disabled={!refs.canAdd} aria-label="Add reference" className="flex-none max-sm:self-end">
           Add
         </AdminButton>
       </div>

@@ -12,9 +12,10 @@ export function ReferenceList({ references, untrusted }: { references: CitableRe
   return (
     <>
       <PartTitle>References</PartTitle>
-      <ExpandableList limit={10} noun={["reference", "references"]} ordered className="list-decimal pl-6">
+      {/* Smaller and closer on small screens, where each reference would otherwise run over many lines. */}
+      <ExpandableList limit={10} noun={["reference", "references"]} ordered className="list-decimal pl-6 max-sm:pl-5 max-sm:text-[0.92rem]/snug">
         {references.map((r) => (
-          <li key={r.text} className="my-1.5">
+          <li key={r.text} className="my-1.5 pl-0.5 hyphens-auto max-sm:my-2">
             <CitationText text={r.text} url={r.url} untrusted={untrusted} />
           </li>
         ))}

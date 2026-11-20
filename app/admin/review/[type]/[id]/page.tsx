@@ -49,7 +49,7 @@ export default async function ReviewPage({ params }: PageProps<"/admin/review/[t
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-zinc-900">{heading}</h1>
           {problem && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <AdminButtonLink href={`/problems/${problem.slug}`} target="_blank" size="sm">
                 View on site ↗
               </AdminButtonLink>
