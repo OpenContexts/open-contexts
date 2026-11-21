@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageTitle } from "@/components/ui";
 import { isGitHubConfigured } from "@/lib/auth/github";
 import { isOrcidConfigured } from "@/lib/auth/orcid";
@@ -17,7 +18,12 @@ export default function SignUpPage() {
       <PageTitle>Create an account</PageTitle>
       <p className="mb-5 text-[0.98rem] text-ink-muted">
         Accounts are for researchers. Sign up with the email address of your university or research institute
-        {others ? `, or with your ${others} account` : ""}. We will send you a link to confirm the address.
+        {others ? `, or with your ${others} account` : ""}. We will send you a link to confirm the address. What we
+        store, and why, is in the{" "}
+        <Link href="/privacy" className="text-brand hover:underline">
+          privacy policy
+        </Link>
+        .
       </p>
       {others && <h2 className="mb-2 font-bold">With your institutional email</h2>}
       <SignUpForm

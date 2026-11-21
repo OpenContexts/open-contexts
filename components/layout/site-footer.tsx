@@ -22,9 +22,17 @@ export function SiteFooter() {
             ))}
           </ul>
         </div>
-        <p className="mt-4 text-ink-subtle">
-          Statuses are dated snapshots. Check the cited sources before relying on one.
-        </p>
+        <div className="mt-4 flex flex-wrap justify-between gap-x-8 gap-y-1 text-ink-subtle">
+          <p>Statuses are dated snapshots. Check the cited sources before relying on one.</p>
+          <p className="flex gap-x-4">
+            <Link href="/legal-notice" className="hover:text-ink hover:underline">
+              Legal notice
+            </Link>
+            <Link href="/privacy" className="hover:text-ink hover:underline">
+              Privacy
+            </Link>
+          </p>
+        </div>
       </Container>
     </footer>
   );
