@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
+import { AssessmentTargets } from "@/components/explainers/facts";
+import { Section } from "@/components/explainers/section";
+import { MathText } from "@/components/markdown/math-text";
+import { StatusBadge, StatusIcon } from "@/components/problems/status";
 import { StatusChart } from "@/components/progress/status-chart";
-import { PageTitle, SectionTitle } from "@/components/ui";
+import { PageTitle } from "@/components/ui";
+import { PROBLEM_STATUS_LABELS, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
+import type { Problem } from "@/lib/data/problems";
 import { getPublishedProblems } from "@/lib/data/problems";
 import { paceFigures, statusTimeline } from "@/lib/data/progress";
 import { formatDate, plural } from "@/lib/format";
+import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Progress", description: "How the statuses of the open problems have changed over time." };
+
+/** The status colours of the chart and the tags: red open, blue under revision, green solved. */
+const BAR: Record<ProblemStatus, string> = { open: "bg-brand-strong", "under-revision": "bg-info-strong", solved: "bg-success" };
+
+/** How many status changes the page lists. */
+const RECENT = 6;
 
 export default async function ProgressPage() {
   // Cached as a whole, including today's date: it is recomputed daily and whenever a problem changes.
@@ -27,48 +40,131 @@ export default async function ProgressPage() {
         <p className="text-center text-ink-muted">No problems have been published yet.</p>
       ) : (
         <>
-          <p className="text-justify hyphens-auto max-sm:text-left">
-            How the list has moved since it went live on {formatDate(rows[0].date)}: how many problems are listed, and
-            how many of them are open, under revision or solved. Every change of status is a dated entry in a
-            problem&apos;s history, and the chart is drawn from those dates. A problem counts from the day it was
-            published, with the status it had then.
+          <p className="mx-auto max-w-140 text-center text-ink-muted">
+            How the list has moved since it went live on {formatDate(rows[0].date)}, drawn from the dated status
+            changes in each problem&apos;s history.
           </p>
 
-          <SectionTitle>I. Problems by status over time</SectionTitle>
-          <StatusChart rows={rows} today={today} />
-          <p className="text-center text-sm text-ink-subtle">
-            Each line steps on the day a status changed.{" "}
-            <Link href="/problems" className="text-brand hover:underline">
-              See all problems
-            </Link>
-            {" · "}
-            <a href="/progress.json" download="opencontexts-progress.json" className="text-brand hover:underline">
-              Download the data (JSON)
-            </a>
-          </p>
+          <Section title="The list today">
+            <StatusSummary problems={problems} />
+          </Section>
 
-          <SectionTitle>II. Time to resolution</SectionTitle>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Figure
-              value={pace.toClaim.median}
-              label={pace.toClaim.count ? `median days from listing to a first claimed solution (${plural(pace.toClaim.count, "problem")})` : "days from listing to a first claimed solution (none yet)"}
-            />
-            <Figure
-              value={pace.toSolved.median}
-              label={pace.toSolved.count ? `median days from a claimed solution to solved (${plural(pace.toSolved.count, "problem")})` : "days from a claimed solution to solved (none yet)"}
-            />
-          </div>
+          <Section title="Over time" intro="Each line steps on the day a status changed. A problem counts from the day it was published.">
+            <StatusChart rows={rows} today={today} />
+            <p className="text-center text-sm">
+              <a href="/progress.json" download="opencontexts-progress.json" className="text-brand hover:underline">
+                Download the data (JSON)
+              </a>
+            </p>
+          </Section>
+
+          <Section title="Latest changes of status">
+            <RecentChanges problems={problems} today={today} />
+          </Section>
+
+          <Section title="Time to resolution">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Pace value={pace.toClaim.median} label="days from listing to a first claimed solution" count={pace.toClaim.count} />
+              <Pace value={pace.toSolved.median} label="days from a claimed solution to solved" count={pace.toSolved.count} />
+            </div>
+          </Section>
+
+          <Section title="The first year" intro={<>{SITE.name} I is assessed publicly after one year, against targets fixed in advance.</>}>
+            <YearBar start={rows[0].date} today={today} />
+            <AssessmentTargets className="mt-6" />
+            <p className="mt-3 text-center text-sm">
+              <Link href="/about#cycles" className="text-brand hover:underline">
+                About the first cycle →
+              </Link>
+            </p>
+          </Section>
         </>
       )}
     </>
   );
 }
 
-function Figure({ value, label }: { value: number | null; label: string }) {
+/** The three statuses as figures with their apples, over a bar split in their proportions. */
+function StatusSummary({ problems }: { problems: Problem[] }) {
+  const count = (s: ProblemStatus) => problems.filter((p) => p.status === s).length;
   return (
-    <div className="flex items-baseline gap-3 rounded border border-rule-strong px-4 py-3">
-      <strong className="text-[1.7rem] leading-none tabular-nums">{value ?? "–"}</strong>
-      <span className="text-[0.95rem] text-ink-muted">{label}</span>
+    <div className="mx-auto max-w-170">
+      <ul className="grid grid-cols-3 gap-3">
+        {PROBLEM_STATUSES.map((s) => (
+          <li key={s}>
+            <Link href={`/problems?status=${s}`} className="flex flex-col items-center rounded-md border border-rule-strong px-3 py-3 text-ink hover:border-ink hover:bg-surface">
+              <span className="flex items-center gap-2">
+                <StatusIcon status={s} className="size-6" />
+                <strong className="text-[1.8rem] leading-none tabular-nums">{count(s)}</strong>
+              </span>
+              <span className="mt-1 text-sm tracking-wide text-ink-muted [font-variant:small-caps]">{PROBLEM_STATUS_LABELS[s]}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-rule" role="img" aria-label={PROBLEM_STATUSES.map((s) => `${count(s)} ${PROBLEM_STATUS_LABELS[s]}`).join(", ")}>
+        {PROBLEM_STATUSES.map((s) => (
+          <span key={s} className={BAR[s]} style={{ width: `${(100 * count(s)) / problems.length}%` }} />
+        ))}
+      </div>
+      <p className="mt-2 text-center text-sm text-ink-subtle">{plural(problems.length, "problem")} on the list</p>
+    </div>
+  );
+}
+
+/** The latest dated changes of status, newest first, each with its problem. */
+function RecentChanges({ problems, today }: { problems: Problem[]; today: string }) {
+  const changes = problems
+    .flatMap((p) => p.history.filter((h) => h.kind === "status" && h.status && h.date <= today).map((h) => ({ problem: p, date: h.date, status: h.status!, text: h.text })))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, RECENT);
+  if (!changes.length) return <p className="text-center text-ink-muted">No changes of status yet.</p>;
+  return (
+    <ol className="relative mx-auto max-w-170 border-l border-rule-strong pl-6">
+      {changes.map((c, i) => (
+        <li key={i} className="relative pb-5 last:pb-0">
+          <StatusIcon status={c.status} className="absolute top-0.5 -left-[2.15rem] size-5 rounded-full bg-paper" />
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-subtle">
+            <time dateTime={c.date}>{formatDate(c.date)}</time>
+            <StatusBadge status={c.status} />
+          </p>
+          <Link href={`/problems/${c.problem.slug}`} className="mt-0.5 block font-bold text-ink hover:text-brand">
+            Problem {c.problem.number}: <MathText text={c.problem.title} />
+          </Link>
+          {c.text && <p className="text-[0.95rem] text-ink-muted">{c.text}</p>}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** One median, with how many problems it is taken over. */
+function Pace({ value, label, count }: { value: number | null; label: string; count: number }) {
+  return (
+    <div className="rounded-md border border-rule-strong px-4 py-3 text-center">
+      <strong className="block text-[1.8rem] leading-tight tabular-nums">{value ?? "–"}</strong>
+      <span className="block text-[0.95rem] text-ink-muted">median {label}</span>
+      <span className="block text-sm text-ink-subtle">{count ? `over ${plural(count, "problem")}` : "none yet"}</span>
+    </div>
+  );
+}
+
+/** How far into its first year the list is: a bar from the day it went live to the assessment. */
+function YearBar({ start, today }: { start: string; today: string }) {
+  const day = Math.max(0, Math.round((Date.parse(today) - Date.parse(start)) / 86_400_000));
+  const end = new Date(Date.parse(start) + 365 * 86_400_000).toISOString().slice(0, 10);
+  const share = Math.min(1, day / 365);
+  return (
+    <div className="mx-auto max-w-170">
+      <div className="relative h-2.5 rounded-full bg-rule">
+        <span className="absolute inset-y-0 left-0 rounded-full bg-gold" style={{ width: `${share * 100}%` }} />
+        <span className="absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-paper bg-gold-dark" style={{ left: `${share * 100}%` }} />
+      </div>
+      <p className="mt-2 flex justify-between text-sm text-ink-subtle">
+        <span>Live since {formatDate(start)}</span>
+        <strong className="text-ink">{day >= 365 ? "The year is over" : `Day ${day} of 365`}</strong>
+        <span>Assessment from {formatDate(end)}</span>
+      </p>
     </div>
   );
 }
