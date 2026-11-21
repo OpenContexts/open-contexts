@@ -54,9 +54,10 @@ export function StatusDiagram({ rules }: { rules: { n: number; title: string; te
       <div className="flex items-center justify-center gap-1 max-sm:flex-col">
         {STATES.map((s, i) => (
           <div key={s.label} className="contents">
-            <span className={cn("rounded-md border-[1.5px] px-4 py-2 font-mono text-[1.05rem] font-bold whitespace-nowrap", s.className)}>{s.label}</span>
+            <span className={cn("rounded-md border-[1.5px] px-4 py-2 text-center font-mono text-[1.05rem] font-bold whitespace-nowrap max-sm:w-full", s.className)}>{s.label}</span>
             {i < MOVES.length && (
-              <div className="flex min-w-0 flex-col gap-1.5 px-1 font-sans text-xs text-ink-muted sm:w-44 max-sm:my-1 max-sm:flex-row max-sm:gap-6">
+              // On phones the two moves are side by side under the state, each in half the width.
+              <div className="flex min-w-0 flex-col gap-1.5 px-1 font-sans text-xs text-ink-muted sm:w-44 max-sm:my-1 max-sm:grid max-sm:w-full max-sm:grid-cols-2 max-sm:gap-3">
                 <span className="flex flex-col items-center sm:items-stretch">
                   <span className="flex items-center justify-center gap-1.5 text-center">
                     <Num n={MOVES[i][0].n} />
@@ -64,7 +65,7 @@ export function StatusDiagram({ rules }: { rules: { n: number; title: string; te
                   </span>
                   <MoveArrow />
                 </span>
-                <span className="flex flex-col items-center sm:flex-col-reverse sm:items-stretch">
+                <span className="flex flex-col-reverse items-center sm:items-stretch">
                   <span className="flex items-center justify-center gap-1.5 text-center">
                     <Num n={MOVES[i][1].n} />
                     {MOVES[i][1].label}

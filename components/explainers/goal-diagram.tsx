@@ -20,7 +20,7 @@ const FAN: [number, number][] = [
 /** The fan of near-term problems under a goal: twigs from the goal's stem out to small apples. */
 function Fan() {
   return (
-    <svg viewBox="0 0 200 76" className="mx-auto w-44 max-w-full flex-none max-md:mx-0 max-md:w-20" aria-hidden>
+    <svg viewBox="0 0 200 76" className="mx-auto w-44 max-w-full flex-none max-md:hidden" aria-hidden>
       {FAN.map(([x, y]) => (
         <path key={x} d={`M100 0C100 22 ${x} ${y - 26} ${x} ${y - 4}`} className="fill-none stroke-rule-strong" strokeWidth={1.5} />
       ))}
@@ -33,7 +33,7 @@ function Fan() {
 
 /**
  * On wide screens a tree from the top: the list, the line branching into the three goals, a fan under each. On
- * phones a spine down the left with a row per goal: its apple and name, and its fan beside them.
+ * phones a spine down the left with a row per goal, its apple and name; the fans stay out of the narrow width.
  */
 export function GoalDiagram() {
   return (

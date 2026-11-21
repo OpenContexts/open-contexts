@@ -36,7 +36,8 @@ export default async function BlogPage() {
       </p>
       <PostList posts={posts} featured empty="No posts yet. Be the first to write one." />
 
-      <Section title="Write a post" intro="Anyone signed in can write one. A moderator reads it before it appears, as with every contribution.">
+      {/* The list ends in a rule of its own, so this section does without its top rule. */}
+      <Section title="Write a post" intro="Anyone signed in can write one. A moderator reads it before it appears, as with every contribution." className="mt-12 border-t-0 pt-0">
         <Tiles items={IDEAS} columns={4} />
         <p className="mt-7 text-center">
           <ButtonLink href="/blog/new">Write a post</ButtonLink>

@@ -65,7 +65,9 @@ export function CycleTimeline({ name }: { name: string }) {
       <span aria-hidden className="absolute top-[0.6rem] right-[12.5%] left-[12.5%] h-px bg-rule-strong max-sm:hidden" />
       {steps.map((s, i) => (
         <li key={s.title} className="relative flex gap-3 sm:flex-col sm:items-center sm:text-center">
-          <span className={cn("mt-0.5 size-5 flex-none rounded-full border-[1.5px] sm:mt-0", i === 0 ? "border-brand bg-brand" : "border-ink-subtle bg-paper")} />
+          {/* On phones the steps stack; a line runs down from each dot to the next (the gap between steps is 1rem). */}
+          {i < steps.length - 1 && <span aria-hidden className="absolute top-3 left-2.5 h-[calc(100%+1rem)] w-px -translate-x-1/2 bg-rule-strong sm:hidden" />}
+          <span className={cn("relative mt-0.5 size-5 flex-none rounded-full border-[1.5px] sm:mt-0", i === 0 ? "border-brand bg-brand" : "border-ink-subtle bg-paper")} />
           <span className="text-[0.95rem]/snug">
             <strong className="block">{s.title}</strong>
             <span className="text-ink-muted">{s.text}</span>

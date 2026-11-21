@@ -76,13 +76,13 @@ export function StatusChart({ rows, today }: { rows: TimelineRow[]; today: strin
           </li>
         ))}
       </ul>
-      {/* On a phone the chart keeps a legible size and scrolls sideways; right-to-left makes it start at today. */}
-      <div className="overflow-x-auto [direction:rtl]">
+      {/* On a phone the chart keeps a legible size and scrolls sideways, starting from the day the list went live. */}
+      <div className="overflow-x-auto">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           role="img"
           aria-label={`Number of problems by status since ${formatDate(rows[0].date)}. Today: ${CHART_SERIES.map((s) => `${last[s.status]} ${PROBLEM_STATUS_LABELS[s.status]}`).join(", ")}.`}
-          className="block h-auto w-full min-w-140 font-sans [direction:ltr] text-[12.5px] [&_text]:fill-ink-muted"
+          className="block h-auto w-full min-w-140 font-sans text-[12.5px] [&_text]:fill-ink-muted"
         >
           {gridValues.map((v) => (
             <g key={v}>
