@@ -1,12 +1,18 @@
 import { cn } from "@/lib/cn";
 
-/** The permanent link keys, each with what it points to: "12", "12v3", "12.3", "blog.7". */
+/** A variable in a key, set like one in a formula. */
+const V = ({ children }: { children: string }) => <em className="font-serif font-normal">{children}</em>;
+
+/**
+ * The forms a permanent link key takes, with what each points to. Written with variables (n for a problem's
+ * number, k for the version, contribution or post) rather than an example, which could pass for a real one.
+ */
 export function PermalinkKeys({ host }: { host: string }) {
   const keys = [
-    { key: "12", text: "Problem 12" },
-    { key: "12v3", text: "its text at version 3" },
-    { key: "12.3", text: "its 3rd contribution" },
-    { key: "blog.7", text: "blog post 7" },
+    { key: <V>n</V>, text: <>problem <V>n</V></> },
+    { key: <><V>n</V>v<V>k</V></>, text: <>problem <V>n</V> as it read at version <V>k</V></> },
+    { key: <><V>n</V>.<V>k</V></>, text: <>the <V>k</V>-th contribution to problem <V>n</V></> },
+    { key: <>blog.<V>k</V></>, text: <>the <V>k</V>-th blog post</> },
   ];
   return (
     <div className="rounded-md border border-rule-strong bg-surface px-4 py-3.5">
@@ -15,14 +21,14 @@ export function PermalinkKeys({ host }: { host: string }) {
         <span className="rounded bg-brand-tint px-1 text-brand">key</span>
       </p>
       <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {keys.map((k) => (
-          <div key={k.key} className="rounded border border-rule bg-paper px-2.5 py-2 text-center">
-            <dt className="font-mono font-bold text-brand">{k.key}</dt>
+        {keys.map((k, i) => (
+          <div key={i} className="rounded border border-rule bg-paper px-2.5 py-2 text-center">
+            <dt className="font-mono text-[1.05rem] font-bold text-brand">{k.key}</dt>
             <dd className="text-sm text-ink-muted">{k.text}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2.5 text-center text-sm text-ink-subtle">Keys never change and are never reused.</p>
+      <p className="mt-2.5 text-center text-sm text-ink-subtle">The links never change, and a key is never reused.</p>
     </div>
   );
 }

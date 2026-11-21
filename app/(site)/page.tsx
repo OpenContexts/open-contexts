@@ -80,15 +80,17 @@ export default async function HomePage() {
       <SectionTitle id="how-it-works" className="scroll-mt-6">
         III. How it works
       </SectionTitle>
+      <p className="mx-auto -mt-2 mb-2 max-w-140 text-center text-ink-muted">
+        A claimed solution is digested by the community, with or without AI, aiming at human understanding and a
+        high-quality presentation.
+      </p>
       <Figure
         number={1}
         title="Workflow and status updates"
         caption={
           <>
-            Curated problems enter the database (dashed frame) as open. A claimed solution puts a problem under
-            revision, where the community digests it, with or without AI, aiming at human understanding and a clear
-            presentation. Moderators mark it solved on a peer-reviewed publication or independent verification;
-            disputes can send it back. Advances are collected in progress reports. After Fig. 2 of the <PaperLink />.
+            Curated problems enter the database (dashed frame) as open; disputes can send them back. After Fig. 2 of
+            the <PaperLink />.
           </>
         }
       >

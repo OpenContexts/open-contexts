@@ -2,11 +2,12 @@ import Link from "next/link";
 import { AGENDA } from "@/lib/agenda";
 import type { Problem } from "@/lib/data/problems";
 import { plural } from "@/lib/format";
-import { Apple, Basket, Person, Robot, ThoughtBubble, TinyTree } from "./drawings";
+import { Apple } from "./drawings";
 
-// The research agenda as a tree, after the companion paper's figure: three golden branches, one per long-term
-// goal with a golden apple at its tip, and near-term problems as the red apples on the twigs. The small apples
-// are a picture of the idea, not the actual problems (there will be too many); each branch links to its goal.
+// The research agenda as a weeping willow, after the companion paper's figure: a brown trunk, and three big
+// branches, one per long-term goal, that arch up, droop and turn golden towards their tips, where the goal's
+// golden apple hangs. Thin strands hang from them with the red apples of near-term problems. The small apples are
+// a picture of the idea, not the actual problems (there will be too many); each branch links to its goal.
 
 type Point = [number, number];
 type Curve = [Point, Point, Point, Point];
@@ -39,45 +40,15 @@ function taper(c: Curve, from: number, to: number, steps = 24): string {
   return `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`;
 }
 
-/** A twig growing out of a curve at `t`, to the `side` (1 or -1), bending upwards; its end, for an apple. */
-function twig(c: Curve, t: number, side: 1 | -1, length: number): { curve: Curve; end: Point } {
-  const start = at(c, t);
-  const [dx, dy] = tangent(c, t);
-  // Between the branch's own direction and its side, tilted up.
-  const dir: Point = [dx * 0.55 - dy * side * 0.8, dy * 0.55 + dx * side * 0.8 - 0.35];
-  const n = Math.hypot(dir[0], dir[1]);
-  const [ux, uy] = [dir[0] / n, dir[1] / n];
-  const end: Point = [start[0] + ux * length, start[1] + uy * length];
-  return {
-    curve: [start, [start[0] + ux * length * 0.4, start[1] + uy * length * 0.4 - 6], [end[0] - ux * length * 0.25, end[1] - uy * length * 0.25 - 4], end],
-    end,
-  };
+/** The highest point of a curve, where its label goes. */
+function apex(c: Curve): Point {
+  let top = at(c, 0);
+  for (let i = 1; i <= 40; i++) {
+    const p = at(c, i / 40);
+    if (p[1] < top[1]) top = p;
+  }
+  return top;
 }
-
-const TRUNK = "M414 505C428 455 434 385 436 322L464 322C466 385 472 455 486 505Z";
-
-type Twig = [t: number, side: 1 | -1, length: number];
-
-/** `count` twigs spread along a branch, alternating sides, shorter towards its tip. */
-function spread(count: number, first: 1 | -1, from = 0.2, to = 0.9, long = 62, short = 30): Twig[] {
-  return Array.from({ length: count }, (_, i) => {
-    const f = count > 1 ? i / (count - 1) : 0;
-    return [from + (to - from) * f, (i % 2 ? -first : first) as 1 | -1, long + (short - long) * f];
-  });
-}
-
-/** The goals' branches, left, middle, right, with where their twigs grow. */
-const GOAL_BRANCHES: { curve: Curve; twigs: Twig[] }[] = [
-  { curve: [[446, 332], [370, 300], [250, 270], [150, 150]], twigs: spread(8, 1) },
-  { curve: [[450, 332], [425, 262], [470, 190], [450, 108]], twigs: spread(7, -1, 0.22, 0.88, 58, 30) },
-  { curve: [[454, 332], [530, 300], [650, 270], [750, 150]], twigs: spread(8, -1) },
-];
-
-/** The lower, plain branches the near-term problems also grow on, curving up at their ends. */
-const LOW_BRANCHES: { curve: Curve; twigs: Twig[] }[] = [
-  { curve: [[442, 425], [350, 410], [210, 430], [90, 360]], twigs: spread(6, 1, 0.2, 0.92, 44, 28) },
-  { curve: [[458, 425], [550, 410], [690, 430], [810, 360]], twigs: spread(6, -1, 0.2, 0.92, 44, 28) },
-];
 
 /** The title broken into lines of at most `max` characters. */
 function lines(text: string, max = 20): string[] {
@@ -90,51 +61,89 @@ function lines(text: string, max = 20): string[] {
   return out;
 }
 
-/** A twig with an apple at its end; the longer ones fork once more, with a second apple. */
-function Twigs({ curve, twigs }: { curve: Curve; twigs: Twig[] }) {
-  return twigs.map(([t, side, length], i) => {
-    const { curve: c, end } = twig(curve, t, side, length);
-    const fork = length > 40 ? twig(c, 0.55, (i % 2 ? 1 : -1) as 1 | -1, length * 0.42) : undefined;
-    return (
-      <g key={`${t}-${side}`}>
-        <path d={taper(c, 7, 2, 12)} className="fill-ink-muted" />
-        {fork && <path d={taper(fork.curve, 3.5, 1.5, 8)} className="fill-ink-muted" />}
-        <Apple x={end[0] - 12 * 0.8} y={end[1] - 3 * 0.8} s={0.8} />
-        {fork && <Apple x={fork.end[0] - 12 * 0.7} y={fork.end[1] - 3 * 0.7} s={0.7} />}
-      </g>
-    );
-  });
+/**
+ * The three goals' branches: left, middle, right. The outer ones arch and droop, their strands swaying outwards
+ * (`side`); the middle one rises to the crown, its strands hanging to both sides (`side` 0).
+ */
+const BRANCHES: { curve: Curve; side: 1 | -1 | 0; crown?: { curve: Curve; side: 1 | -1 }[] }[] = [
+  { curve: [[444, 345], [405, 215], [255, 140], [135, 262]], side: -1 },
+  {
+    curve: [[450, 345], [452, 260], [446, 170], [450, 108]],
+    side: 0,
+    // Two short arcs below the crown, drooping left and right; the middle goal's strands hang from these.
+    crown: [
+      { curve: [[449, 168], [428, 132], [380, 130], [352, 196]], side: -1 },
+      { curve: [[451, 168], [472, 132], [520, 130], [548, 196]], side: 1 },
+    ],
+  },
+  { curve: [[456, 345], [495, 215], [645, 140], [765, 262]], side: 1 },
+];
+
+/** Where the strands hang from each branch, along it (t), and how far down they reach. */
+const STRANDS = [0.26, 0.36, 0.46, 0.55, 0.64, 0.72, 0.8, 0.88];
+
+/** A thin strand hanging from `start`, swaying a little to `side`; its end, for the apple. */
+function strand(start: Point, length: number, sway: number): { d: string; end: Point } {
+  const end: Point = [start[0] + sway, start[1] + length];
+  const c: Curve = [start, [start[0] + sway * 0.6, start[1] + length * 0.15], [end[0] - sway * 0.15, end[1] - length * 0.4], end];
+  return { d: taper(c, 3.2, 1.2, 12), end };
 }
 
+const BROWN = "light-dark(#6b4a2f, #a3805c)";
+
+/** The tree, with each goal's branch a link to it on the agenda page. */
 export function AgendaTree() {
   return (
-    <svg viewBox="0 0 900 505" className="w-full" role="group" aria-label="The research agenda as a tree: three long-term goals and their near-term problems">
-      <path d={TRUNK} className="fill-ink-muted" />
-      {LOW_BRANCHES.map((b, i) => (
-        <g key={i}>
-          <path d={taper(b.curve, 18, 4)} className="fill-ink-muted" />
-          <Twigs {...b} />
-        </g>
-      ))}
-      {GOAL_BRANCHES.map((b, i) => {
+    <svg viewBox="0 -55 900 615" className="w-full" role="group" aria-label="The research agenda as a tree: three long-term goals and their near-term problems">
+      <defs>
+        {BRANCHES.map((b, i) => (
+          <linearGradient key={i} id={`willow-${i}`} gradientUnits="userSpaceOnUse" x1={b.curve[0][0]} y1={b.curve[0][1]} x2={b.curve[3][0]} y2={b.curve[3][1]}>
+            <stop offset="0.15" style={{ stopColor: BROWN }} />
+            <stop offset="0.95" style={{ stopColor: "var(--color-gold)" }} />
+          </linearGradient>
+        ))}
+      </defs>
+      <ellipse cx={450} cy={552} rx={150} ry={7} className="fill-rule" />
+      <path d="M412 553C428 500 434 420 436 338L464 338C466 420 472 500 488 553Z" style={{ fill: BROWN }} />
+      {BRANCHES.map((b, i) => {
         const goal = AGENDA[i];
         const tip = b.curve[3];
+        // Labels over the outer branches sit a little outwards, clear of the crown.
+        const top: Point = b.side ? [apex(b.curve)[0] + b.side * 45, apex(b.curve)[1]] : [tip[0], tip[1] - 40];
         const label = lines(goal.title);
+        const paint = `url(#willow-${i})`;
         return (
           <a key={goal.id} href={`/agenda#${goal.id}`} className="group outline-none [&:focus-visible_.halo]:stroke-brand">
             <title>{`Goal ${goal.numeral}: ${goal.title}`}</title>
-            <Twigs {...b} />
-            <path d={taper(b.curve, 30, 6)} className="fill-gold stroke-gold-dark transition group-hover:brightness-110" strokeWidth={1.5} />
-            <circle className="halo fill-none stroke-transparent" cx={tip[0]} cy={tip[1]} r={34} strokeWidth={2.5} />
-            <g className="origin-center transition [transform-box:fill-box] group-hover:-translate-y-1">
-              <Apple x={tip[0] - 26} y={tip[1] - 30} s={2.2} gold />
+            {(b.crown ?? [{ curve: b.curve, side: b.side || 1 }]).map((arm, a) =>
+              STRANDS.map((t, j) => {
+                const start = at(arm.curve, b.crown ? 0.2 + t * 0.85 : t);
+                // Strands reach down to about the same height, the outer ones a little less; two per point.
+                const reach = Math.max(70, 470 - start[1]) * (j % 2 ? 0.55 : 0.75);
+                // The crown's arcs are short: one strand per point there, two on the long branches.
+                return (b.crown ? [0] : [0, 1]).map((k) => {
+                  const { d, end } = strand(start, reach * (k ? 0.62 : 1), arm.side * (k ? -8 : 14 + j * 2));
+                  return (
+                    <g key={`${a}-${t}-${k}`}>
+                      <path d={d} style={{ fill: paint }} />
+                      <Apple x={end[0] - 12 * 0.72} y={end[1] - 3 * 0.72} s={0.72} />
+                    </g>
+                  );
+                });
+              }),
+            )}
+            {b.crown?.map((arm, a) => <path key={a} d={taper(arm.curve, 14, 5)} style={{ fill: paint }} />)}
+            <path d={taper(b.curve, 34, 8)} style={{ fill: paint }} className="transition group-hover:brightness-110" />
+            <circle className="halo fill-none stroke-transparent" cx={tip[0]} cy={tip[1] + (b.side ? 22 : -18)} r={34} strokeWidth={2.5} />
+            <g className="transition group-hover:translate-y-1">
+              <Apple x={tip[0] - 12 * 2.3} y={tip[1] - (b.side ? 3 : 20) * 2.3} s={2.3} gold />
             </g>
-            <text x={tip[0]} textAnchor="middle" className="font-serif">
-              <tspan x={tip[0]} y={tip[1] - 46 - label.length * 24} fontSize={13} className="fill-ink-subtle font-sans font-bold tracking-[0.15em]">
+            <text textAnchor="middle" className="font-serif">
+              <tspan x={top[0]} y={top[1] - 34 - label.length * 24} fontSize={13} className="fill-ink-subtle font-sans font-bold tracking-[0.15em]">
                 GOAL {goal.numeral}
               </tspan>
               {label.map((line, j) => (
-                <tspan key={line} x={tip[0]} y={tip[1] - 40 - (label.length - 1 - j) * 24} fontSize={22} className="fill-gold-dark font-bold group-hover:underline">
+                <tspan key={line} x={top[0]} y={top[1] - 28 - (label.length - 1 - j) * 24} fontSize={22} className="fill-gold-dark font-bold group-hover:underline">
                   {line}
                 </tspan>
               ))}
@@ -161,29 +170,16 @@ export function GoalCounts({ problems }: { problems: Problem[] }) {
   );
 }
 
-/** The tree among people who think about it and work on it, as on the paper's figure: for the agenda page. */
+/**
+ * The tree, with the researchers who think about it and work on it to its right, as in the paper's figure (their
+ * illustrations are one image, public/figures/agenda-people.webp). For the agenda page; on phones only the tree.
+ */
 export function AgendaTreeWithPeople() {
   return (
-    <div className="grid items-end md:grid-cols-[minmax(0,1fr)_minmax(0,4fr)_minmax(0,1fr)] md:gap-2">
-      <svg viewBox="0 0 150 470" className="w-full max-md:hidden" aria-hidden>
-        <ThoughtBubble x={40} y={10}>
-          <TinyTree x={15} y={8} gold />
-        </ThoughtBubble>
-        <Person x={8} y={100} s={1.25} thinking />
-        <Robot x={70} y={250} s={1.05} holding />
-        <Person x={28} y={330} s={1.15} />
-        <Basket x={88} y={430} s={1.05} />
-      </svg>
+    <div className="grid items-center gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <AgendaTree />
-      <svg viewBox="0 0 150 470" className="w-full max-md:hidden" aria-hidden>
-        <ThoughtBubble x={20} y={40}>
-          <TinyTree x={15} y={8} />
-        </ThoughtBubble>
-        <Person x={70} y={130} s={1.25} flip thinking />
-        <Basket x={14} y={262} s={1.05} />
-        <Robot x={92} y={300} s={0.95} />
-        <Person x={22} y={340} s={1.15} flip />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed illustration, already sized and compressed */}
+      <img src="/figures/agenda-people.webp" alt="" width={990} height={1055} loading="lazy" className="h-auto w-full max-md:hidden" />
     </div>
   );
 }

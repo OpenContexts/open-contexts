@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type KeyboardEvent, type ReactNode, useState } from "react";
 import { cn } from "@/lib/cn";
-import { Apple, Person, Robot } from "./drawings";
+import { Apple } from "./drawings";
 
 // Fig. 2 of the companion paper, "Workflow and status updates", redrawn for the site: problems enter the database
 // (the dashed frame) as open, a claimed solution puts them under revision, digestion leads to solved, and disputes
@@ -180,6 +180,11 @@ function Arrow({ d, dashed }: { d: string; dashed?: boolean }) {
   return <path d={d} className="fill-none stroke-ink" strokeWidth={dashed ? 2 : 3} strokeDasharray={dashed ? "4 5" : undefined} markerEnd={dashed ? "url(#wf-head-thin)" : "url(#wf-head)"} />;
 }
 
+/** One of the paper's illustrations (public/figures), placed in the drawing's units; `w` and `h` keep its proportions. */
+function Illustration({ name, x, y, w, h }: { name: string; x: number; y: number; w: number; h: number }) {
+  return <image href={`/figures/${name}.webp`} x={x} y={y} width={w} height={h} aria-hidden />;
+}
+
 /** A process arrow in the brown of the paper's drawing: from a gold box into the frame, or out of it. */
 function Feed({ d }: { d: string }) {
   return <path d={d} className="fill-none stroke-gold-dark" strokeWidth={4} markerEnd="url(#wf-feed)" />;
@@ -209,19 +214,18 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
       {/* The database: everything inside the dashed frame is on the site. */}
       <rect x={20} y={175} width={815} height={150} rx={18} className="fill-brand-tint stroke-brand" strokeWidth={3} strokeDasharray="10 9" opacity={0.9} />
 
-      {/* Curation, by researchers, into the frame at "open". */}
-      <Person x={26} y={64} s={0.85} />
+      {/* Curation, into the frame at "open". */}
       <Hotspot id="curation" {...hot}>
         <Box x={85} y={82} w={170} h={50} label="Curation" tone="gold" size={27} />
       </Hotspot>
       <Feed d="M170 134V170" />
 
       {/* Digestion by people and AI, from above into the step from under revision to solved. */}
-      <Person x={430} y={68} s={0.85} />
+      <Illustration name="researcher-tablet" x={392} y={40} w={70} h={131} />
       <Hotspot id="digestion" {...hot}>
         <Box x={500} y={82} w={170} h={50} label="Digestion" tone="gold" size={27} />
       </Hotspot>
-      <Robot x={688} y={76} s={0.95} />
+      <Illustration name="robot-magnifier" x={684} y={62} w={76} h={106} />
       <Feed d="M585 134V170" />
 
       {/* The three states, with the moves forward and the disputes back. */}
@@ -249,11 +253,11 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
       </Hotspot>
 
       {/* Candidate solutions, by people and AI, up into the step from open to under revision. */}
-      <Person x={168} y={362} s={0.9} />
+      <Illustration name="researcher-pointing" x={150} y={334} w={68} h={106} />
       <Hotspot id="candidate" {...hot}>
         <Box x={225} y={362} w={200} h={70} label={["Candidate", "solution"]} tone="gold" size={24} />
       </Hotspot>
-      <Robot x={438} y={368} s={0.95} />
+      <Illustration name="robot-apple" x={434} y={352} w={72} h={87} />
       <Feed d="M296 360V330" />
 
       {/* The report, out of the solved problems. */}

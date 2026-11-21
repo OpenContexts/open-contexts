@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { BEST_PRACTICES, CRITERIA } from "@/components/explainers/content";
 import { Disclosure } from "@/components/explainers/disclosure";
-import { Section, SubTitle } from "@/components/explainers/section";
+import { Section } from "@/components/explainers/section";
 import { Glyph, Steps, Tiles } from "@/components/explainers/tiles";
 import { FormattingGuide } from "@/components/markdown/formatting-guide";
 import { ButtonLink, FramedBox, PageTitle } from "@/components/ui";
@@ -21,16 +21,9 @@ const ON_A_PROBLEM = [
 
 const STEPS = [
   { title: "Sign in", text: "under your own name, with an institutional email or ORCID" },
-  { title: "Submit", text: "with the short form for your kind of contribution" },
+  { title: "Submit", text: "a title, its type, how much AI was used, and who takes responsibility" },
   { title: "Light check", text: "relevant? fixed format? a named human? no duplicate? best practices?" },
   { title: "Published", text: "credited to the people you named, with a permanent link" },
-];
-
-const RECORDS = [
-  { icon: "T", title: "Title" },
-  { icon: "∴", title: "Type", text: "solution, partial result, evidence, …" },
-  { icon: "⚙", title: "AI use", text: "none, partial or full" },
-  { icon: "✍", title: "A named human", text: "who takes responsibility" },
 ];
 
 /** The parts of a problem, as the proposal form lays them out. */
@@ -52,7 +45,7 @@ export default function ContributePage() {
       </p>
 
       <Section title="What you can contribute">
-        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <Card title="On any problem" action={<ButtonLink href="/problems" variant="secondary">Choose a problem →</ButtonLink>}>
             <ul className="grid gap-x-5 gap-y-2.5 sm:grid-cols-2">
               {ON_A_PROBLEM.map((w) => (
@@ -69,28 +62,26 @@ export default function ContributePage() {
               Open the problem and use <em>Contribute to this problem</em>, or its discussion.
             </p>
           </Card>
-          <Card title="A new problem" action={<ButtonLink href="/contribute/new-problem">Propose a problem</ButtonLink>}>
-            <p className="text-[0.95rem] text-ink-muted">
-              A well-posed question that meets the{" "}
-              <a href="#propose" className="text-brand hover:underline">
-                four criteria
-              </a>
-              .
-            </p>
-          </Card>
-          <Card title="A blog post" action={<ButtonLink href="/blog/new" variant="secondary">Write a post</ButtonLink>}>
-            <p className="text-[0.95rem] text-ink-muted">Overviews, the story behind a result, open directions.</p>
-          </Card>
+          <div className="grid gap-4">
+            <Card title="A new problem" action={<ButtonLink href="/contribute/new-problem">Propose a problem</ButtonLink>}>
+              <p className="text-[0.95rem] text-ink-muted">
+                A well-posed question that meets the{" "}
+                <a href="#propose" className="text-brand hover:underline">
+                  four criteria
+                </a>
+                .
+              </p>
+            </Card>
+            <Card title="A blog post" action={<ButtonLink href="/blog/new" variant="secondary">Write a post</ButtonLink>}>
+              <p className="text-[0.95rem] text-ink-muted">Overviews, the story behind a result, open directions.</p>
+            </Card>
+          </div>
         </div>
       </Section>
 
       <Section id="how" title="How it works" intro="Every contribution is checked by a moderator before it appears.">
         <Steps items={STEPS} />
-        <SubTitle>Every submission records</SubTitle>
-        <div className="rounded-md border border-rule px-5 py-4">
-          <Tiles items={RECORDS} columns={4} />
-        </div>
-        <p className="mx-auto mt-5 max-w-160 text-center text-[0.95rem] text-ink-muted">
+        <p className="mx-auto mt-6 max-w-160 text-center text-[0.95rem] text-ink-muted">
           As on a preprint server, moderators filter out only what is unrelated, predatory or unethical; they do not
           judge whether a solution is correct when accepting it. Follow your submissions, or withdraw one, under{" "}
           <em>My submissions</em>.
@@ -165,10 +156,10 @@ function ProblemAnatomy() {
         </span>
         <p className="text-center text-[0.95rem] text-ink-muted">{statement.text}</p>
       </div>
-      <dl className="mt-3 divide-y divide-rule rounded-md border border-rule-strong">
+      <dl className="mt-3 space-y-1.5 rounded-md border border-rule-strong py-2.5">
         {sections.map((s, i) => (
-          <div key={s.name} className="flex items-baseline gap-3 px-4 py-2 text-[0.95rem]">
-            <dt className="w-28 flex-none font-bold">
+          <div key={s.name} className="flex items-baseline gap-3 px-4 text-[0.95rem]">
+            <dt className="w-36 flex-none font-bold max-sm:w-32">
               {String.fromCharCode(65 + i)}. {s.name}
             </dt>
             <dd className="text-ink-muted">{s.text}</dd>
