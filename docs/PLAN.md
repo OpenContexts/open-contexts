@@ -1,4 +1,4 @@
-# OpenContext: project plan
+# OpenContexts: project plan
 
 Last revised 1 November 2026, after comparing the site with the companion paper, *Accelerating research
 through human-AI collaboration: A case study in quantum foundations* (Wagner et al., 2026). Section numbers
@@ -6,7 +6,7 @@ such as "Sec. II.C" or "Box II" refer to that paper.
 
 ## 1. Idea
 
-OpenContext is a community-curated, moderated database of precisely stated open problems in generalized
+OpenContexts is a community-curated, moderated database of precisely stated open problems in generalized
 contextuality. It is the case study of the companion paper: a test of whether a shared, structured list of
 problems helps a research community coordinate human and AI-assisted work, record partial progress and
 credit everyone fairly.
@@ -114,9 +114,9 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 | `/sign-in`, `/sign-up` | — | done: institutional email and password, GitHub, ORCID |
 | `/me` | — | done |
 | `/admin` | `#/moderate` | done: overview, queues with quick decisions, review with diff, activity log |
-| `/admin/problems` | — | done (moderators): list, create, edit, delete, download `.md`, publish candidates |
+| `/admin/problems` | — | done (moderators): list, create, edit, delete, download `.md`, publish additional problems |
 | `/admin/users` | — | done (admins only): search, pagination, roles, block and unblock |
-| `/candidates` | — | done: accepted problems outside the published list; community reviews in Phase 4 |
+| `/additional-problems` | — | done: accepted problems outside the published list; community reviews in Phase 4 |
 | `/blog` | `#/blog` | done: published posts, each with references and a moderated discussion; `/blog/new` to write one |
 | `/people/[id]` | — | Phase 6: a contributor's credited work |
 
@@ -149,13 +149,13 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 
 Needed so that the site behaves as the Guidelines already describe.
 
-- [x] Approving a proposal no longer publishes it: it becomes a **candidate** for the next cycle. Moderators
+- [x] Approving a proposal no longer publishes it: it becomes an **additional problem** for the next cycle. Moderators
       can still admit it to the active list explicitly (Publish in the dashboard).
-- [x] A public list of candidate problems (`/candidates`), linked below the problem list.
+- [x] A public list of additional problems (`/additional-problems`), linked below the problem list.
 - [ ] **Community review of proposals** against the curation criteria (Box I). Any signed-in researcher can
       tick each criterion and comment, and reviews are a submission type of their own (Sec. II.C). Whether
       and how reviews add up to admission is an open question (see §6).
-- [ ] **Cycles**: problems record the cycle they belong to ("OpenContext I"), with the cycle's start and end
+- [ ] **Cycles**: problems record the cycle they belong to ("OpenContexts I"), with the cycle's start and end
       dates shown on the site.
 - [ ] Proposals for **future goals** (objections to a goal, new directions), collected for the next cycle.
 - [ ] Add a Feasibility section to the existing problems (content, done by the moderators in the editor).
@@ -290,7 +290,7 @@ database migration.
   problems.
 - **Preprint servers**: show the AI-use labels of Hexagon deposits, and watch the arXiv for preprints that
   cite listed problems.
-- **Scaling** after the assessment: further subfields, within OpenContext or together with existing
+- **Scaling** after the assessment: further subfields, within OpenContexts or together with existing
   initiatives such as the QIQCOP zoo.
 - A "download all" archive of the problems.
 

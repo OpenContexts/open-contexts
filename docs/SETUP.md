@@ -1,6 +1,6 @@
 # Setup: database and sign-in providers
 
-How to set up the three external services OpenContext depends on: the **Neon** Postgres database (required),
+How to set up the three external services OpenContexts depends on: the **Neon** Postgres database (required),
 and **GitHub** and **ORCID** sign-in (both optional). Email (SMTP) is covered in the
 [development notes](DEVELOPMENT.md#quick-start).
 
@@ -38,7 +38,7 @@ migrations in `drizzle/`.
 
 1. Sign up at <https://console.neon.tech>. The free plan is enough to start.
 2. Create a **project**:
-   - **Name**: e.g. `opencontext`.
+   - **Name**: e.g. `opencontexts`.
    - **Postgres version**: the default.
    - **Region**: close to where the site will be hosted, for instance *AWS Europe Central (Frankfurt)* for a
      host in Europe. The region can't be changed later.
@@ -146,7 +146,7 @@ A GitHub **OAuth app** accepts only one callback URL, so create **one app per en
 
    | Field | Development | Production |
    | ----- | ----------- | ---------- |
-   | Application name | `OpenContext (dev)` | `OpenContext` |
+   | Application name | `OpenContexts (dev)` | `OpenContexts` |
    | Homepage URL | `http://localhost:3000` | `https://your-domain.org` |
    | Authorization callback URL | `http://localhost:3000/api/auth/callback/github` | `https://your-domain.org/api/auth/callback/github` |
 
@@ -211,9 +211,9 @@ was registered: the production registry (`orcid.org`) or the sandbox (`sandbox.o
    project's or a moderator's. Its primary email must be verified.
 2. Open <https://orcid.org/developer-tools> (also in the user menu as **Developer tools**).
 3. Accept the terms of the Public API and fill in the form:
-   - **Name of your application**: `OpenContext`. Users see it on ORCID's consent screen.
+   - **Name of your application**: `OpenContexts`. Users see it on ORCID's consent screen.
    - **Application URL**: `https://your-domain.org`.
-   - **Description**: e.g. "Sign in to OpenContext, a community database of open problems in generalized
+   - **Description**: e.g. "Sign in to OpenContexts, a community database of open problems in generalized
      contextuality."
    - **Redirect URIs**: `https://your-domain.org/api/auth/callback/orcid`. You can add several, for
      instance a staging domain too.
@@ -222,7 +222,7 @@ was registered: the production registry (`orcid.org`) or the sandbox (`sandbox.o
 #### Sandbox client (`sandbox.orcid.org`), for development
 
 1. Create a separate account at <https://sandbox.orcid.org/register>. The sandbox only delivers email to
-   addresses at `@mailinator.com`, so register with something like `opencontext-dev@mailinator.com`, and
+   addresses at `@mailinator.com`, so register with something like `opencontexts-dev@mailinator.com`, and
    confirm it by opening that inbox at <https://www.mailinator.com>.
 2. Open <https://sandbox.orcid.org/developer-tools> and register a client as above, with the redirect URI
    `http://localhost:3000/api/auth/callback/orcid`.

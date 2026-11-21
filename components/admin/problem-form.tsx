@@ -36,7 +36,7 @@ export type ProblemFormValues = {
   /** Markdown; "" for none. */
   note: string;
   history: HistoryEntry[];
-  /** New problems only: start in the published list rather than as a candidate. */
+  /** New problems only: start in the published list rather than as an additional problem. */
   published?: boolean;
 };
 
@@ -157,7 +157,7 @@ export function ProblemForm({ initial, id, number, version, nextNumber }: { init
                   <input type="checkbox" name="publish" defaultChecked={publish} className="mt-0.5 accent-zinc-900" />
                   <span>
                     Publish in the problem list
-                    <span className="block text-xs text-zinc-500">Otherwise it is a candidate, listed under /candidates until it is published.</span>
+                    <span className="block text-xs text-zinc-500">Otherwise it is an additional problem, listed under /additional-problems until it is published.</span>
                   </span>
                 </label>
               )}

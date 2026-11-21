@@ -41,8 +41,8 @@ export const problem = pgTable("problem", {
   /** Increases with every change. Suggested edits record the version they started from. */
   version: integer("version").default(1).notNull(),
   /**
-   * When the problem was admitted to the published list (/problems). Null for a candidate: accepted by the
-   * moderators but kept for a later cycle, shown only on /candidates. Proposals are accepted as candidates.
+   * When the problem was admitted to the published list (/problems). Null for an additional problem: accepted by
+   * the moderators but kept for a later cycle, shown only on /additional-problems. Proposals are accepted as additional problems.
    */
   publishedAt: timestamp("published_at", { withTimezone: true }),
   createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),

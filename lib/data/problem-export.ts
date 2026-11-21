@@ -37,7 +37,7 @@ export type ProblemExport = {
     statusSince: string;
     posedBy: string[];
     posed: string;
-    /** False for a candidate problem: accepted, but not (yet) in the published list. */
+    /** False for an additional problem: accepted, but not (yet) in the published list. */
     published: boolean;
     listed: string;
     updated: string;
@@ -219,7 +219,7 @@ export function problemExportToMarkdown({ source, problem: p, contributors, cont
     `- **Status:** ${PROBLEM_STATUS_LABELS[p.status]} since ${formatDate(p.statusSince)}`,
     `- **Posed${p.posedBy.length ? " by" : ""}:** ${p.posedBy.length ? `${formatNames(p.posedBy)}, ` : ""}${formatDate(p.posed)}`,
     `- **Last updated:** ${formatDate(p.updated)}`,
-    ...(p.published ? [] : [`- **Candidate problem:** accepted by the moderators, but not yet part of the published list.`]),
+    ...(p.published ? [] : [`- **Additional problem:** accepted by the moderators, but not part of the published list.`]),
     ...(p.agenda.length ? [`- **Research agenda:** ${p.agenda.map((a) => `${a.numeral}. ${a.title}`).join("; ")}`] : []),
     ...(p.tags.length ? [`- **Tags:** ${p.tags.join(", ")}`] : []),
   );

@@ -13,7 +13,7 @@ import { SITE } from "@/lib/site";
 
 const VERBS: Partial<Record<ContributionKind, string>> = { verification: "Verifies", challenge: "Challenges" };
 
-/** "Verifies OpenContext 12.3: Title", for a verification or challenge whose result is public. */
+/** "Verifies OpenContexts 12.3: Title", for a verification or challenge whose result is public. */
 export function TargetLine({ kind, target, className }: { kind: ContributionKind; target?: LinkedResult; className?: string }) {
   const verb = VERBS[kind];
   if (!verb || !target) return null;

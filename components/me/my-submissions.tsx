@@ -146,12 +146,12 @@ function typeLook(s: MySubmission): KindLook {
 }
 
 /**
- * Where a submission stands; an accepted proposal is on the site, but only among the candidates until it is
+ * Where a submission stands; an accepted proposal is on the site, but only among the additional problems until it is
  * published. A withdrawn contribution says so, whether it was published or still waiting.
  */
 function statusOf(s: MySubmission, problem?: ProblemRef) {
   if (s.withdrawnAt) return { label: s.status === "approved" ? "Published, withdrawn" : "Withdrawn", tone: "neutral" as const };
-  return s.type === "proposal" && s.status === "approved" && problem && !problem.published ? { label: "Accepted as a candidate", tone: "success" as const } : STATUS[s.status];
+  return s.type === "proposal" && s.status === "approved" && problem && !problem.published ? { label: "Accepted as an additional problem", tone: "success" as const } : STATUS[s.status];
 }
 
 const STATUS_TEXT: Record<TagTone, string> = { neutral: "text-ink-muted", success: "text-success", info: "text-info", warning: "text-gold-dark", danger: "text-brand" };
@@ -364,6 +364,6 @@ export function NewsList({ mine, news }: { mine: Mine; news: News[] }) {
 
 function StatusWord({ item: s, problem }: { item: MySubmission; problem?: ProblemRef }) {
   const status = statusOf(s, problem);
-  const words = s.status === "pending" ? "is waiting for review" : s.status === "rejected" ? "was not accepted" : status === STATUS.approved ? "was published" : "was accepted as a candidate";
+  const words = s.status === "pending" ? "is waiting for review" : s.status === "rejected" ? "was not accepted" : status === STATUS.approved ? "was published" : "was accepted as an additional problem";
   return <span className={cn("font-bold", STATUS_TEXT[status.tone])}>{words}</span>;
 }

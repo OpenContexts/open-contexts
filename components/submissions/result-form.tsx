@@ -105,7 +105,6 @@ export function ResultForm({
           label={kind === "verification" ? "Which result does it verify?" : "Which result does it challenge?"}
           htmlFor="target"
           error={errorOf(state, "target")}
-          hint="An accepted result on this problem. Its page will link to yours once accepted."
         >
           <Select id="target" name="target" defaultValue={valueOf(state, "target", initial.target ?? "")} required className="w-full">
             <option value="" disabled>
@@ -121,7 +120,7 @@ export function ResultForm({
       )}
 
       <h2 className="mt-7 font-sans text-sm font-bold">2. Describe it</h2>
-      <Field label="Title" htmlFor="title" error={errorOf(state, "title")} hint="One line, e.g. “Mass gap for SU(2) on the lattice at strong coupling”.">
+      <Field label="Title" htmlFor="title" error={errorOf(state, "title")} hint="One line title of the contribution">
         <Input id="title" name="title" defaultValue={valueOf(state, "title")} required />
       </Field>
       <Field label="Summary" htmlFor="summary" error={errorOf(state, "summary")} hint="What is shown, how, and under which assumptions. Readers should understand the claim without opening the link.">

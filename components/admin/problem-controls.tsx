@@ -20,7 +20,7 @@ export function ProblemActions({ problem, activity }: { problem: Target; activit
         label={`Actions for problem ${problem.number}`}
         items={[
           { label: "Edit", href: `/admin/problems/${problem.id}` },
-          { label: problem.published ? "Move to candidates" : "Publish in the list", onSelect: () => startTransition(() => setPublished(problem.id, !problem.published)) },
+          { label: problem.published ? "Move to additional problems" : "Publish in the list", onSelect: () => startTransition(() => setPublished(problem.id, !problem.published)) },
           { label: "View on the site ↗", href: `/problems/${problem.slug}`, external: true },
           { label: "Download .md", href: downloadHref(problem), download: `${problem.slug}.md` },
           { label: "Delete…", onSelect: () => setDeleting(true), danger: true, separated: true },
@@ -31,12 +31,12 @@ export function ProblemActions({ problem, activity }: { problem: Target; activit
   );
 }
 
-/** For the editor page: admits a candidate to the published list, or takes a problem off it again. */
+/** For the editor page: admits an additional problem to the published list, or takes a problem off it again. */
 export function PublishButton({ problem }: { problem: Target }) {
   const [pending, startTransition] = useTransition();
   return (
     <AdminButton variant={problem.published ? "secondary" : "primary"} disabled={pending} onClick={() => startTransition(() => setPublished(problem.id, !problem.published))}>
-      {pending ? "Saving…" : problem.published ? "Move to candidates" : "Publish in the list"}
+      {pending ? "Saving…" : problem.published ? "Move to additional problems" : "Publish in the list"}
     </AdminButton>
   );
 }

@@ -2,7 +2,7 @@ import { cn } from "@/lib/cn";
 
 // The site's mark. Its colour encodes state: red = open, outline = under revision,
 // grey = solved, gold = agenda item, white = on a red background. The outline apple is filled with the page colour.
-// Candidate problems (not yet in the published list) get an hourglass in the same colours instead.
+// Additional problems (not in the published list) get an hourglass in the same colours instead.
 const palettes = {
   red: { body: "#c00808", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "none" },
   outline: { body: "var(--color-paper)", leaf: "#3f8f3f", stem: "#5a3a1a", stroke: "#c00808" },
@@ -46,7 +46,7 @@ export function AppleIcon({ variant = "red", className, label }: IconProps) {
   );
 }
 
-/** The apple's counterpart for candidate problems: the glass in the apple's colour, the frame in its stem colour. */
+/** The apple's counterpart for additional problems: the glass in the apple's colour, the frame in its stem colour. */
 export function HourglassIcon({ variant = "red", className, label }: IconProps) {
   const c = palettes[variant];
   return (

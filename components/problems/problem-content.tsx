@@ -165,7 +165,7 @@ function DownloadLinks({ slug, number }: { slug: string; number: number }) {
     <ButtonAnchor
       key={f.ext}
       href={`/problems/${slug}/problem.${f.ext}`}
-      download={`opencontext-problem-${number}.${f.ext}`}
+      download={`opencontexts-problem-${number}.${f.ext}`}
       variant="quiet"
       size="sm"
       title={`The statement, text, references, history, contributions and discussion, ${f.hint}.`}

@@ -71,7 +71,7 @@ export default async function HomePage() {
 
       <SectionTitle>I. Organizing research goals</SectionTitle>
       <p className="mx-auto mb-4 -mt-4 max-w-160 text-justify text-base hyphens-auto max-sm:text-left">
-          For this first cycle (OpenContext I) three long-term goals organize the list. The division into broad goals is a matter of motivation and organization, rather than a fixed verdict on what is worth pursuing. Within this scheme, every problem traces back to at least one goal. Golden apples mark the broad goals motivated in our companion paper; red apples mark the near-term problems that grow from them. Later cycles may be organized around other broad directions, and objections to the current goals are welcome: see the{" "}
+          For this first cycle (OpenContexts I) three long-term goals organize the list. The division into broad goals is a matter of motivation and organization, rather than a fixed verdict on what is worth pursuing. Within this scheme, every problem traces back to at least one goal. Golden apples mark the broad goals motivated in our companion paper; red apples mark the near-term problems that grow from them. Later cycles may be organized around other broad directions, and objections to the current goals are welcome: see the{" "}
           <Link href="/guidelines#cycles" className="text-brand hover:underline">
             guidelines
           </Link>

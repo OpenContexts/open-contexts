@@ -10,7 +10,7 @@ export async function GET() {
   return new Response(JSON.stringify(await progressData(), null, 2), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `inline; filename="opencontext-progress.json"`,
+      "Content-Disposition": `inline; filename="opencontexts-progress.json"`,
     },
   });
 }

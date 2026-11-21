@@ -14,9 +14,9 @@ const toneFor: Record<ProblemStatus, TagTone> = {
   solved: "success",
 };
 
-/** An apple in the status's colour; an hourglass in the same colour for a `candidate` (not yet in the published list). */
-export function StatusIcon({ status, candidate, className }: { status: ProblemStatus; candidate?: boolean; className?: string }) {
-  const Icon = candidate ? HourglassIcon : AppleIcon;
+/** An apple in the status's colour; an hourglass in the same colour for an `additional` problem (not in the published list). */
+export function StatusIcon({ status, additional, className }: { status: ProblemStatus; additional?: boolean; className?: string }) {
+  const Icon = additional ? HourglassIcon : AppleIcon;
   return <Icon variant={appleFor[status]} className={className} />;
 }
 

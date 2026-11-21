@@ -18,7 +18,7 @@ function ProblemRow({ problem: p, counts }: { problem: Problem; counts?: Communi
   return (
     <li className="group relative grid grid-cols-[3.8rem_minmax(0,1fr)] gap-x-3 border-t border-rule px-2 py-4 transition-colors hover:bg-surface max-sm:grid-cols-[3rem_minmax(0,1fr)] max-sm:px-0">
       <span className="flex items-center gap-1.5 self-start text-[1.3rem]/[1.6rem] font-bold tabular-nums max-sm:text-[1.1rem]">
-        <StatusIcon status={p.status} candidate={!p.published} className="size-[0.8em]" />
+        <StatusIcon status={p.status} additional={!p.published} className="size-[0.8em]" />
         {p.number}
       </span>
       <div className="min-w-0">

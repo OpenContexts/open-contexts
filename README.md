@@ -1,11 +1,11 @@
-# OpenContext
+# OpenContexts
 
 **Open problems in generalized contextuality.** A community-curated, moderated database of precisely stated
 open problems in the subfield of quantum foundations that asks when experimental statistics resist a
 classical explanation. Each problem has a live status, a record of partial progress, and the names of
 everyone who posed, advanced, verified or explained it.
 
-OpenContext is the case study of the companion paper *Accelerating research through human-AI collaboration:
+OpenContexts is the case study of the companion paper *Accelerating research through human-AI collaboration:
 A case study in quantum foundations* (Wagner et al., 2026).
 
 ## Why
@@ -16,7 +16,7 @@ problem with the same AI tools, a flood of quickly produced results that nobody 
 asked without regard for whether they matter, and unclear credit for who posed, solved, checked and explained
 what.
 
-OpenContext tries out one concrete answer for one small field:
+OpenContexts tries out one concrete answer for one small field:
 
 - **A shared list of problems**, each anchored to a long-term goal of the field's research agenda, so that
   effort goes where it advances the field.
@@ -57,7 +57,7 @@ Anyone can read the site. To contribute, create an account under your own name, 
 - an ORCID iD,
 - a GitHub account.
 
-The first cycle, **OpenContext I**, runs with a fixed list of problems for one year. New problems can be
+The first cycle, **OpenContexts I**, runs with a fixed list of problems for one year. New problems can be
 proposed at any time and are kept for the next cycle. At the end of the year the project will be assessed
 publicly, with its failures reported as carefully as its successes.
 

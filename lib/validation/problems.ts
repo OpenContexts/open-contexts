@@ -40,7 +40,7 @@ export const problemSchema = z
     ...referenceRows,
     note: text(0, 10_000, "the note"),
     ...historyRows,
-    /** New problems only: the checkbox to publish it in the list right away instead of as a candidate. */
+    /** New problems only: the checkbox to publish it in the list right away instead of as an additional problem. */
     publish: z
       .string()
       .optional()

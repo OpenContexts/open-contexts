@@ -8,7 +8,7 @@ import { StatusIcon } from "@/components/problems/status";
 import { Button, ButtonLink, ChipLink, HourglassIcon, Input, PageTitle, TabLink, Tabs } from "@/components/ui";
 import { AGENDA, type AgendaId } from "@/lib/agenda";
 import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
-import { getCandidateProblems, getPublishedProblems, searchProblems } from "@/lib/data/problems";
+import { getAdditionalProblems, getPublishedProblems, searchProblems } from "@/lib/data/problems";
 import { plural } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Problems" };
@@ -52,7 +52,7 @@ async function ProblemResults(filters: Filters) {
   cacheTag("problems");
 
   const { status, agenda, q, sort } = filters;
-  const [published, candidates] = await Promise.all([getPublishedProblems(), getCandidateProblems()]);
+  const [published, additional] = await Promise.all([getPublishedProblems(), getAdditionalProblems()]);
   const base = searchProblems(published, q ?? "").filter((p) => !agenda || p.agenda.includes(agenda));
   const list = (status ? base.filter((p) => p.status === status) : base).toSorted((a, b) =>
     sort === "date" ? b.updated.localeCompare(a.updated) : a.number - b.number,
@@ -114,14 +114,14 @@ async function ProblemResults(filters: Filters) {
 
       <ProblemList problems={list} empty={q ? `No problems match “${q}”.` : "No problems in this selection yet."} />
 
-      {candidates.length > 0 && (
+      {additional.length > 0 && (
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <p className="text-[0.95rem] text-ink-muted">
-            {plural(candidates.length, "further problem")} {candidates.length === 1 ? "has" : "have"} been accepted but {candidates.length === 1 ? "is" : "are"} not part of this list yet.
+            {plural(additional.length, "further problem")} {additional.length === 1 ? "has" : "have"} been accepted but {additional.length === 1 ? "is" : "are"} not part of this list yet.
           </p>
-          <ButtonLink href="/candidates" variant="secondary">
+          <ButtonLink href="/additional-problems" variant="secondary">
             <HourglassIcon variant="grey" />
-            See the candidate problems →
+            See the additional problems →
           </ButtonLink>
         </div>
       )}

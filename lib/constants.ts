@@ -38,7 +38,7 @@ export const QUICK_DECISION_TYPES: readonly SubmissionType[] = ["comment", "cont
 export const MODERATION_ACTIONS = ["approve", "reject", "reopen"] as const;
 export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
 
-/** Everything the activity log records: decisions on submissions, and direct changes to problems (publish: admitted to the list, unpublish: back to the candidates). */
+/** Everything the activity log records: decisions on submissions, and direct changes to problems (publish: admitted to the list, unpublish: back to the additional problems). */
 export const LOG_TARGET_TYPES = [...SUBMISSION_TYPES, "problem"] as const;
 export type LogTargetType = (typeof LOG_TARGET_TYPES)[number];
 export const LOG_ACTIONS = [...MODERATION_ACTIONS, "create", "update", "delete", "publish", "unpublish", "withdraw"] as const;

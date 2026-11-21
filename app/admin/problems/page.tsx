@@ -19,7 +19,7 @@ export default function ProblemsAdminPage({ searchParams }: PageProps<"/admin/pr
     <>
       <PageHeader
         title="Problems"
-        description="Every problem on the site: the published list and the candidates (accepted proposals, kept for a later cycle). Edit a problem directly, publish candidates, or add and remove problems."
+        description="Every problem on the site: the published list and the additional problems (accepted proposals, kept for a later cycle). Edit a problem directly, publish additional problems, or add and remove problems."
         actions={
           <AdminButtonLink href="/admin/problems/new" variant="primary">
             New problem
@@ -46,7 +46,7 @@ function Activity({ a }: { a?: ProblemActivity }) {
   );
 }
 
-const LISTS = { all: "All", published: "Published", candidates: "Candidates" } as const;
+const LISTS = { all: "All", published: "Published", additional: "Additional" } as const;
 type List = keyof typeof LISTS;
 
 function listHref(list: List, query: string) {
@@ -61,7 +61,7 @@ async function Problems({ searchParams }: Pick<PageProps<"/admin/problems">, "se
   await requireModerator();
   const { q, list: listParam, deleted } = await searchParams;
   const query = (Array.isArray(q) ? q[0] : q)?.trim() ?? "";
-  const list: List = listParam === "published" || listParam === "candidates" ? listParam : "all";
+  const list: List = listParam === "published" || listParam === "additional" ? listParam : "all";
   const [all, activity] = await Promise.all([getProblems(), getProblemActivity()]);
   const inList = (p: Problem, l: List) => l === "all" || p.published === (l === "published");
   const found = searchProblems(all, query);
@@ -118,7 +118,7 @@ async function Problems({ searchParams }: Pick<PageProps<"/admin/problems">, "se
                     </Pill>
                     {!p.published && (
                       <Pill tone="amber" className="ml-1.5">
-                        Candidate
+                        Additional
                       </Pill>
                     )}
                   </Td>
@@ -139,8 +139,8 @@ async function Problems({ searchParams }: Pick<PageProps<"/admin/problems">, "se
         </Card>
       ) : (
         <EmptyState
-          title={query ? `No problems match “${query}”` : list === "candidates" ? "No candidates" : "No problems yet"}
-          description={query ? undefined : list === "candidates" ? "Accepted proposals appear here until they are published." : "Add the first one with “New problem”."}
+          title={query ? `No problems match “${query}”` : list === "additional" ? "No additional problems" : "No problems yet"}
+          description={query ? undefined : list === "additional" ? "Accepted proposals appear here until they are published." : "Add the first one with “New problem”."}
         />
       )}
     </>

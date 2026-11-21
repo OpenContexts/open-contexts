@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/problems
   return new Response(JSON.stringify({ ...data, citation }, null, 2), {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `inline; filename="opencontext-problem-${data.problem.number}.json"`,
+      "Content-Disposition": `inline; filename="opencontexts-problem-${data.problem.number}.json"`,
     },
   });
 }

@@ -5,9 +5,9 @@ export type VerifyEmailProps = { name: string; url: string };
 
 export default function VerifyEmail({ name, url }: VerifyEmailProps) {
   return (
-    <EmailLayout preview="Confirm your email address for OpenContext">
+    <EmailLayout preview="Confirm your email address for OpenContexts">
       <Paragraph>Hello {name},</Paragraph>
-      <Paragraph>Please confirm your email address to finish creating your OpenContext account.</Paragraph>
+      <Paragraph>Please confirm your email address to finish creating your OpenContexts account.</Paragraph>
       <ActionButton href={url}>Confirm email address</ActionButton>
       <Paragraph muted>The link is valid for one hour. If you did not sign up, you can ignore this email.</Paragraph>
     </EmailLayout>

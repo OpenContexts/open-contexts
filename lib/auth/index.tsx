@@ -32,7 +32,7 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       if (isPlaceholderEmail(user.email)) return;
-      await sendEmail({ to: user.email, subject: "Reset your OpenContext password", template: <ResetPassword name={user.name} url={url} /> });
+      await sendEmail({ to: user.email, subject: "Reset your OpenContexts password", template: <ResetPassword name={user.name} url={url} /> });
     },
   },
   emailVerification: {
@@ -41,7 +41,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       if (isPlaceholderEmail(user.email)) return;
-      await sendEmail({ to: user.email, subject: "Confirm your email for OpenContext", template: <VerifyEmail name={user.name} url={url} /> });
+      await sendEmail({ to: user.email, subject: "Confirm your email for OpenContexts", template: <VerifyEmail name={user.name} url={url} /> });
     },
   },
   socialProviders: github ? { github } : {},

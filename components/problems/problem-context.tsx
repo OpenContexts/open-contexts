@@ -12,7 +12,7 @@ export function ProblemContext({ problem, label }: { problem: Pick<Problem, "slu
       href={`/problems/${problem.slug}`}
       className="group mt-6 flex items-center gap-3.5 rounded-md border border-rule bg-surface px-4 py-3 no-underline transition hover:border-rule-strong"
     >
-      <StatusIcon status={problem.status} candidate={!problem.published} className="size-7" />
+      <StatusIcon status={problem.status} additional={!problem.published} className="size-7" />
       <span className="min-w-0 flex-1">
         <span className="block font-sans text-[0.7rem] font-bold tracking-[0.12em] text-ink-subtle uppercase">{label}</span>
         <span className="block font-bold text-ink group-hover:text-brand">

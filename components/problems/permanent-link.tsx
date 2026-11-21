@@ -4,7 +4,7 @@ import { siteOrigin } from "@/lib/cite";
 import { permalinkPath } from "@/lib/permalinks";
 
 /**
- * "Permanent link: opencontext.org/contribution/12.3", with a button to copy the full address. The link keeps
+ * "Permanent link: open-contexts.com/contribution/12.3", with a button to copy the full address. The link keeps
  * working when the page's URL changes, so it is the one to cite.
  */
 export function PermanentLink({ permalink }: { permalink: string }) {

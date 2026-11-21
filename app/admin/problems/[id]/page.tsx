@@ -35,7 +35,7 @@ export default async function EditProblemPage({ params, searchParams }: PageProp
         title={`Problem ${problem.number}: ${problem.title}`}
         description={
           <>
-            {problem.published ? `Published in the list since ${formatDate(problem.listed)}` : "Candidate, not in the published list"}
+            {problem.published ? `Published in the list since ${formatDate(problem.listed)}` : "Additional problem, not in the published list"}
             {current && (
               <>
                 {" · "}

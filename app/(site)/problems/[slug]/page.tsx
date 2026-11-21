@@ -29,14 +29,14 @@ export default async function ProblemPage({ params }: PageProps<"/problems/[slug
   return (
     <>
       <p className="mt-6 flex justify-between text-[0.92rem]">
-        <Link href={problem.published ? "/problems" : "/candidates"} className="text-brand hover:underline">
-          {problem.published ? "← All problems" : "← All candidate problems"}
+        <Link href={problem.published ? "/problems" : "/additional-problems"} className="text-brand hover:underline">
+          {problem.published ? "← All problems" : "← All additional problems"}
         </Link>
         <ModeratorEditLink problemId={problem.id} />
       </p>
       {!problem.published && (
         <Callout>
-          A <Link href="/candidates">candidate problem</Link>: accepted by the moderators, but not yet part of the
+          An <Link href="/additional-problems">additional problem</Link>: accepted by the moderators, but not part of the
           published list.
         </Callout>
       )}

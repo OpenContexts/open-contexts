@@ -12,7 +12,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/problems
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
       // Inline, so agents and browsers can read it; the page's link downloads it.
-      "Content-Disposition": `inline; filename="opencontext-problem-${data.problem.number}.md"`,
+      "Content-Disposition": `inline; filename="opencontexts-problem-${data.problem.number}.md"`,
     },
   });
 }

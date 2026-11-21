@@ -111,8 +111,8 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
 }
 
 /**
- * Admits a candidate to the published list (from today on), or takes a problem off it again, back to the
- * candidates. Leaves the version alone: an editor that is open at the same time can still save.
+ * Admits an additional problem to the published list (from today on), or takes a problem off it again, back
+ * to the additional problems. Leaves the version alone: an editor that is open at the same time can still save.
  */
 export async function setPublished(id: string, publish: boolean): Promise<void> {
   const moderator = await requireModerator();

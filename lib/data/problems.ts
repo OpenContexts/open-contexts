@@ -1,5 +1,5 @@
-// The problems, read from the `problem` table: the published list and the candidates (accepted, but kept for
-// a later cycle). The list is cached; every change to a problem (admin editor, approved edits and proposals,
+// The problems, read from the `problem` table: the published list and the additional problems (accepted, but kept
+// for a later cycle). The list is cached; every change to a problem (admin editor, approved edits and proposals,
 // publishing) invalidates it with `updateTag("problems")`.
 import "server-only";
 import { asc, eq } from "drizzle-orm";
@@ -24,9 +24,9 @@ export type Problem = {
   posedBy: string[];
   /** "1976", "1976-11" or "1976-11-15". */
   posed: string;
-  /** In the published list (/problems); false for a candidate (/candidates). */
+  /** In the published list (/problems); false for an additional problem (/additional-problems). */
   published: boolean;
-  /** Date the problem was published in the list, "YYYY-MM-DD"; for a candidate, the date it was accepted. */
+  /** Date the problem was published in the list, "YYYY-MM-DD"; for an additional problem, the date it was accepted. */
   listed: string;
   /** Date of the last change, "YYYY-MM-DD". */
   updated: string;
@@ -66,7 +66,7 @@ function toProblem(r: typeof problem.$inferSelect): Problem {
   };
 }
 
-/** All problems, published and candidates, sorted by number. Cached until the "problems" tag is invalidated. */
+/** All problems, published and additional, sorted by number. Cached until the "problems" tag is invalidated. */
 export async function getProblems(): Promise<Problem[]> {
   "use cache";
   cacheLife("max");
@@ -82,7 +82,7 @@ export async function getPublishedProblems(): Promise<Problem[]> {
 }
 
 /** Accepted, but not (yet) in the published list. */
-export async function getCandidateProblems(): Promise<Problem[]> {
+export async function getAdditionalProblems(): Promise<Problem[]> {
   return (await getProblems()).filter((p) => !p.published);
 }
 

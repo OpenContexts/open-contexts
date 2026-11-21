@@ -5,9 +5,9 @@ export type ResetPasswordProps = { name: string; url: string };
 
 export default function ResetPassword({ name, url }: ResetPasswordProps) {
   return (
-    <EmailLayout preview="Reset your OpenContext password">
+    <EmailLayout preview="Reset your OpenContexts password">
       <Paragraph>Hello {name},</Paragraph>
-      <Paragraph>Someone asked to reset the password of your OpenContext account. Choose a new one with the link below.</Paragraph>
+      <Paragraph>Someone asked to reset the password of your OpenContexts account. Choose a new one with the link below.</Paragraph>
       <ActionButton href={url}>Choose a new password</ActionButton>
       <Paragraph muted>The link is valid for one hour. If you did not ask for this, you can ignore this email; your password stays the same.</Paragraph>
     </EmailLayout>

@@ -32,7 +32,7 @@ const BEST_PRACTICES = [
   { name: "Avoid single-prompt outputs", text: "Even when a single prompt yields a promising solution, engage with the material in follow-up iterative prompting before submitting it." },
   { name: "Be polite", text: "Agents have no feelings; humans do. A digestion phase is public and every submission carries named humans, so direct polite criticism at the claim or passages, not at the involved researchers." },
   { name: "Avoid duplication", text: "Check whether a claimed solution already exists. If one does, do not rapidly prepare an AI-written revised version merely to reflect \"your own style\" and submit it; make an effort, instead, to ensure that distinct solutions offer distinct insights into the same problem."},
-  { name: "Recognize effort", text: "When preparing an explanatory exposition of an independent manuscript, or any work that benefited from the exchanges shared in OpenContext, acknowledge, and where relevant, cite the contributions you drew on."}
+  { name: "Recognize effort", text: "When preparing an explanatory exposition of an independent manuscript, or any work that benefited from the exchanges shared in OpenContexts, acknowledge, and where relevant, cite the contributions you drew on."}
 ];
 
 const PARTS: { name: string; text: ReactNode }[] = [
@@ -66,7 +66,7 @@ export default function ContributePage() {
     <>
       <PageTitle>Contribute</PageTitle>
       <p className="text-justify hyphens-auto max-sm:text-left">
-        OpenContext is written by its readers. You can add results and references to the existing problems,
+        OpenContexts is written by its readers. You can add results and references to the existing problems,
         improve their statements, discuss them, propose new problems, or{" "}
         <Link href="/blog/new" className="text-brand hover:underline">
           write a post for the blog
@@ -92,7 +92,7 @@ export default function ContributePage() {
         that an AI agent can understand unambiguously what is being asked (Clarity) and search the literature for
         prior attempts and established results (Relevance), for a problem whose resolution would advance the
         research program (Significance) and that is not obviously out of reach (Feasibility). Proposals are checked
-        against these criteria, not heavily refereed. For the first cycle, OpenContext I, the list of problems is
+        against these criteria, not heavily refereed. For the first cycle, OpenContexts I, the list of problems is
         fixed: new proposals are kept for consideration in the next cycle (see the{" "}
         <Link href="/guidelines#cycles" className="text-brand hover:underline">
           guidelines

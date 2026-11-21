@@ -13,11 +13,11 @@ export function EmailLayout({ preview, children }: { preview: string; children: 
       <Body style={{ backgroundColor: "#ffffff", fontFamily: "Georgia, 'Times New Roman', serif", color: colors.ink, margin: 0 }}>
         <Container style={{ maxWidth: "32rem", padding: "32px 24px" }}>
           <Text style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 24px" }}>
-            <span style={{ color: colors.brand }}>●</span> OpenContext
+            <span style={{ color: colors.brand }}>●</span> OpenContexts
           </Text>
           {children}
           <Hr style={{ borderColor: colors.rule, margin: "32px 0 16px" }} />
-          <Text style={{ fontSize: "13px", color: colors.muted, margin: 0 }}>OpenContext · Open problems in generalized contextuality</Text>
+          <Text style={{ fontSize: "13px", color: colors.muted, margin: 0 }}>OpenContexts · Open problems in generalized contextuality</Text>
         </Container>
       </Body>
     </Html>

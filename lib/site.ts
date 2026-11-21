@@ -1,6 +1,6 @@
 // Site-wide settings. Plain values only, safe to import anywhere.
 export const SITE = {
-  name: "OpenContext",
+  name: "OpenContexts",
   subtitle: "Open problems in generalized contextuality",
   description:
     "A community-curated, moderated database of precisely stated open problems in generalized contextuality, with recorded progress, discussion and fine-grained credit.",
