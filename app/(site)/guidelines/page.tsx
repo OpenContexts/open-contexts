@@ -1,230 +1,233 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PageTitle, SectionTitle } from "@/components/ui";
+import { CREDIT_ROLES } from "@/components/explainers/content";
+import { Disclosure } from "@/components/explainers/disclosure";
+import { AssessmentTargets, PermalinkKeys } from "@/components/explainers/facts";
+import { SolvedChecklist, StatusDiagram } from "@/components/explainers/status-diagram";
+import { Steps, Tiles } from "@/components/explainers/tiles";
+import { FramedBox, PageTitle, SectionTitle } from "@/components/ui";
+import { siteOrigin } from "@/lib/cite";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Guidelines" };
 
-// The governance of the database, following Sec. II of the companion paper. Provisional by design:
-// revised whenever maintaining the database raises unanticipated situations, and at the one-year assessment.
+const IN_SHORT = [
+  { icon: "✍", title: "Under your own name", text: "Every submission is backed by a named human." },
+  { icon: "≈", title: "Unpolished is welcome", text: "Partial and provisional work counts; say how far you understand it." },
+  { icon: "⚖", title: "Light moderation", text: "Moderators check relevance and format, not correctness." },
+  { icon: "◔", title: "Live status", text: "Open → under revision → solved, and back on disputes." },
+  { icon: "✓", title: "Understanding over speed", text: "Verifying and explaining earn credit; being first with an AI answer counts little." },
+  { icon: "↻", title: "Provisional rules", text: "Revised as needed, and after the one-year assessment." },
+];
+
+const RECORDS = [
+  { icon: "T", title: "A title" },
+  { icon: "∴", title: "The type", text: "claimed solution, partial result, evidence, verification, exposition, challenge, …" },
+  { icon: "⚙", title: "The AI use", text: "none; partial (several human–AI iterations); or full (essentially one prompt)" },
+  { icon: "✍", title: "A named human", text: "at least one, who takes responsibility for it" },
+];
+
+// The governance of the database, following Sec. III of the companion paper, which gives the reasoning; this
+// page states the rules. Provisional by design: revised whenever maintaining the database raises unanticipated
+// situations, and at the one-year assessment.
 export default function GuidelinesPage() {
+  const host = siteOrigin().replace(/^https?:\/\//, "");
   return (
-    <div className="prose-oc">
+    <>
       <PageTitle>Guidelines</PageTitle>
-      <p>
-        These rules govern how submissions are handled and how the status of a problem changes. They ask nothing
-        of contributors beyond the short format described below. They are provisional: the moderators revise them
-        whenever maintaining the database raises situations they did not anticipate, and in light of the one-year
-        assessment.
+      <p className="mx-auto max-w-140 text-center text-ink-muted">
+        How submissions are handled and how a problem&apos;s status changes. The reasoning behind the rules is in the{" "}
+        <Link href="/about#paper" className="text-brand hover:underline">
+          companion paper
+        </Link>
+        .
       </p>
 
+      <FramedBox title="In short" tone="gold">
+        <Tiles items={IN_SHORT} columns={3} />
+      </FramedBox>
+
       <SectionTitle>I. Participating</SectionTitle>
-      <p>
-        Anyone can read the database. To contribute, create an account under your own name, with the email address
-        of your university or research institute or with GitHub, and send a submission: a comment, a result on an
-        existing problem, a reference, a suggested edit, or a new problem. See{" "}
-        <Link href="/contribute">how to contribute</Link>.
-      </p>
-      <p>
-        You can also write to the moderators (listed on the <Link href="/about">About</Link> page, or at{" "}
-        <a href={`mailto:${SITE.contact}`}>{SITE.contact}</a>), for instance to point out a preprint that addresses
-        a listed problem. Results posted elsewhere are monitored by the moderators and added to the problem’s entry.
+      <Tiles
+        columns={3}
+        items={[
+          { icon: "◉", title: "Read", text: "Anyone can read everything, without an account." },
+          { icon: "✍", title: "Sign up", text: "Under your own name: institutional email, ORCID or GitHub." },
+          { icon: "→", title: "Submit", text: <>Use the forms (see <Link href="/contribute" className="text-brand hover:underline">Contribute</Link>), or write to the moderators.</> },
+        ]}
+      />
+      <p className="mt-4 text-center text-sm text-ink-subtle">
+        The moderators are listed on the <Link href="/about#moderators" className="text-brand hover:underline">About</Link> page, or write to{" "}
+        <a href={`mailto:${SITE.contact}`} className="text-brand hover:underline">
+          {SITE.contact}
+        </a>
+        , for instance about a preprint that addresses a listed problem.
       </p>
 
       <SectionTitle>II. What every submission records</SectionTitle>
-      <p>Every result submitted to a problem records, in a fixed format:</p>
-      <ul>
-        <li>a <strong>title</strong>;</li>
-        <li>
-          the <strong>type of material</strong>: a claimed solution, a partial or negative result, a reformulation,
-          computational evidence, an independent verification, an exposition, a challenge, and so on;
-        </li>
-        <li>
-          the extent to which <strong>AI tools</strong> were used: none; partially, when the material was produced
-          over several human–AI iterations; or fully, when it is essentially the output of a single prompt;
-        </li>
-        <li>
-          the <strong>name of at least one human</strong> who takes responsibility for the material.
-        </li>
-      </ul>
-      <p>
-        Submissions need not be complete or rigorous. A promising but unpolished argument, an incomplete proof or a
-        partially verified computation is welcome; say in its summary that it is provisional, and how far you
-        understand it.
-      </p>
+      <Tiles items={RECORDS} columns={4} />
+      <p className="mt-4 text-center text-sm text-ink-subtle">Submissions need not be complete or rigorous: say in the summary that it is provisional, and how far you understand it.</p>
 
       <SectionTitle>III. Moderation</SectionTitle>
-      <p>
-        Every submission is reviewed by a moderator before it appears, and each decision is logged. Routing every
-        addition through the moderators, instead of opening the database to direct editing, keeps each contribution
-        tied to a named human and excludes automated or anonymous mass submissions.
-      </p>
-      <p>
-        The check is deliberately light: is the submission relevant to the entry, in the fixed format, and backed by
-        a named human? Moderators filter out only content that is unrelated, predatory or otherwise unethical. They
-        do not judge the correctness of a claimed solution, or the quality of its presentation, when accepting it.
-        If a submission is not accepted, the moderator explains why, and you can follow its status under{" "}
-        <em>My submissions</em>.
-      </p>
-      <p>
-        Moderators may judge the correctness of existing work as independent researchers, in order to change the
-        status of a problem, following the rules below.
+      <Steps
+        items={[
+          { title: "Submission", text: "through the site or by email" },
+          { title: "Light check", text: "relevant to the entry? fixed format? a named human? no duplicate? best practices?" },
+          { title: "Published", text: "with a timestamp and its contributors' names; or the moderator explains why not" },
+        ]}
+      />
+      <p className="mt-4 text-center text-[0.98rem] text-ink-muted">
+        Like a preprint server, moderators filter out only what is unrelated, predatory or unethical. They do not judge
+        whether a claimed solution is correct when accepting it, but may do so later as independent researchers, to
+        change a problem&apos;s status. Follow your submissions under <em>My submissions</em>.
       </p>
 
-      <SectionTitle id="status">IV. The status of a problem</SectionTitle>
-      <p>
-        Every problem carries a live status, <em>open</em>, <em>under revision</em> or <em>solved</em>, and every
-        change of status is a dated entry in the problem’s history. A problem enters the database as open.
-      </p>
-      <p>
-        <strong>From open to under revision.</strong> When a solution is claimed, whether submitted to the entry or
-        reported to the moderators as a preprint, the problem is placed under revision. Researchers can then submit
-        revisions of, comments on and verifications of the claimed solution; the moderators may comment as well.
-        Submissions at this stage should put human understanding first: commentary on the existing results,
-        independent solutions, verification, replication, or polished, clearly written accounts.
-      </p>
-      <p>
-        A solution must resolve the problem <em>as stated</em>, by the criterion for a solution fixed in its
-        statement. A proof of a weakened or otherwise modified statement is a partial advance, not a solution: it is
-        recorded as such, the original problem stays open, and the modified statement can be proposed as a new
-        problem.
-      </p>
-      <p>
-        <strong>From under revision to solved.</strong> If the solution has been published in a peer-reviewed
-        journal, the problem is marked solved once the moderators have confirmed that the published work settles the
-        problem as stated. Otherwise, it is marked solved only when all of the following hold:
-      </p>
-      <ol>
-        <li>
-          A human-backed account of the solution exists: at least one human contributor claims full understanding of
-          it, and it is available in a preprint repository that provides a digital object identifier (DOI). Claimed
-          solutions that are entirely AI-generated, or whose contributors do not claim to understand them fully, do
-          not solve a problem; they keep it under revision.
-        </li>
-        <li>
-          At least three skilled researchers who are independent of the solution’s contributors and declare no
-          conflict of interest (moderators, for example) have verified the solution, declaring that they understand
-          it and agree with its claim. They may do so by submitting a verification to the entry, by writing to the
-          moderators, or by sharing further material, such as an explanatory manuscript. A machine-checked
-          formalization strengthens this verification but does not replace it.
-        </li>
-        <li>
-          There is no current dispute of the solution. An active dispute must either be resolved within the
-          community until its authors withdraw it, or be marked as resolved by a moderator when there is overwhelming
-          evidence that it is.
-        </li>
-      </ol>
-      <p>
-        <strong>From solved to under revision.</strong> A solved problem is reopened only on a substantiated
-        challenge: a written submission to the entry, backed by a researcher who claims to fully understand it, that
-        identifies a gap or error in the account of the solution, reports a failed replication of a computation or
-        construction, or points to a published result that contradicts the claim. Any researcher may submit a
-        challenge. The moderators reopen the problem once a researcher independent of both the challenger and the
-        solution’s contributors, possibly another moderator, seconds it.
-      </p>
-      <p>
-        <strong>From under revision to open.</strong> A problem under revision returns to open in two cases. Its
-        contributors may withdraw the claimed solution, for instance after the open discussion around it (write to
-        the moderators to do so); the material stays attached to the entry as a provisional or negative result, with
-        the credit this implies. Or the revision may show that the statement of the problem itself was significantly
-        flawed: ambiguous, ill-posed, or dependent on an unstated assumption that lacks proof. The moderators then
-        return the problem to open with a revised statement, keep the earlier version and the submissions attached,
-        and credit the researcher who identified the flaw, since clarifying a question is itself a valuable
-        contribution.
-      </p>
-      <p>
-        Once a solution has been published, the entry stays open to further updates: corrections, simpler proofs,
-        generalizations and follow-ups.
+      <SectionTitle id="status" className="scroll-mt-6">
+        IV. The status of a problem
+      </SectionTitle>
+      <p className="mb-6 text-center text-ink-muted">Every problem enters as open. Each change of status is a dated entry in its history.</p>
+      <StatusDiagram
+        rules={[
+          {
+            n: 1,
+            title: "Open → under revision",
+            text: (
+              <>
+                When a solution is claimed, submitted here or reported to the moderators as a preprint. The community
+                then digests it: comments, verifications, replications, independent solutions and clear expositions.
+                A solution must resolve the problem <em>as stated</em>; a proof of a weaker or modified statement is a
+                partial advance, and the modified statement can be proposed as a new problem.
+              </>
+            ),
+          },
+          { n: 2, title: "Under revision → solved", text: <>When a peer-reviewed publication settles the problem, confirmed by the moderators, or when the three conditions below hold.</> },
+          {
+            n: 3,
+            title: "Solved → under revision",
+            text: (
+              <>
+                Only on a substantiated challenge: a written submission, backed by a researcher who fully understands it,
+                that identifies a gap or error, reports a failed replication, or points to a contradicting published
+                result. Anyone may challenge; the moderators reopen the problem once a researcher independent of both
+                sides seconds it.
+              </>
+            ),
+          },
+          {
+            n: 4,
+            title: "Under revision → open",
+            text: (
+              <>
+                When the contributors withdraw the claimed solution (with <em>Withdraw</em> under <em>My submissions</em>
+                ); it stays on the entry, marked as withdrawn. Or when the revision shows the statement was flawed:
+                ambiguous, ill-posed, or resting on an unproven assumption. The moderators then revise it, keep the
+                earlier version and its submissions, and credit whoever found the flaw.
+              </>
+            ),
+          },
+        ]}
+      />
+      <div className="mt-8">
+        <SolvedChecklist id="solved" />
+      </div>
+      <p className="mt-4 text-center text-sm text-ink-subtle">
+        After a solution is published, the entry stays open to corrections, simpler proofs, generalizations and follow-ups.
       </p>
 
-      <SectionTitle id="credit">V. Credit</SectionTitle>
-      <p>
-        The database records who posed each problem, who advanced it, who verified a solution, who found a flaw and
-        who made a result readable, so that every contributor is credited directly and visibly. Posing a
-        well-motivated question earns credit as much as answering one: cite the problem, and the people who posed it,
-        when you work on it. Every problem page has a <em>Cite this problem</em> button. Taking up a problem posed
-        here without acknowledging its posers is a breach of academic norms.
-      </p>
-      <p>
-        Everything citable has a permanent link of the form <code>/contribution/&lt;key&gt;</code> that keeps
-        working when pages move: <code>12</code> is Problem 12, <code>12v3</code> its statement and text as they
-        stood at version 3, <code>12.3</code> a contribution to it, and <code>blog.7</code> a blog post. Problems
-        and blog posts get their key when they are accepted, as do contributions other than references; comments get
-        none. A key is never reused: if what it points to is removed, the link says so. Every accepted change to
-        a problem’s title, statement, text or references starts a new version, except minor corrections such as
-        typos, which moderators apply to the current version.
-      </p>
-      <p>
-        Improving a problem’s text is a contribution too. A suggested edit names the people to credit and how much
-        AI was used, like a result; once accepted, the new version is credited to them and linked from the
-        problem’s history. Changes the moderators make themselves are credited to the editors, unless they name
-        someone. Each problem lists its contributors: everyone who posed or proposed it, edited its text, or added
-        a result or a reference. Comments are discussion and are not counted as contributions.
-      </p>
-      <p>
-        Each result can be discussed on its own page, and signed-in readers can vote on it: up if it is useful,
-        down if it is not. Votes are a signal for readers, not a verdict: a claimed solution counts as verified
-        only through the verifications recorded with it. Nobody votes on their own work, and suggested references
-        are not voted on.
-      </p>
-      <p>
-        Within the database, credit for solving a problem goes primarily to those who understand and verify its
-        solution, and to those who make it understandable. Being the first to submit an AI-generated claimed
-        solution therefore carries only moderate weight, and prompting an AI does not entitle anyone to sole credit
-        for the eventual solution: an AI-generated purported solution can meaningfully accelerate a research
-        direction, but it does not, on its own, solve an open problem. Partial results that are shared here are
-        credited too, even when the final solution is reached by someone else.
-      </p>
-      <p>
-        Progress on the problems will be documented in progress reports. Everyone who contributed to the discussion
-        or advancement of a problem will be invited to collaborate on, and share authorship of, the report that
-        covers it. The researchers involved in an entry can also decide together whether a result merits a proper
-        manuscript.
+      <SectionTitle id="credit" className="scroll-mt-6">
+        V. Credit
+      </SectionTitle>
+      <p className="mb-5 text-center text-ink-muted">Every role is credited by name, on the problem and in its list of contributors.</p>
+      <Tiles items={CREDIT_ROLES} columns={3} />
+      <h3 className="mt-10 mb-4 text-center font-sans text-sm font-bold">Everything citable has a permanent link</h3>
+      <PermalinkKeys host={host} />
+      <Disclosure label="More on credit, versions and votes">
+        <div className="prose-oc text-[0.98rem]">
+          <p>
+            Posing a question earns credit as much as answering it: cite the problem and the people who posed it when
+            you work on it (each problem page has <em>Cite this problem</em>). Taking up a problem posed here without
+            acknowledging its posers breaches academic norms.
+          </p>
+          <p>
+            Credit for solving a problem goes primarily to those who understand and verify its solution, and to those
+            who make it understandable. Being first with an AI-generated claim carries only moderate weight, and
+            prompting an AI does not entitle anyone to sole credit. Partial results shared here are credited even when
+            someone else reaches the final solution.
+          </p>
+          <p>
+            Every accepted change to a problem&apos;s title, statement, text or references starts a new version,
+            credited to the people named in it; minor corrections such as typos are applied to the current version.
+            Changes made by the moderators are credited to the editors unless they name someone. Comments are
+            discussion, not contributions.
+          </p>
+          <p>
+            Signed-in readers can vote results up or down. Votes are a signal for readers, not a verdict: a solution
+            counts as verified only through recorded verifications. Nobody votes on their own work.
+          </p>
+          <p>
+            Progress is documented in progress reports, and everyone who contributed to a problem is invited to
+            co-author the report that covers it. The researchers involved in an entry can also decide together whether a
+            result merits its own manuscript.
+          </p>
+        </div>
+      </Disclosure>
+
+      <SectionTitle id="cycles" className="scroll-mt-6">
+        VI. The problem list and its cycles
+      </SectionTitle>
+      <Tiles
+        columns={3}
+        items={[
+          { icon: "◎", title: "Four criteria", text: <>Problems are admitted on clarity, relevance, significance and feasibility (<Link href="/contribute#curation-criteria" className="text-brand hover:underline">Box I</Link>), checked, not refereed.</> },
+          { icon: "I", title: "A fixed first list", text: `For ${SITE.name} I, the list is fixed in advance, as a controlled setting for the case study.` },
+          {
+            icon: "+",
+            title: "Additional problems",
+            text: (
+              <>
+                New proposals are{" "}
+                <Link href="/additional-problems" className="text-brand hover:underline">
+                  kept apart
+                </Link>{" "}
+                with the same features, so the assessment can report on the main list alone.
+              </>
+            ),
+          },
+        ]}
+      />
+      <p className="mt-4 text-center text-sm text-ink-subtle">
+        Problems that become obsolete may be removed. Objections to a long-term goal itself are welcome: send them to the
+        moderators, who collect them for the next cycle.
       </p>
 
-      <SectionTitle id="cycles">VI. The problem list and its cycles</SectionTitle>
-      <p>
-        A problem is added to the list only if it meets the four{" "}
-        <Link href="/contribute#curation-criteria">curation criteria</Link>: clarity, relevance, significance and
-        feasibility. Proposed problems are checked against these criteria by other researchers and the moderators,
-        not heavily refereed.
-      </p>
-      <p>
-        For the first cycle, {SITE.name} I, the list of problems is fixed in advance, to provide a controlled setting
-        for the case study. New proposals are welcome and are kept for consideration in the next cycle; the
-        moderators may admit new problems earlier, depending on the engagement with, and the results of, this first
-        cycle. A problem that becomes obsolete or no longer relevant may be removed.
-      </p>
-      <p>
-        The long-term goals that organize the list are provisional too. Objections to a goal itself, the assumptions
-        or motivations it rests on and what the goal would lose if the objection held, are welcome: send them to the
-        moderators, who will collect them as starting material for the next cycle.
+      <SectionTitle id="best-practices" className="scroll-mt-6">
+        VII. Best practices
+      </SectionTitle>
+      <p className="text-center text-ink-muted">
+        Prompt cautiously, be honest about your understanding, polish before submitting, be polite, avoid duplication,
+        and recognize the work you build on: see{" "}
+        <Link href="/contribute#best-practices" className="text-brand hover:underline">
+          Box III
+        </Link>
+        .
       </p>
 
-      <SectionTitle id="best-practices">VII. Best practices</SectionTitle>
-      <p>
-        Prompt cautiously, be honest about how far you understand what you submit, avoid single-prompt outputs and
-        duplication, be polite, and recognize the work you build on. The{" "}
-        <Link href="/contribute#best-practices">best practices</Link> spell these out.
+      <SectionTitle id="assessment" className="scroll-mt-6">
+        VIII. The one-year assessment
+      </SectionTitle>
+      <p className="mb-5 text-center text-ink-muted">
+        {SITE.name} I tests a hypothesis: that this infrastructure improves credit, broadens participation and
+        accelerates progress. After one year it counts as engaging the community if:
       </p>
-
-      <SectionTitle id="assessment">VIII. The one-year assessment</SectionTitle>
-      <p>
-        {SITE.name} I is a test of a hypothesis: that this kind of infrastructure improves the attribution of
-        credit, broadens participation and accelerates progress. One year after launch, the project will be assessed
-        publicly in a community-facing report, against criteria fixed in advance. It will report how many problems
-        were advanced or solved, how quickly, and how much of each advance came from humans, from AI or from their
-        collaboration (as recorded in each submission’s AI-use field); how many researchers, from how many
-        institutions, took part; and whether work that resolves listed problems cites the database and the people who
-        posed them. The dated status changes behind these figures are shown on the{" "}
-        <Link href="/progress">progress</Link> page.
+      <AssessmentTargets />
+      <p className="mt-5 text-center text-sm text-ink-subtle">
+        The public white paper will also report problems advanced and solved, how quickly (from the dated statuses on{" "}
+        <Link href="/progress" className="text-brand hover:underline">
+          Progress
+        </Link>
+        ), the shares of humans and AI, and citations, and revise the criteria, status rules, moderation, list size and
+        credit conventions where needed. Negative outcomes are reported with the same care.
       </p>
-      <p>
-        The assessment will state which parts of the design are open to revision, among them the curation criteria,
-        the status rules above, the moderation load, the size of the list and the credit conventions, and whether to
-        extend the project to further subfields. Negative outcomes will be reported with the same care as positive
-        ones.
-      </p>
-    </div>
+    </>
   );
 }

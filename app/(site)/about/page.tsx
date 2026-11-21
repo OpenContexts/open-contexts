@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
+import { PRINCIPLES } from "@/components/explainers/content";
+import { AssessmentTargets, CycleTimeline } from "@/components/explainers/facts";
+import { Tiles } from "@/components/explainers/tiles";
 import { CopyBlock, PageTitle, SectionTitle } from "@/components/ui";
 import { isPlaceholderEmail } from "@/lib/auth/orcid";
 import { getModerators } from "@/lib/data/moderators";
@@ -12,81 +15,89 @@ export const metadata: Metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <>
-      <div className="prose-oc">
-        <PageTitle>About</PageTitle>
-        <p>
-          {SITE.name} is a community-curated database of open problems in generalized contextuality, the subfield
-          of quantum foundations that studies when experimental statistics resist a classical explanation. Each
-          problem is stated precisely, placed in its context in the literature, traced to a long-term goal of the
-          research agenda, and given a dated status. Progress is recorded with credit to the people who made it.
-        </p>
+      <PageTitle>About</PageTitle>
+      <p className="mx-auto max-w-140 text-center text-ink-muted">
+        {SITE.name} is a community-curated database of open problems in generalized contextuality, the subfield of
+        quantum foundations that studies when experimental statistics resist a classical explanation.
+      </p>
 
-        <SectionTitle>Mission</SectionTitle>
-        <p>
-          Skilled researchers working with AI assistants can now settle well-posed problems at unprecedented speed.
-          This makes well-motivated, precisely stated open problems more valuable than ever, and it raises new
-          difficulties: duplicated effort, a growing volume of hastily produced results, questions asked without
-          regard for whether they matter, and unclear credit for who posed, solved, checked and explained what.
-        </p>
-        <p>
-          {SITE.name} is a concrete, testable answer to these difficulties for one small field. It offers a shared,
-          open record of which problems are open and of what has been achieved on each, so that redundant efforts
-          become visible and partial results are not lost. Every problem is anchored to an
-          explicit research agenda, so that effort goes where it advances the field. Partial and unpolished results
-          can be shared and digested here first, before they are polished for the arXiv or a journal. And every
-          contribution is credited to named humans: posing a good question, verifying a solution, or explaining it
-          clearly counts as much as producing it.
-        </p>
-        <p>
-          {SITE.name} adds an option rather than replacing existing ways of working: researchers who prefer to work
-          independently remain free to do so. Its rules are provisional. The first cycle, {SITE.name} I, runs with a
-          fixed list of problems for one year, after which the project will be assessed publicly, including its
-          failures (see the <Link href="/guidelines#assessment">guidelines</Link>).
-        </p>
+      <SectionTitle>Why</SectionTitle>
+      <p className="mx-auto mb-6 max-w-140 text-center text-[0.98rem] text-ink-muted">
+        Researchers working with AI can now settle well-posed problems fast. That makes good questions more valuable,
+        and brings duplicated effort, hasty results and unclear credit. {SITE.name} tries out an answer for one small
+        field, built on four principles:
+      </p>
+      <Tiles items={PRINCIPLES} />
+      <p className="mt-5 text-center text-sm text-ink-subtle">
+        It adds an option rather than replacing existing ways of working: anyone may keep working independently.
+      </p>
 
-        <SectionTitle>Companion paper</SectionTitle>
-        <p>
-          The methodology, the research agenda and the first problems are described in{" "}
-          {SITE.paper.url ? (
-            <a href={SITE.paper.url}>
-              <em>{SITE.paper.title}</em>
-            </a>
-          ) : (
+      <SectionTitle>The first cycle</SectionTitle>
+      <CycleTimeline name={SITE.name} />
+      <p className="mt-8 mb-4 text-center text-[0.98rem] text-ink-muted">After one year, the case study counts as engaging the community if, fixed in advance:</p>
+      <AssessmentTargets />
+      <p className="mt-4 text-center text-sm text-ink-subtle">
+        Failures included; see the <Link href="/guidelines#assessment" className="text-brand hover:underline">guidelines</Link> and the{" "}
+        <Link href="/progress" className="text-brand hover:underline">
+          progress so far
+        </Link>
+        .
+      </p>
+
+      <SectionTitle id="paper" className="scroll-mt-6">
+        Companion paper
+      </SectionTitle>
+      <p className="text-center">
+        {SITE.paper.url ? (
+          <a href={SITE.paper.url} className="text-brand hover:underline">
             <em>{SITE.paper.title}</em>
-          )}
-          , {SITE.paper.authors} ({SITE.paper.year}). To cite it:
-        </p>
-      </div>
-      <CopyBlock label="BibTeX" text={paperBibtex()} className="mt-4" />
-      <div className="prose-oc">
+          </a>
+        ) : (
+          <em>{SITE.paper.title}</em>
+        )}
+        , {SITE.paper.authors} ({SITE.paper.year}).
+      </p>
+      <p className="mt-1 mb-4 text-center text-sm text-ink-subtle">The methodology, the research agenda and the first problems, with the reasoning behind every rule.</p>
+      <CopyBlock label="BibTeX" text={paperBibtex()} />
 
-        <SectionTitle>How to cite</SectionTitle>
-        <p>
-          Every problem page has a <em>Cite this problem</em> button with a ready-made BibTeX entry carrying the
-          problem’s title, the people who posed it, the address of its page, the date it was posed, its status, and
-          the date it was last updated. To cite the database as a whole:
-        </p>
-      </div>
+      <SectionTitle>How to cite</SectionTitle>
+      <p className="mb-4 text-center text-[0.98rem] text-ink-muted">
+        Each problem and contribution has <em>Cite this problem</em> with a ready BibTeX entry. The database as a whole:
+      </p>
       <DatabaseCitation />
 
-      <SectionTitle>Moderators</SectionTitle>
-      <p className="mb-5 text-justify hyphens-auto max-sm:text-left">
-        Every submission is reviewed by one of the moderators before it appears. All moderators are humans.
-      </p>
+      <SectionTitle id="moderators" className="scroll-mt-6">
+        Moderators
+      </SectionTitle>
+      <p className="mb-5 text-center text-[0.98rem] text-ink-muted">They review every submission before it appears. All moderators are humans.</p>
       <ModeratorList />
 
-      <div className="prose-oc">
-        <SectionTitle>Data</SectionTitle>
-        <p>
-          Every problem can be downloaded, with its references, history, contributions and discussion, as Markdown (to
-          read, or to give to an AI agent) or as JSON (for programs): use the buttons next to <em>Cite this problem</em>,
-          or add <code>/problem.md</code> or <code>/problem.json</code> to a problem’s address. The figures on the{" "}
-          <Link href="/progress">progress</Link> page are available as <a href="/progress.json">JSON</a>.
-        </p>
-
-        <SectionTitle>Licensing</SectionTitle>
-        <p>Unless an entry says otherwise, the text of this database is released under CC BY 4.0. Quotations from the cited sources keep their original licenses.</p>
-      </div>
+      <SectionTitle>Data and license</SectionTitle>
+      <Tiles
+        columns={3}
+        items={[
+          {
+            icon: "↓",
+            title: "Every problem",
+            text: (
+              <>
+                as Markdown (for reading, or an AI agent) or JSON: the buttons by <em>Cite this problem</em>, or add <code className="font-mono text-[0.9em]">/problem.md</code> or{" "}
+                <code className="font-mono text-[0.9em]">/problem.json</code> to its address.
+              </>
+            ),
+          },
+          {
+            icon: "∿",
+            title: "The progress figures",
+            text: (
+              <>
+                as <a href="/progress.json" className="text-brand hover:underline">JSON</a>, behind the <Link href="/progress" className="text-brand hover:underline">progress</Link> page.
+              </>
+            ),
+          },
+          { icon: "©", title: "CC BY 4.0", text: "for the text of the database, unless an entry says otherwise. Quotations keep their licenses." },
+        ]}
+      />
     </>
   );
 }
