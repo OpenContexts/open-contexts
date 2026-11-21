@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { connection } from "next/server";
 import { PostList } from "@/components/blog/post-list";
-import { AgendaTree, GoalCounts } from "@/components/explainers/agenda-tree";
+import { AgendaTree } from "@/components/explainers/agenda-tree";
 import { FEATURES } from "@/components/explainers/content";
 import { Figure } from "@/components/explainers/figure";
 import { Tiles } from "@/components/explainers/tiles";
@@ -98,7 +98,7 @@ export default async function HomePage() {
       </Figure>
 
       <SectionTitle>IV. Three long-term goals</SectionTitle>
-      <p className="mx-auto -mt-2 mb-2 max-w-140 text-center text-ink-muted">
+      <p className="mx-auto -mt-2 mb-6 max-w-140 text-center text-ink-muted">
         Every problem grows from at least one goal of the{" "}
         <Link href="/agenda" className="text-brand hover:underline">
           research agenda
@@ -107,7 +107,6 @@ export default async function HomePage() {
       </p>
       <div className="mx-auto max-w-170">
         <AgendaTree />
-        <GoalCounts problems={problems} />
       </div>
 
       <SectionTitle>V. What the database records</SectionTitle>

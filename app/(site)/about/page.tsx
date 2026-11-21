@@ -168,7 +168,7 @@ export default function AboutPage() {
           )}
           , {SITE.paper.authors} ({SITE.paper.year}).
         </p>
-        <Disclosure label="BibTeX of the paper" className="mx-auto max-w-170">
+        <Disclosure label="BibTeX of the paper">
           <CopyBlock label="BibTeX" text={paperBibtex()} />
         </Disclosure>
         <p className="mt-6 mb-3 text-center text-[0.95rem] text-ink-muted">
@@ -258,7 +258,7 @@ async function DatabaseCitation() {
   await connection();
   const context = { origin: siteOrigin(), today: todayIso() };
   return (
-    <div className="mx-auto max-w-170">
+    <div>
       <CopyBlock label="Plain text" text={databaseCitation(context)} />
       <Disclosure label="BibTeX of the database">
         <CopyBlock label="BibTeX" text={databaseBibtex(context)} />

@@ -1,13 +1,11 @@
-import Link from "next/link";
 import { AGENDA } from "@/lib/agenda";
-import type { Problem } from "@/lib/data/problems";
-import { plural } from "@/lib/format";
 import { Apple } from "./drawings";
 
 // The research agenda as a weeping willow, after the companion paper's figure: a brown trunk, and three big
-// branches, one per long-term goal, that arch up, droop and turn golden towards their tips, where the goal's
-// golden apple hangs. Thin strands hang from them with the red apples of near-term problems. The small apples are
-// a picture of the idea, not the actual problems (there will be too many); each branch links to its goal.
+// branches, one per long-term goal, that arch up and turn golden towards their tips, where the goal's golden apple
+// hangs. A curtain of thin leafy strands falls from them, some bearing the red apples of near-term problems. The
+// small apples are a picture of the idea, not the actual problems (there will be too many); each branch links to
+// its goal.
 
 type Point = [number, number];
 type Curve = [Point, Point, Point, Point];
@@ -40,133 +38,113 @@ function taper(c: Curve, from: number, to: number, steps = 24): string {
   return `M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`;
 }
 
-/** The highest point of a curve, where its label goes. */
-function apex(c: Curve): Point {
-  let top = at(c, 0);
-  for (let i = 1; i <= 40; i++) {
-    const p = at(c, i / 40);
-    if (p[1] < top[1]) top = p;
-  }
-  return top;
-}
+/** An outer branch: it arches up from the trunk and droops; its strands hang along all of it. */
+type Arch = { curve: Curve; side: 1 | -1 };
 
-/** The title broken into lines of at most `max` characters. */
-function lines(text: string, max = 20): string[] {
-  const out: string[] = [];
-  for (const word of text.split(" ")) {
-    const last = out.at(-1);
-    if (last && `${last} ${word}`.length <= max) out[out.length - 1] = `${last} ${word}`;
-    else out.push(word);
-  }
-  return out;
-}
-
-/**
- * The three goals' branches: left, middle, right. The outer ones arch and droop, their strands swaying outwards
- * (`side`); the middle one rises to the crown, its strands hanging to both sides (`side` 0).
- */
-const BRANCHES: { curve: Curve; side: 1 | -1 | 0; crown?: { curve: Curve; side: 1 | -1 }[] }[] = [
-  { curve: [[444, 345], [405, 215], [255, 140], [135, 262]], side: -1 },
+/** The three goals' branches. The middle one rises to the crown, which droops to both sides in two short arches. */
+const BRANCHES: { stem: Curve; arches: Arch[]; tip: Point; crown?: boolean }[] = [
+  { stem: [[444, 335], [410, 205], [270, 122], [128, 208]], arches: [{ curve: [[444, 335], [410, 205], [270, 122], [128, 208]], side: -1 }], tip: [128, 208] },
   {
-    curve: [[450, 345], [452, 260], [446, 170], [450, 108]],
-    side: 0,
-    // Two short arcs below the crown, drooping left and right; the middle goal's strands hang from these.
-    crown: [
-      { curve: [[449, 168], [428, 132], [380, 130], [352, 196]], side: -1 },
-      { curve: [[451, 168], [472, 132], [520, 130], [548, 196]], side: 1 },
+    stem: [[450, 335], [452, 250], [447, 170], [450, 106]],
+    arches: [
+      { curve: [[449, 152], [430, 112], [385, 106], [348, 168]], side: -1 },
+      { curve: [[451, 152], [470, 112], [515, 106], [552, 168]], side: 1 },
     ],
+    tip: [450, 106],
+    crown: true,
   },
-  { curve: [[456, 345], [495, 215], [645, 140], [765, 262]], side: 1 },
+  { stem: [[456, 335], [490, 205], [630, 122], [772, 208]], arches: [{ curve: [[456, 335], [490, 205], [630, 122], [772, 208]], side: 1 }], tip: [772, 208] },
 ];
 
-/** Where the strands hang from each branch, along it (t), and how far down they reach. */
-const STRANDS = [0.26, 0.36, 0.46, 0.55, 0.64, 0.72, 0.8, 0.88];
+/** Where each goal's name goes, on one line: above the crown for the middle, beside it for the outer two. */
+const LABELS: { x: number; y: number; anchor: "start" | "middle" | "end" }[] = [
+  { x: 372, y: 96, anchor: "end" },
+  { x: 450, y: 44, anchor: "middle" },
+  { x: 528, y: 96, anchor: "start" },
+];
 
-/** A thin strand hanging from `start`, swaying a little to `side`; its end, for the apple. */
-function strand(start: Point, length: number, sway: number): { d: string; end: Point } {
-  const end: Point = [start[0] + sway, start[1] + length];
-  const c: Curve = [start, [start[0] + sway * 0.6, start[1] + length * 0.15], [end[0] - sway * 0.15, end[1] - length * 0.4], end];
-  return { d: taper(c, 3.2, 1.2, 12), end };
+type Strand = { d: string; leaves: { x: number; y: number; angle: number }[]; apples: Point[]; t: number };
+
+/**
+ * The strands hanging from an arch, like a willow's: many thin twigs that leave it, bend outwards and fall,
+ * reaching down to about the same height, so that together they make the curtain of the crown. Small leaves
+ * along them; an apple on some, at the end or partway down, so that not every strand bears one.
+ */
+function strands({ curve, side }: Arch, count: number, bottom: number, from: number): Strand[] {
+  return Array.from({ length: count }, (_, j) => {
+    const t = from + ((1 - from) * j) / (count - 1);
+    const start = at(curve, t);
+    // A little irregular, as twigs are: the length and sway vary from one to the next.
+    const wave = Math.sin(j * 2.3) * 0.5 + Math.sin(j * 1.1) * 0.5;
+    const length = Math.max(60, bottom - start[1] + wave * 26);
+    const sway = side * (12 + 7 * Math.abs(Math.sin(j * 1.7)));
+    const c: Curve = [start, [start[0] + sway * 0.9, start[1] + 18], [start[0] + sway, start[1] + length * 0.55], [start[0] + sway * 0.75, start[1] + length]];
+    const leaves = [0.28, 0.44, 0.6, 0.76, 0.9].map((f, k) => {
+      const [x, y] = at(c, f);
+      return { x, y, angle: (k % 2 ? 1 : -1) * 38 };
+    });
+    const apples: Point[] = [];
+    if (j % 3 === 0) apples.push(at(c, 1));
+    else if (j % 5 === 2) apples.push(at(c, 0.62));
+    return { d: taper(c, 2.6, 0.8, 14), leaves, apples, t };
+  });
 }
 
 const BROWN = "light-dark(#6b4a2f, #a3805c)";
 
+/** Brown turning gold: the colour `golden` (0 to 1) of the way along. */
+const goldenBrown = (golden: number) => `color-mix(in oklab, var(--color-gold) ${Math.round(Math.min(1, Math.max(0, golden)) * 100)}%, ${BROWN})`;
+
 /** The tree, with each goal's branch a link to it on the agenda page. */
 export function AgendaTree() {
   return (
-    <svg viewBox="0 -55 900 615" className="w-full" role="group" aria-label="The research agenda as a tree: three long-term goals and their near-term problems">
+    <svg viewBox="-70 12 1040 545" className="w-full" role="group" aria-label="The research agenda as a tree: three long-term goals and their near-term problems">
       <defs>
         {BRANCHES.map((b, i) => (
-          <linearGradient key={i} id={`willow-${i}`} gradientUnits="userSpaceOnUse" x1={b.curve[0][0]} y1={b.curve[0][1]} x2={b.curve[3][0]} y2={b.curve[3][1]}>
-            <stop offset="0.15" style={{ stopColor: BROWN }} />
-            <stop offset="0.95" style={{ stopColor: "var(--color-gold)" }} />
+          <linearGradient key={i} id={`willow-${i}`} gradientUnits="userSpaceOnUse" x1={b.stem[0][0]} y1={b.stem[0][1]} x2={b.stem[3][0]} y2={b.stem[3][1]}>
+            <stop offset="0.12" style={{ stopColor: BROWN }} />
+            <stop offset="0.9" style={{ stopColor: "var(--color-gold)" }} />
           </linearGradient>
         ))}
       </defs>
-      <ellipse cx={450} cy={552} rx={150} ry={7} className="fill-rule" />
-      <path d="M412 553C428 500 434 420 436 338L464 338C466 420 472 500 488 553Z" style={{ fill: BROWN }} />
+      <ellipse cx={450} cy={548} rx={160} ry={7} className="fill-rule" />
+      <path d="M410 549C428 495 433 420 436 330L464 330C467 420 472 495 490 549Z" style={{ fill: BROWN }} />
       {BRANCHES.map((b, i) => {
         const goal = AGENDA[i];
-        const tip = b.curve[3];
-        // Labels over the outer branches sit a little outwards, clear of the crown.
-        const top: Point = b.side ? [apex(b.curve)[0] + b.side * 45, apex(b.curve)[1]] : [tip[0], tip[1] - 40];
-        const label = lines(goal.title);
+        const label = LABELS[i];
         const paint = `url(#willow-${i})`;
+        const hanging = b.arches.flatMap((arch) => (b.crown ? strands(arch, 9, 352, 0.15) : strands(arch, 17, 395, 0.16)));
         return (
           <a key={goal.id} href={`/agenda#${goal.id}`} className="group outline-none [&:focus-visible_.halo]:stroke-brand">
             <title>{`Goal ${goal.numeral}: ${goal.title}`}</title>
-            {(b.crown ?? [{ curve: b.curve, side: b.side || 1 }]).map((arm, a) =>
-              STRANDS.map((t, j) => {
-                const start = at(arm.curve, b.crown ? 0.2 + t * 0.85 : t);
-                // Strands reach down to about the same height, the outer ones a little less; two per point.
-                const reach = Math.max(70, 470 - start[1]) * (j % 2 ? 0.55 : 0.75);
-                // The crown's arcs are short: one strand per point there, two on the long branches.
-                return (b.crown ? [0] : [0, 1]).map((k) => {
-                  const { d, end } = strand(start, reach * (k ? 0.62 : 1), arm.side * (k ? -8 : 14 + j * 2));
-                  return (
-                    <g key={`${a}-${t}-${k}`}>
-                      <path d={d} style={{ fill: paint }} />
-                      <Apple x={end[0] - 12 * 0.72} y={end[1] - 3 * 0.72} s={0.72} />
-                    </g>
-                  );
-                });
-              }),
-            )}
-            {b.crown?.map((arm, a) => <path key={a} d={taper(arm.curve, 14, 5)} style={{ fill: paint }} />)}
-            <path d={taper(b.curve, 34, 8)} style={{ fill: paint }} className="transition group-hover:brightness-110" />
-            <circle className="halo fill-none stroke-transparent" cx={tip[0]} cy={tip[1] + (b.side ? 22 : -18)} r={34} strokeWidth={2.5} />
+            {hanging.map((h, j) => {
+              // The crown is golden throughout; along an outer branch, the strands turn golden towards its tip.
+              const fill = goldenBrown(b.crown ? 0.9 : (h.t - 0.15) / 0.7);
+              return (
+                <g key={j}>
+                  <path d={h.d} style={{ fill }} />
+                  {h.leaves.map((l, k) => (
+                    <ellipse key={k} cx={l.x} cy={l.y} rx={5} ry={1.7} transform={`rotate(${l.angle} ${l.x} ${l.y})`} style={{ fill }} />
+                  ))}
+                  {h.apples.map(([x, y], k) => (
+                    <Apple key={k} x={x - 12 * 0.7} y={y - 3 * 0.7} s={0.7} />
+                  ))}
+                </g>
+              );
+            })}
+            <path d={taper(b.stem, 34, b.crown ? 12 : 7)} style={{ fill: paint }} className="transition group-hover:brightness-110" />
+            {b.crown && b.arches.map((arch, a) => <path key={a} d={taper(arch.curve, 13, 5)} style={{ fill: paint }} />)}
+            <circle className="halo fill-none stroke-transparent" cx={b.tip[0]} cy={b.tip[1] + (b.crown ? -18 : 22)} r={34} strokeWidth={2.5} />
             <g className="transition group-hover:translate-y-1">
-              <Apple x={tip[0] - 12 * 2.3} y={tip[1] - (b.side ? 3 : 20) * 2.3} s={2.3} gold />
+              <Apple x={b.tip[0] - 12 * 2.3} y={b.tip[1] - (b.crown ? 20 : 3) * 2.3} s={2.3} gold />
             </g>
-            <text textAnchor="middle" className="font-serif">
-              <tspan x={top[0]} y={top[1] - 34 - label.length * 24} fontSize={13} className="fill-ink-subtle font-sans font-bold tracking-[0.15em]">
-                GOAL {goal.numeral}
-              </tspan>
-              {label.map((line, j) => (
-                <tspan key={line} x={top[0]} y={top[1] - 28 - (label.length - 1 - j) * 24} fontSize={22} className="fill-gold-dark font-bold group-hover:underline">
-                  {line}
-                </tspan>
-              ))}
+            <text x={label.x} y={label.y} textAnchor={label.anchor} fontSize={24} className="fill-gold-dark font-serif font-bold group-hover:underline">
+              {goal.numeral}. {goal.title}
             </text>
           </a>
         );
       })}
     </svg>
-  );
-}
-
-/** Under the tree: each goal with the number of its problems, linking to them. */
-export function GoalCounts({ problems }: { problems: Problem[] }) {
-  return (
-    <ul className="mt-3 grid gap-2 text-center sm:grid-cols-3">
-      {AGENDA.map((goal) => (
-        <li key={goal.id}>
-          <Link href={`/problems?agenda=${goal.id}`} className="text-sm text-brand hover:underline">
-            {plural(problems.filter((p) => p.agenda.some((a) => a === goal.id)).length, "problem")} for goal {goal.numeral} →
-          </Link>
-        </li>
-      ))}
-    </ul>
   );
 }
 
