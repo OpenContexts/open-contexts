@@ -8,7 +8,7 @@ import { Apple } from "./drawings";
 // Fig. 2 of the companion paper, "Workflow and status updates", redrawn for the site: problems enter the database
 // (the dashed frame) as open, a claimed solution puts them under revision, digestion leads to solved, and disputes
 // lead back. Every box says, when clicked, what happens there and where on the site it happens. On wide screens it
-// is the drawing; on phones the same parts as a column of boxes that open.
+// is the drawing; on phones the same drawing turned to run top to bottom.
 
 type PartId = "curation" | "open" | "candidate" | "under-revision" | "digestion" | "solved" | "disputes" | "report";
 
@@ -64,31 +64,33 @@ const PARTS: Record<PartId, Part> = {
 };
 
 const STATUS_FILL = { open: "fill-brand", "under-revision": "fill-info", solved: "fill-success" } as const;
-const STATUS_TEXT: Partial<Record<PartId, string>> = { open: "text-brand", "under-revision": "text-info", solved: "text-success" };
 
 export function WorkflowFigure() {
   const [selected, setSelected] = useState<PartId | null>(null);
+  const select = (id: PartId) => setSelected((s) => (s === id ? null : id));
   return (
     <div>
-      <div className="max-sm:hidden">
-        <p className="mb-1 text-right font-sans text-xs text-ink-subtle">
-          <span aria-hidden className="mr-1 inline-flex size-4 items-center justify-center rounded-full bg-ink font-bold text-paper">
-            i
-          </span>
-          Click a box to see what happens there
-        </p>
-        <Drawing selected={selected} onSelect={(id) => setSelected((s) => (s === id ? null : id))} />
-        <div aria-live="polite">{selected && <Panel part={PARTS[selected]} onClose={() => setSelected(null)} />}</div>
-      </div>
-      <Column />
+      <p className="mb-1 text-right font-sans text-xs text-ink-subtle max-sm:text-center">
+        <span aria-hidden className="mr-1 inline-flex size-4 items-center justify-center rounded-full bg-ink font-bold text-paper">
+          i
+        </span>
+        <span className="max-sm:hidden">Click</span>
+        <span className="sm:hidden">Tap</span> a box to see what happens there
+      </p>
+      <Drawing selected={selected} onSelect={select} />
+      <TallDrawing selected={selected} onSelect={select} />
+      <div aria-live="polite">{selected && <Panel part={PARTS[selected]} onClose={() => setSelected(null)} />}</div>
     </div>
   );
 }
 
-/** What the selected box means, under the drawing. */
+/**
+ * What the selected box means: under the drawing, or on phones, where the tall drawing would push it out of
+ * sight, as a card at the foot of the screen.
+ */
 function Panel({ part, onClose }: { part: Part; onClose: () => void }) {
   return (
-    <div className="relative mx-auto mt-2 max-w-160 rounded border border-rule-strong bg-surface py-3 pr-10 pl-4 text-[0.98rem]">
+    <div className="relative mx-auto mt-2 max-w-160 rounded border border-rule-strong bg-surface py-3 pr-10 pl-4 text-[0.98rem] max-sm:fixed max-sm:inset-x-3 max-sm:bottom-3 max-sm:z-30 max-sm:mt-0 max-sm:shadow-xl">
       <p>
         <strong>{part.title}.</strong> {part.text}
       </p>
@@ -176,8 +178,25 @@ function Box({ x, y, w, h, label, tone, size = 24 }: { x: number; y: number; w: 
   );
 }
 
-function Arrow({ d, dashed }: { d: string; dashed?: boolean }) {
-  return <path d={d} className="fill-none stroke-ink" strokeWidth={dashed ? 2 : 3} strokeDasharray={dashed ? "4 5" : undefined} markerEnd={dashed ? "url(#wf-head-thin)" : "url(#wf-head)"} />;
+/** The arrowheads, with ids of their own per drawing: a drawing that is hidden can't lend its markers to the other. */
+function Markers({ ids }: { ids: string }) {
+  return (
+    <defs>
+      <marker id={`${ids}-head`} viewBox="0 0 10 10" refX={8} refY={5} markerWidth={4.5} markerHeight={4.5} orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" className="fill-ink" />
+      </marker>
+      <marker id={`${ids}-head-thin`} viewBox="0 0 10 10" refX={8} refY={5} markerWidth={6} markerHeight={6} orient="auto-start-reverse">
+        <path d="M0 1L9 5L0 9z" className="fill-ink" />
+      </marker>
+      <marker id={`${ids}-feed`} viewBox="0 0 10 10" refX={6} refY={5} markerWidth={3.6} markerHeight={3.6} orient="auto-start-reverse">
+        <path d="M0 0L10 5L0 10z" className="fill-gold-dark" />
+      </marker>
+    </defs>
+  );
+}
+
+function Arrow({ d, dashed, ids }: { d: string; dashed?: boolean; ids: string }) {
+  return <path d={d} className="fill-none stroke-ink" strokeWidth={dashed ? 2 : 3} strokeDasharray={dashed ? "4 5" : undefined} markerEnd={`url(#${ids}-head${dashed ? "-thin" : ""})`} />;
 }
 
 /** One of the paper's illustrations (public/figures), placed in the drawing's units; `w` and `h` keep its proportions. */
@@ -186,10 +205,15 @@ function Illustration({ name, x, y, w, h }: { name: string; x: number; y: number
 }
 
 /** A process arrow in the brown of the paper's drawing: from a gold box into the frame, or out of it. */
-function Feed({ d }: { d: string }) {
-  return <path d={d} className="fill-none stroke-gold-dark" strokeWidth={4} markerEnd="url(#wf-feed)" />;
+function Feed({ d, ids }: { d: string; ids: string }) {
+  return <path d={d} className="fill-none stroke-gold-dark" strokeWidth={4} markerEnd={`url(#${ids}-feed)`} />;
 }
 
+/** The ids of the wide drawing's markers, and of the tall one's. */
+const W = "wf-wide";
+const T = "wf-tall";
+
+/** The figure as in the paper, for wide screens. */
 function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (id: PartId) => void }) {
   const hot = { selected, onSelect };
   const states = [
@@ -198,18 +222,8 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
     { id: "solved" as const, x: 635, label: "Solved" },
   ];
   return (
-    <svg viewBox="0 40 850 410" className="w-full" role="group" aria-label="Workflow and status updates">
-      <defs>
-        <marker id="wf-head" viewBox="0 0 10 10" refX={8} refY={5} markerWidth={4.5} markerHeight={4.5} orient="auto-start-reverse">
-          <path d="M0 0L10 5L0 10z" className="fill-ink" />
-        </marker>
-        <marker id="wf-head-thin" viewBox="0 0 10 10" refX={8} refY={5} markerWidth={6} markerHeight={6} orient="auto-start-reverse">
-          <path d="M0 1L9 5L0 9z" className="fill-ink" />
-        </marker>
-        <marker id="wf-feed" viewBox="0 0 10 10" refX={6} refY={5} markerWidth={3.6} markerHeight={3.6} orient="auto-start-reverse">
-          <path d="M0 0L10 5L0 10z" className="fill-gold-dark" />
-        </marker>
-      </defs>
+    <svg viewBox="0 40 850 410" className="w-full max-sm:hidden" role="group" aria-label="Workflow and status updates">
+      <Markers ids={W} />
 
       {/* The database: everything inside the dashed frame is on the site. */}
       <rect x={20} y={175} width={815} height={150} rx={18} className="fill-brand-tint stroke-brand" strokeWidth={3} strokeDasharray="10 9" opacity={0.9} />
@@ -218,7 +232,7 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
       <Hotspot id="curation" {...hot}>
         <Box x={85} y={82} w={170} h={50} label="Curation" tone="gold" size={27} />
       </Hotspot>
-      <Feed d="M170 134V170" />
+      <Feed ids={W} d="M170 134V170" />
 
       {/* Digestion by people and AI, from above into the step from under revision to solved. */}
       <Illustration name="researcher-tablet" x={392} y={40} w={70} h={131} />
@@ -226,7 +240,7 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
         <Box x={500} y={82} w={170} h={50} label="Digestion" tone="gold" size={27} />
       </Hotspot>
       <Illustration name="robot-magnifier" x={684} y={62} w={76} h={106} />
-      <Feed d="M585 134V170" />
+      <Feed ids={W} d="M585 134V170" />
 
       {/* The three states, with the moves forward and the disputes back. */}
       {states.map((s) => (
@@ -238,13 +252,13 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
           <Apple x={s.x - 34} y={244} s={1.15} />
         </Hotspot>
       ))}
-      <Arrow d="M256 260H314" />
-      <Arrow d="M536 260H594" />
+      <Arrow ids={W} d="M256 260H314" />
+      <Arrow ids={W} d="M536 260H594" />
       <Hotspot id="disputes" {...hot}>
         <rect className="ring fill-none stroke-transparent" x={252} y={180} width={370} height={52} rx={10} strokeWidth={2} />
         <rect x={252} y={180} width={370} height={52} className="fill-transparent" />
-        <Arrow d="M325 222C305 200 282 200 266 214" dashed />
-        <Arrow d="M605 222C585 200 562 200 546 214" dashed />
+        <Arrow ids={W} d="M325 222C305 200 282 200 266 214" dashed />
+        <Arrow ids={W} d="M605 222C585 200 562 200 546 214" dashed />
         {[296, 576].map((x) => (
           <text key={x} x={x} y={196} textAnchor="middle" fontSize={16} textDecoration="underline dotted" className="fill-ink-muted font-serif">
             Disputes
@@ -258,57 +272,85 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
         <Box x={225} y={362} w={200} h={70} label={["Candidate", "solution"]} tone="gold" size={24} />
       </Hotspot>
       <Illustration name="robot-apple" x={434} y={352} w={72} h={87} />
-      <Feed d="M296 360V330" />
+      <Feed ids={W} d="M296 360V330" />
 
       {/* The report, out of the solved problems. */}
       <Hotspot id="report" {...hot}>
         <Box x={635} y={368} w={170} h={50} label="Report" tone="gold" size={27} />
       </Hotspot>
-      <Feed d="M720 328V362" />
+      <Feed ids={W} d="M720 328V362" />
     </svg>
   );
 }
 
-/** On phones: the same parts, top to bottom, as a flow chart whose boxes open to say what they mean. */
-function Column() {
-  const order: PartId[] = ["curation", "open", "candidate", "under-revision", "digestion", "solved", "report"];
-  const isState = (id: PartId) => id in STATUS_FILL;
+/**
+ * The figure for phones: the same parts in the same style, turned to run top to bottom. The database (the dashed
+ * frame) holds the three states one above the other; curation feeds it from the top, candidate solutions and
+ * digestion from the sides, and the report leaves it at the bottom.
+ */
+function TallDrawing({ selected, onSelect }: { selected: PartId | null; onSelect: (id: PartId) => void }) {
+  const hot = { selected, onSelect };
+  const states = [
+    { id: "open" as const, y: 150, label: "Open" },
+    { id: "under-revision" as const, y: 350, label: "Under revision" },
+    { id: "solved" as const, y: 550, label: "Solved" },
+  ];
   return (
-    <div className="sm:hidden">
-      <p className="mb-2 text-center text-sm text-ink-subtle">Tap a step to see what happens there.</p>
-      <ol>
-        {order.map((id, i) => (
-          <li key={id}>
-            <ColumnPart id={id} className={isState(id) ? "border-brand-dark bg-brand-tint" : "border-gold-dark bg-gold-tint"} />
-            {i < order.length - 1 && (
-              <p aria-hidden className="text-center leading-6 text-ink-subtle">
-                ↓
-              </p>
-            )}
-          </li>
-        ))}
-      </ol>
-      <ColumnPart id="disputes" className="mt-3 border-dashed border-rule-strong" />
-    </div>
-  );
-}
+    <svg viewBox="0 0 400 764" className="w-full sm:hidden" role="group" aria-label="Workflow and status updates">
+      <Markers ids={T} />
+      <rect x={96} y={100} width={208} height={566} rx={16} className="fill-brand-tint stroke-brand" strokeWidth={3} strokeDasharray="10 9" opacity={0.9} />
 
-function ColumnPart({ id, className }: { id: PartId; className?: string }) {
-  const part = PARTS[id];
-  const color = STATUS_TEXT[id];
-  return (
-    <details className={cn("group rounded border-[1.5px] px-3.5 py-2 text-[0.95rem]/snug", className)}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-        <strong className={cn(color && "font-mono", color)}>
-          {id === "disputes" && "↺ "}
-          {part.title}
-        </strong>
-        <span aria-hidden className="text-ink-subtle transition group-open:rotate-90">
-          ›
-        </span>
-      </summary>
-      <p className="mt-1 text-ink-muted">{part.text}</p>
-      <PartLinks part={part} />
-    </details>
+      <Hotspot id="curation" {...hot}>
+        <Box x={125} y={14} w={150} h={46} label="Curation" tone="gold" size={23} />
+      </Hotspot>
+      <Feed ids={T} d="M200 62V95" />
+
+      {states.map((s) => (
+        <Hotspot key={s.id} id={s.id} {...hot}>
+          <text x={212} y={s.y - 14} textAnchor="middle" fontSize={19} className={cn("font-mono font-bold", STATUS_FILL[s.id])}>
+            {s.label}
+          </text>
+          <Box x={134} y={s.y} w={156} h={50} label="Problem" tone="red" size={24} />
+          <Apple x={103} y={s.y + 12} s={1.05} />
+        </Hotspot>
+      ))}
+      <Arrow ids={T} d="M212 206V316" />
+      <Arrow ids={T} d="M212 406V516" />
+      <Hotspot id="disputes" {...hot}>
+        <rect className="ring fill-none stroke-transparent" x={226} y={208} width={74} height={112} rx={10} strokeWidth={2} />
+        <rect className="ring fill-none stroke-transparent" x={124} y={408} width={74} height={112} rx={10} strokeWidth={2} />
+        <rect x={226} y={208} width={74} height={112} className="fill-transparent" />
+        <rect x={124} y={408} width={74} height={112} className="fill-transparent" />
+        <Arrow ids={T} d="M238 300C262 278 262 240 240 216" dashed />
+        <Arrow ids={T} d="M186 500C162 478 162 440 184 416" dashed />
+        <text x={278} y={262} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 278 262)" className="fill-ink-muted font-serif">
+          Disputes
+        </text>
+        <text x={146} y={462} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 146 462)" className="fill-ink-muted font-serif">
+          Disputes
+        </text>
+      </Hotspot>
+
+      {/* Candidate solutions come in from the left, between open and under revision. */}
+      <Illustration name="researcher-pointing" x={0} y={160} w={44} h={68} />
+      <Illustration name="robot-apple" x={44} y={176} w={44} h={53} />
+      <Hotspot id="candidate" {...hot}>
+        <Box x={4} y={236} w={84} h={56} label={["Candidate", "solution"]} tone="gold" size={14} />
+      </Hotspot>
+      <Feed ids={T} d="M90 264H202" />
+
+      {/* Digestion comes in from the right, between under revision and solved. */}
+      <Illustration name="researcher-tablet" x={312} y={360} w={42} h={79} />
+      <Illustration name="robot-magnifier" x={352} y={378} w={44} h={61} />
+      <Hotspot id="digestion" {...hot}>
+        <Box x={312} y={446} w={84} h={44} label="Digestion" tone="gold" size={15} />
+      </Hotspot>
+      <Feed ids={T} d="M310 468H222" />
+
+      <Hotspot id="report" {...hot}>
+        <Box x={137} y={706} w={150} h={46} label="Report" tone="gold" size={23} />
+      </Hotspot>
+      <Feed ids={T} d="M212 668V700" />
+    </svg>
   );
 }

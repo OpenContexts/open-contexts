@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { connection } from "next/server";
 import { PostList } from "@/components/blog/post-list";
-import { AgendaTree } from "@/components/explainers/agenda-tree";
+import { GoalDiagram } from "@/components/explainers/goal-diagram";
 import { FEATURES } from "@/components/explainers/content";
 import { Figure } from "@/components/explainers/figure";
 import { Tiles } from "@/components/explainers/tiles";
@@ -105,9 +105,13 @@ export default async function HomePage() {
         </Link>
         .
       </p>
-      <div className="mx-auto max-w-170">
-        <AgendaTree />
-      </div>
+      <Figure
+        number={2}
+        title="The research agenda"
+        caption={<>Three long-term goals (golden apples) organize the list; near-term problems (red apples) grow from each. Click a goal to read about it.</>}
+      >
+        <GoalDiagram />
+      </Figure>
 
       <SectionTitle>V. What the database records</SectionTitle>
       <Tiles items={FEATURES} columns={3} />

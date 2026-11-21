@@ -26,17 +26,17 @@ export default async function AgendaPage() {
       <AgendaTreeWithPeople />
 
       {AGENDA.map((item) => (
-          <section key={item.id} id={item.id} className="scroll-mt-6">
-            <SectionTitle>
-              <AppleIcon variant="gold" className="mr-1.5" />
-              {item.numeral}. {item.title}
-            </SectionTitle>
-            <p className="mx-auto max-w-160 text-center text-[1.02rem]">{item.summary}</p>
-            <Disclosure label="Read the full motivation" className="mx-auto max-w-160">
-              <MarkdownContent source={item.description} />
-            </Disclosure>
-            <ItemProblems itemId={item.id} problems={problems.filter((p) => p.agenda.some((a) => a === item.id))} />
-          </section>
+        <section key={item.id} id={item.id} className="scroll-mt-6">
+          <SectionTitle>
+            <AppleIcon variant="gold" className="mr-1.5" />
+            {item.numeral}. {item.title}
+          </SectionTitle>
+          <p className="mx-auto max-w-160 text-justify text-[1.02rem] hyphens-auto max-sm:text-left">{item.summary}</p>
+          <Disclosure label="Read the full motivation" className="mx-auto mt-1.5 max-w-160">
+            <MarkdownContent source={item.description} />
+          </Disclosure>
+          <ItemProblems itemId={item.id} problems={problems.filter((p) => p.agenda.some((a) => a === item.id))} />
+        </section>
       ))}
     </>
   );
