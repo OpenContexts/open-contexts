@@ -79,7 +79,7 @@ user submits ──▶ pending ──(moderator approves)──▶ approved ─�
 
 ### Problem status (Fig. 2, Sec. II.C)
 
-The rules are published on `/guidelines`. Today moderators apply them by hand in the problem editor; Phase 5
+The rules are published on `/about` (statuses, credit, cycles) and `/contribute` (submissions, moderation). Today moderators apply them by hand in the problem editor; Phase 5
 gives them support in the data and the interface.
 
 ```
@@ -105,7 +105,7 @@ open ──(solution claimed)──▶ under revision ──(published, or DOI +
 | `/problems/[slug]/problem.md`, `.json` | "Data as JSON" | done: the problem with everything recorded about it, for AI agents and programs |
 | `/problems/[slug]/contribute/*` | `#/submit` | done: result, reference, edit; comments inline |
 | `/agenda` | `#/agenda`, `#/tags` | done (basic) |
-| `/guidelines` | same | done: participation, submission format, moderation, status rules, credit, cycles, assessment |
+| `/guidelines` | — | merged into `/about` and `/contribute` (redirects to `/about`) |
 | `/about` | same | done: mission, companion paper, citation, moderators, data, license |
 | `/contribute` | same | done: steps, curation criteria (Box I), problem structure, best practices (Box III) |
 | `/contribute/new-problem` | `#/submit` | done |
@@ -163,7 +163,7 @@ Needed so that the site behaves as the Guidelines already describe.
 
 ### Phase 5: the status workflow (Fig. 2, Box II)
 
-The rules exist on `/guidelines`; the data model and the interface should support them. This needs a
+The rules exist on `/about` and `/contribute`; the data model and the interface should support them. This needs a
 database migration.
 
 - [x] **What can be submitted depends on the status** (`RESULT_KINDS_BY_STATUS` in `lib/constants.ts`): under

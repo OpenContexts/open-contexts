@@ -2,7 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { connection } from "next/server";
 import { PostList } from "@/components/blog/post-list";
-import { AgendaMap } from "@/components/explainers/agenda-map";
+import { AgendaTree, GoalCounts } from "@/components/explainers/agenda-tree";
 import { FEATURES } from "@/components/explainers/content";
 import { Figure } from "@/components/explainers/figure";
 import { Tiles } from "@/components/explainers/tiles";
@@ -22,7 +22,7 @@ export default async function HomePage() {
   const random = pickRandom(open);
 
   const count = (status: string) => problems.filter((p) => p.status === status).length;
-  const recent = [...problems].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 5);
+  const recent = [...problems].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 3);
 
   return (
     <>
@@ -66,8 +66,19 @@ export default async function HomePage() {
         <Button type="submit">Search</Button>
       </Form>
 
+      <SectionTitle>I. A random open problem</SectionTitle>
+      {random ? <ProblemBox problem={random} preview /> : <p className="text-ink-muted">No open problems yet.</p>}
+
+      <SectionTitle>II. Recently updated</SectionTitle>
+      <ProblemList problems={recent} />
+      <p className="mt-2 text-right text-sm">
+        <Link href="/problems?sort=date" className="text-brand hover:underline">
+          All problems →
+        </Link>
+      </p>
+
       <SectionTitle id="how-it-works" className="scroll-mt-6">
-        I. How it works
+        III. How it works
       </SectionTitle>
       <Figure
         number={1}
@@ -75,41 +86,34 @@ export default async function HomePage() {
         caption={
           <>
             Curated problems enter the database (dashed frame) as open. A claimed solution puts a problem under
-            revision, where the community digests it; independent verification makes it solved. Disputes can send it
-            back. After Fig. 2 of the <PaperLink />.
+            revision, where the community digests it, with or without AI, aiming at human understanding and a clear
+            presentation. Moderators mark it solved on a peer-reviewed publication or independent verification;
+            disputes can send it back. Advances are collected in progress reports. After Fig. 2 of the <PaperLink />.
           </>
         }
       >
         <WorkflowFigure />
       </Figure>
 
-      <SectionTitle>II. What the database records</SectionTitle>
+      <SectionTitle>IV. Three long-term goals</SectionTitle>
+      <p className="mx-auto -mt-2 mb-2 max-w-140 text-center text-ink-muted">
+        Every problem grows from at least one goal of the{" "}
+        <Link href="/agenda" className="text-brand hover:underline">
+          research agenda
+        </Link>
+        .
+      </p>
+      <div className="mx-auto max-w-170">
+        <AgendaTree />
+        <GoalCounts problems={problems} />
+      </div>
+
+      <SectionTitle>V. What the database records</SectionTitle>
       <Tiles items={FEATURES} columns={3} />
       <p className="mt-6 text-center">
         <ButtonLink href="/contribute" variant="secondary">
           How to contribute →
         </ButtonLink>
-      </p>
-
-      <SectionTitle>III. Three long-term goals</SectionTitle>
-      <p className="mx-auto -mt-2 mb-4 max-w-140 text-center text-ink-muted">
-        Every problem grows from at least one goal of the{" "}
-        <Link href="/agenda" className="text-brand hover:underline">
-          research agenda
-        </Link>
-        . Each red apple is one of its problems.
-      </p>
-      <AgendaMap problems={problems} />
-
-      <SectionTitle>IV. A random open problem</SectionTitle>
-      {random ? <ProblemBox problem={random} preview /> : <p className="text-ink-muted">No open problems yet.</p>}
-
-      <SectionTitle>V. Recently updated</SectionTitle>
-      <ProblemList problems={recent} />
-      <p className="mt-2 text-right text-sm">
-        <Link href="/problems?sort=date" className="text-brand hover:underline">
-          All problems →
-        </Link>
       </p>
 
       <SectionTitle>VI. From the blog</SectionTitle>

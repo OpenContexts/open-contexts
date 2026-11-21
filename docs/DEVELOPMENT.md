@@ -96,7 +96,7 @@ app/
     blog/                 published posts, /blog/[slug] with its discussion, /blog/new to write one
     me/                   the signed-in user's submissions and their review status
     (auth)/               sign-in, sign-up, forgot-password, reset-password
-    agenda/ about/ guidelines/
+    agenda/ about/
     progress/             problems by status over time (a static SVG chart, cached daily)
     progress.json/        the progress figures as JSON
   admin/                  dashboard (its own minimal design): overview, problems (editor, .md download),

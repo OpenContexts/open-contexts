@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Address } from "@/components/legal/legal-parts";
 import { PageTitle, SectionTitle } from "@/components/ui";
+import { isGitHubConfigured } from "@/lib/auth/github";
 import { formatDate } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 import { SITE } from "@/lib/site";
@@ -13,6 +14,9 @@ export const metadata: Metadata = { title: "Privacy policy" };
 // in step with the code: a new service, cookie or kind of stored data belongs here, with a new `privacyUpdated`.
 export default function PrivacyPage() {
   const { operator } = LEGAL;
+  // GitHub is named only while GitHub sign-in is switched on (GITHUB_CLIENT_ID); ORCID always.
+  const github = isGitHubConfigured();
+  const providers = github ? "GitHub or ORCID" : "ORCID";
   const mail = <a href={`mailto:${operator.email}`}>{operator.email}</a>;
   return (
     <div className="prose-oc">
@@ -64,7 +68,7 @@ export default function PrivacyPage() {
           expires after seven days without a visit, or when you sign out;
         </li>
         <li>
-          during sign-in with GitHub or ORCID, a <strong>short-lived cookie</strong> that ties the provider&apos;s
+          during sign-in with {providers}, a <strong>short-lived cookie</strong> that ties the provider&apos;s
           answer to your sign-in, to protect it against forgery;
         </li>
         <li>
@@ -89,7 +93,7 @@ export default function PrivacyPage() {
           turned back into the password;
         </li>
         <li>
-          for sign-in with <strong>GitHub</strong> or <strong>ORCID</strong>, the identifier of your account there
+          for sign-in with <strong>{providers}</strong>, the identifier of your account there
           and the tokens the provider issues for the sign-in (see section 6);
         </li>
         <li>
@@ -116,17 +120,27 @@ export default function PrivacyPage() {
         account (Art. 6(1)(b) GDPR).
       </p>
 
-      <SectionTitle>6. Sign-in with GitHub or ORCID</SectionTitle>
-      <p>
-        If you choose to sign in with GitHub (GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA)
-        or ORCID (ORCID, Inc., 10411 Motor City Drive, Suite 750, Bethesda, MD 20817, USA), you are sent to that
-        provider and sign in there. It then tells us the identifier of your account, your name and, for GitHub,
-        your email address and profile picture address; for ORCID, the email address on your public ORCID record
-        if there is one. The provider learns that you sign in to {SITE.name}; its own privacy policy applies to what
-        happens there. The legal basis is the performance of the account you asked for (Art. 6(1)(b) GDPR). Both
-        providers may process data in the USA; GitHub is certified under the EU–US Data Privacy Framework
-        (Art. 45 GDPR). You can always use email and password instead.
-      </p>
+      <SectionTitle>6. Sign-in with {providers}</SectionTitle>
+      {github ? (
+        <p>
+          If you choose to sign in with GitHub (GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA)
+          or ORCID (ORCID, Inc., 10411 Motor City Drive, Suite 750, Bethesda, MD 20817, USA), you are sent to that
+          provider and sign in there. It then tells us the identifier of your account, your name and, for GitHub,
+          your email address and profile picture address; for ORCID, the email address on your public ORCID record
+          if there is one. The provider learns that you sign in to {SITE.name}; its own privacy policy applies to
+          what happens there. The legal basis is the performance of the account you asked for (Art. 6(1)(b) GDPR).
+          Both providers may process data in the USA; GitHub is certified under the EU–US Data Privacy Framework
+          (Art. 45 GDPR). You can always use email and password instead.
+        </p>
+      ) : (
+        <p>
+          If you choose to sign in with ORCID (ORCID, Inc., 10411 Motor City Drive, Suite 750, Bethesda, MD 20817,
+          USA), you are sent to ORCID and sign in there. It then tells us your ORCID iD, your name and the email
+          address on your public ORCID record, if there is one. ORCID learns that you sign in to {SITE.name}; its own
+          privacy policy applies to what happens there. The legal basis is the performance of the account you asked
+          for (Art. 6(1)(b) GDPR). ORCID may process data in the USA. You can always use email and password instead.
+        </p>
+      )}
 
       <SectionTitle>7. Your contributions</SectionTitle>
       <p>

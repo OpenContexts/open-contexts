@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-// How a problem moves between its three statuses (Guidelines IV): the moves, numbered on the arrows, and the
+// How a problem moves between its three statuses (on the About page): the moves, numbered on the arrows, and the
 // rule behind each number under the drawing. Static, so the rules read as a reference without any clicking.
 
 const STATES = [

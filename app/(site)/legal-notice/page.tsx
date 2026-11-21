@@ -35,7 +35,7 @@ export default function LegalNoticePage() {
       <p>
         Comments, results, suggested edits, proposed problems and blog posts are written by the researchers credited
         with them, who are responsible for their content. The moderators review every submission before it appears
-        (see the <Link href="/guidelines">guidelines</Link>), but cannot guarantee that what it claims is correct.
+        (see <Link href="/contribute#how">how it works</Link>), but cannot guarantee that what it claims is correct.
         Statuses of problems are dated snapshots: check the cited sources before relying on one. If you find content
         on {SITE.name} that infringes your rights or the law, please write to{" "}
         <a href={`mailto:${operator.email}`}>{operator.email}</a>; we will remove it promptly once we know of it.

@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     instantInsights: { validationLevel: "manual-warning" },
   },
   cacheComponents: true,
+  // The rules once had a page of their own; they are now on About (the statuses, credit, cycles) and Contribute.
+  async redirects() {
+    return [{ source: "/guidelines", destination: "/about", permanent: true }];
+  },
   // Loaded from node_modules at runtime instead of bundled: nodemailer uses Node APIs, and
   // react-email's renderer imports react-dom/server, which Next.js won't bundle into server code.
   serverExternalPackages: ["nodemailer", "@react-email/components", "@react-email/render"],

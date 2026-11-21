@@ -27,22 +27,19 @@ export function PermalinkKeys({ host }: { host: string }) {
   );
 }
 
-/** The targets of the one-year assessment, fixed in advance in the companion paper. */
+/** The targets of the one-year assessment, fixed in advance in the companion paper: three figures on a line. */
 export function AssessmentTargets({ className }: { className?: string }) {
   const targets = [
-    { n: "50", unit: "researchers", text: "have contributed" },
-    { n: "10", unit: "institutions", text: "they come from" },
-    { n: "50 %", unit: "of the problems", text: "on the main list received a submission or comment" },
+    { n: "≥ 50", text: "researchers contributed" },
+    { n: "≥ 10", text: "institutions took part" },
+    { n: "≥ 50 %", text: "of the problems got a submission or comment" },
   ];
   return (
-    <ul className={cn("grid gap-3 sm:grid-cols-3", className)}>
+    <ul className={cn("mx-auto flex max-w-170 flex-wrap justify-center gap-2", className)}>
       {targets.map((t) => (
-        <li key={t.unit} className="rounded-md border border-rule-strong px-4 py-3 text-center">
-          <span className="block text-[1.8rem] leading-tight font-bold">
-            <span className="text-ink-subtle">≥</span> {t.n}
-          </span>
-          <span className="block font-bold">{t.unit}</span>
-          <span className="block text-sm text-ink-muted">{t.text}</span>
+        <li key={t.text} className="flex items-baseline gap-2 rounded-full border border-rule-strong px-3.5 py-1 text-[0.95rem]">
+          <strong className="whitespace-nowrap">{t.n}</strong>
+          <span className="text-ink-muted">{t.text}</span>
         </li>
       ))}
     </ul>

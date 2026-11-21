@@ -122,7 +122,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
       name: SITE.name,
       title: `${SITE.name}: ${SITE.subtitle}`,
       url: origin,
-      guidelines: `${origin}/guidelines`,
+      guidelines: `${origin}/about`,
       license: "CC BY 4.0, unless the entry says otherwise",
     },
     problem: {

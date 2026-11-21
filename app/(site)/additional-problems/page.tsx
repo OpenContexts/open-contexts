@@ -32,9 +32,9 @@ export default async function AdditionalProblemsPage() {
           list of problems
         </Link>{" "}
         is fixed in advance. The problems below have been proposed and accepted by the moderators since, and are kept
-        for consideration in the next cycle; the moderators may also admit some of them to the list earlier (see the{" "}
-        <Link href="/guidelines#cycles" className="text-brand hover:underline">
-          guidelines
+        for consideration in the next cycle; the moderators may also admit some of them to the list earlier (see{" "}
+        <Link href="/about#cycles" className="text-brand hover:underline">
+          the first cycle
         </Link>
         ). They are open for comments and contributions like any other problem.
       </p>

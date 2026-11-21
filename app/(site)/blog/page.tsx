@@ -24,9 +24,9 @@ export default async function BlogPage() {
       <p className="mb-6 text-justify hyphens-auto max-sm:text-left">
         Informal writing on the problems and on generalized contextuality: overviews, the story behind a result,
         open directions, reports from meetings. Anyone can write a post. Like everything on {SITE.name}, posts and
-        their comments are read by a moderator before they appear (see the{" "}
-        <Link href="/guidelines" className="text-brand hover:underline">
-          guidelines
+        their comments are read by a moderator before they appear (see{" "}
+        <Link href="/contribute#how" className="text-brand hover:underline">
+          how it works
         </Link>
         ).
       </p>
