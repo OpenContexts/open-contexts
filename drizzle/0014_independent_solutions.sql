@@ -1,0 +1,1 @@
+ALTER TYPE "public"."contribution_kind" ADD VALUE 'independent' BEFORE 'partial';

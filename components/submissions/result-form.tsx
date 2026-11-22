@@ -35,7 +35,7 @@ const GROUPS: Record<ProblemStatus, { label: string; kinds: ContributionKind[] }
   ],
   "under-revision": [
     { label: "Checking or explaining the claimed solution", kinds: ["verification", "challenge", "evidence", "exposition"] },
-    { label: "Other progress", kinds: ["claim", "partial", "negative"] },
+    { label: "Other progress", kinds: ["independent", "partial", "negative"] },
     { label: "Restating the problem", kinds: ["reformulation"] },
   ],
   solved: [{ label: "Checking or explaining the solution", kinds: ["verification", "challenge", "evidence", "exposition"] }],

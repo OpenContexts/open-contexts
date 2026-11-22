@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "katex/dist/katex.min.css";
 import "./globals.css";
+import { SiteAnalytics } from "@/components/layout/analytics";
 import { SITE } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
@@ -51,7 +52,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <SiteAnalytics />
+      </body>
     </html>
   );
 }

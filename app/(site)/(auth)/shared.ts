@@ -30,6 +30,10 @@ export function authErrorMessage(error: { code?: string; message?: string } | st
       return "The sign-in could not be completed. Please try again.";
     case "INVALID_TOKEN":
       return "This link is invalid or has expired. Please request a new one.";
+    // The bot protection (Vercel BotID) turned the request away, or could not check it.
+    case "VERIFICATION_FAILED":
+    case "MISSING_RESPONSE":
+      return "We could not confirm that this request comes from a person. Please reload the page and try again; if it keeps happening, try another browser or turn off extensions that block scripts.";
     default:
       return (typeof error === "string" ? null : error.message) || "Something went wrong. Please try again.";
   }

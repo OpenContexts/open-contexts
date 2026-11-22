@@ -3,10 +3,10 @@ import { PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import type { TimelineRow } from "@/lib/data/progress";
 import { formatDate } from "@/lib/format";
 
-/** In list order; the colours match the rest of the site (red open, blue under revision, green solved). */
+/** In list order; the colours match the rest of the site (red open, gold under revision, green solved). */
 const CHART_SERIES: { status: ProblemStatus; color: string }[] = [
   { status: "open", color: "var(--color-brand-strong)" },
-  { status: "under-revision", color: "var(--color-info)" },
+  { status: "under-revision", color: "var(--color-gold)" },
   { status: "solved", color: "var(--color-success)" },
 ];
 

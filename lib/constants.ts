@@ -51,6 +51,7 @@ export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
 export const CONTRIBUTION_KINDS = [
   "claim",
+  "independent",
   "partial",
   "negative",
   "reformulation",
@@ -64,6 +65,7 @@ export const CONTRIBUTION_KINDS = [
 export type ContributionKind = (typeof CONTRIBUTION_KINDS)[number];
 export const CONTRIBUTION_KIND_LABELS: Record<ContributionKind, string> = {
   claim: "claimed solution",
+  independent: "independent solution",
   partial: "partial result",
   negative: "negative result",
   reformulation: "reformulation",
@@ -76,6 +78,7 @@ export const CONTRIBUTION_KIND_LABELS: Record<ContributionKind, string> = {
 };
 export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = {
   claim: "You believe you have solved the problem.",
+  independent: "A solution of your own, different from the claimed solution under review.",
   partial: "A special case, a bound, or a step towards a solution.",
   negative: "A no-go result, counterexample, or a route that does not work.",
   reformulation: "An equivalent or sharper statement of the problem.",
@@ -91,7 +94,8 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
  * The kinds of result that can be submitted while a problem has each status, following the guidelines (IV):
  * - open: everything;
  * - under revision: work on the claimed solution (verifying, challenging, explaining, replicating), and
- *   independent solutions or progress, since the claim may still fail; no decompositions;
+ *   independent solutions or progress, since the claim may still fail; no decompositions. A problem has one
+ *   claimed solution at a time: the one that put it under revision. Any other solution is an independent one;
  * - solved: only verifying, challenging, explaining or replicating the solution. Further work on it, such as a
  *   generalization, is a new problem.
  * Edits and references stay possible in every state, though the statement is fixed once a solution is claimed
@@ -99,17 +103,16 @@ export const CONTRIBUTION_KIND_DESCRIPTIONS: Record<ContributionKind, string> = 
  */
 export const RESULT_KINDS_BY_STATUS: Record<ProblemStatus, readonly ContributionKind[]> = {
   open: ["claim", "partial", "negative", "reformulation", "decomposition", "evidence", "verification", "exposition", "challenge"],
-  "under-revision": ["claim", "partial", "negative", "reformulation", "evidence", "verification", "exposition", "challenge"],
+  "under-revision": ["independent", "partial", "negative", "reformulation", "evidence", "verification", "exposition", "challenge"],
   solved: ["evidence", "verification", "exposition", "challenge"],
 };
 
 /**
- * How a kind is offered where its meaning shifts with the status: under revision, a solution is one besides the
- * claim under review; once solved, evidence is a replication of the solution. Stored as the kind itself.
+ * How a kind is offered where its meaning shifts with the status: under revision, evidence may replicate the claim;
+ * once solved, evidence is a replication of the solution. Stored as the kind itself.
  */
 export const KIND_CHOICES_BY_STATUS: Partial<Record<ProblemStatus, Partial<Record<ContributionKind, { label: string; description: string }>>>> = {
   "under-revision": {
-    claim: { label: "Independent solution", description: "A solution of your own, different from the one under review." },
     evidence: { label: "Computational evidence", description: "Numerics or computer-assisted work, such as a replication of the claim's computations." },
   },
   solved: {
@@ -137,6 +140,7 @@ export const TARGETED_KINDS: readonly ContributionKind[] = ["verification", "cha
  */
 export const CONTRIBUTION_HISTORY_KINDS: Record<ContributionKind, HistoryKind | null> = {
   claim: "advance",
+  independent: "advance",
   partial: "advance",
   negative: "advance",
   evidence: "advance",
@@ -155,6 +159,7 @@ export type PermalinkTarget = (typeof PERMALINK_TARGETS)[number];
 /** The contributions that get a permanent link when accepted: results in their own right, not pointers to literature. */
 export const PERMALINK_KINDS: readonly ContributionKind[] = [
   "claim",
+  "independent",
   "partial",
   "negative",
   "reformulation",

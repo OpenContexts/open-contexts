@@ -7,6 +7,7 @@ export type KindLook = { label: string; tone: TagTone; strong?: boolean };
 // Filled only where the outcome matters: a solution, a verification, a refutation, a change of status.
 const contributionLooks: Record<ContributionKind, KindLook> = {
   claim: { label: "Claimed solution", tone: "warning", strong: true },
+  independent: { label: "Independent solution", tone: "warning", strong: true },
   verification: { label: "Verification", tone: "success", strong: true },
   negative: { label: "Negative result", tone: "danger", strong: true },
   challenge: { label: "Challenge", tone: "danger", strong: true },
@@ -20,7 +21,7 @@ const contributionLooks: Record<ContributionKind, KindLook> = {
 
 const statusLooks: Record<ProblemStatus, KindLook> = {
   solved: { label: "Solved", tone: "success", strong: true },
-  "under-revision": { label: "Under revision", tone: "info", strong: true },
+  "under-revision": { label: "Under revision", tone: "warning", strong: true },
   // A problem only goes back to open when a claimed solution did not hold up.
   open: { label: "Reopened", tone: "danger", strong: true },
 };

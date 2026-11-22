@@ -24,9 +24,9 @@ const GROUPS = [
   {
     id: "all",
     label: "All",
-    kinds: ["claim", "partial", "negative", "evidence", "verification", "challenge", "reformulation", "decomposition", "exposition", "reference"],
+    kinds: ["claim", "independent", "partial", "negative", "evidence", "verification", "challenge", "reformulation", "decomposition", "exposition", "reference"],
   },
-  { id: "solutions", label: "Claimed solutions", kinds: ["claim"] },
+  { id: "solutions", label: "Solutions", kinds: ["claim", "independent"] },
   { id: "partial", label: "Partial and negative results", kinds: ["partial", "negative"] },
   { id: "evidence", label: "Evidence", kinds: ["evidence"] },
   { id: "checks", label: "Verifications and challenges", kinds: ["verification", "challenge"] },

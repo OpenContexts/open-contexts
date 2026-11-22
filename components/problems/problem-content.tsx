@@ -9,6 +9,7 @@ import { ContributionsSection, DiscussionSection } from "@/components/problems/c
 import { historyLook, KindTag } from "@/components/problems/kind-tag";
 import { PermanentLink } from "@/components/problems/permanent-link";
 import { ProblemBox } from "@/components/problems/problem-box";
+import { SolutionSummary } from "@/components/problems/solution-summary";
 import { versionCredit } from "@/components/problems/version-list";
 import { StatusBadge } from "@/components/problems/status";
 import { ContributeBox } from "@/components/submissions/contribute-options";
@@ -90,6 +91,8 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
           </Fact>
         )}
       </dl>
+
+      <SolutionSummary contributions={contributions} slug={problem.slug} status={problem.status} />
 
       <MarkdownContent source={problem.body} references={problem.references} className="lettered" />
 

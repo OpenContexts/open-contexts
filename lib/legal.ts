@@ -31,7 +31,7 @@ export const LEGAL: {
   /** For the blog and the edited problem pages (§ 18 Abs. 2 MStV): the person responsible for their content. Empty: the operator. */
   editor: { name: "", address: { street: "", city: "", country: "Germany" } },
   /** When the privacy policy last changed, "YYYY-MM-DD". */
-  privacyUpdated: "2026-11-21",
+  privacyUpdated: "2026-11-22",
 };
 
 /** The person responsible for the content, with an address: the editor if one is named, otherwise the operator. */

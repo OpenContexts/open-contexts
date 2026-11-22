@@ -18,7 +18,7 @@ import { PROBLEM_STATUSES, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/l
 import type { HistoryEntry, Reference } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
-const STATUS_DOTS: Record<ProblemStatus, string> = { open: "bg-zinc-400", "under-revision": "bg-sky-500", solved: "bg-emerald-500" };
+const STATUS_DOTS: Record<ProblemStatus, string> = { open: "bg-zinc-400", "under-revision": "bg-amber-500", solved: "bg-emerald-500" };
 
 /** The form's starting values: lists and references already joined into text. */
 export type ProblemFormValues = {

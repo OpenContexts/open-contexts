@@ -16,8 +16,8 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Progress", description: "How the statuses of the open problems have changed over time." };
 
-/** The status colours of the chart and the tags: red open, blue under revision, green solved. */
-const BAR: Record<ProblemStatus, string> = { open: "bg-brand-strong", "under-revision": "bg-info-strong", solved: "bg-success" };
+/** The status colours of the chart and the tags: red open, gold under revision, green solved. */
+const BAR: Record<ProblemStatus, string> = { open: "bg-brand-strong", "under-revision": "bg-gold", solved: "bg-success" };
 
 /** How many status changes the page lists. */
 const RECENT = 6;

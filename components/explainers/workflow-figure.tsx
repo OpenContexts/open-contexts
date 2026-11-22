@@ -63,7 +63,7 @@ const PARTS: Record<PartId, Part> = {
   },
 };
 
-const STATUS_FILL = { open: "fill-brand", "under-revision": "fill-info", solved: "fill-success" } as const;
+const STATUS_FILL = { open: "fill-brand", "under-revision": "fill-gold-dark", solved: "fill-success" } as const;
 
 export function WorkflowFigure() {
   const [selected, setSelected] = useState<PartId | null>(null);

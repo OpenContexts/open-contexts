@@ -19,10 +19,12 @@ const INTROS: Record<ProblemStatus, string> = {
 export default async function Page({ params, searchParams }: PageProps<"/problems/[slug]/contribute/result">) {
   const { problem, user, back } = await loadContributionContext(params, "result");
   const query = await searchParams;
-  // What a verification or challenge can be about: accepted results that are not withdrawn, claims first.
+  // What a verification or challenge can be about: accepted results that are not withdrawn, the claimed solution
+  // first, then independent solutions.
   const results = (await getCachedContributions(problem.id)).filter((c) => c.key && c.kind !== "reference" && !c.withdrawnAt);
+  const rank = (k: ContributionKind) => (k === "claim" ? 2 : k === "independent" ? 1 : 0);
   const targets: ResultTarget[] = results
-    .toSorted((a, b) => Number(b.kind === "claim") - Number(a.kind === "claim"))
+    .toSorted((a, b) => rank(b.kind) - rank(a.kind))
     .map((c) => ({ key: c.key!, label: `${SITE.name} ${c.key} · ${CONTRIBUTION_KIND_LABELS[c.kind].replace(/^./, (x) => x.toUpperCase())}: ${mathAsPlainText(c.title)} (${c.credit})` }));
   const kind = CONTRIBUTION_KINDS.find((k) => k === query.kind) as ContributionKind | undefined;
   const target = targets.find((t) => t.key === query.target)?.key;

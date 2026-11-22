@@ -7,10 +7,10 @@ const appleFor: Record<ProblemStatus, AppleVariant> = {
   solved: "grey",
 };
 
-// The same colours as the progress chart: red open, blue under revision, green solved.
+// The same colours as the progress chart: red open, gold under revision (like a claimed solution), green solved.
 const toneFor: Record<ProblemStatus, TagTone> = {
   open: "danger",
-  "under-revision": "info",
+  "under-revision": "warning",
   solved: "success",
 };
 

@@ -23,6 +23,7 @@ import { SITE } from "@/lib/site";
 /** What a result's link leads to, by kind: a write-up for most, code and data for computational evidence. */
 const LINK_LABELS: Record<ContributionKind, string> = {
   claim: "Solution",
+  independent: "Solution",
   partial: "Write-up",
   negative: "Write-up",
   reformulation: "Write-up",

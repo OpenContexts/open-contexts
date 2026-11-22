@@ -2,7 +2,8 @@ import "server-only";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { admin, genericOAuth } from "better-auth/plugins";
+import { admin, captcha, genericOAuth } from "better-auth/plugins";
+import { checkBotId } from "botid/server";
 import { revalidateTag } from "next/cache";
 import { MODERATOR_ROLES, type Role } from "@/lib/constants";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
@@ -77,6 +78,10 @@ export const auth = betterAuth({
     // Adds `role`, `banned`, … to the user table and admin endpoints for user management.
     // Blocked users (banned = true) cannot sign in; see app/admin/users.
     admin({ defaultRole: "user", adminRoles: ["admin"], bannedUserMessage: BLOCKED_MESSAGE }),
+    // Bot protection for signing in, signing up and asking for a password reset by email: Vercel BotID, which
+    // checks invisibly in the browser (instrumentation-client.ts) that a person sends the form. Its default
+    // endpoints are those three; on a local `next dev` it always lets the request through.
+    captcha({ provider: "vercel-botid", checkBotId }),
     // ORCID sign-in, when configured (lib/auth/orcid.ts).
     ...(isOrcidConfigured() ? [genericOAuth({ config: [orcidProvider()] })] : []),
     // Must stay last: lets server actions set auth cookies.

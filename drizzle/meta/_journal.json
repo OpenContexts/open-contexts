@@ -99,6 +99,13 @@
       "when": 1795173183824,
       "tag": "0013_contribution_targets_withdrawal",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795340599360,
+      "tag": "0014_independent_solutions",
+      "breakpoints": true
     }
   ]
 }

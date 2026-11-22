@@ -64,8 +64,10 @@ export function SubmissionContent({ submission, problems, references }: { submis
       // Only worth showing when someone else is credited than the person who sent it.
       const credit = c.credit.trim() !== c.author.name.trim() ? c.credit : undefined;
       const problem = problems.get(c.problemId);
-      // The problem's status may have changed since this was sent, to one that no longer takes this kind.
+      // The problem's status may have changed since this was sent, to one that no longer takes this kind. A claim
+      // sent while the problem was open is then accepted as an independent solution (app/admin/actions.ts).
       const outOfPlace = c.status === "pending" && problem && c.kind !== "reference" && !RESULT_KINDS_BY_STATUS[problem.status].includes(c.kind);
+      const claimNow = c.status === "pending" && problem && c.kind === "claim" && !c.withdrawnAt;
       const target = c.target;
       return (
         <Card>
@@ -78,6 +80,12 @@ export function SubmissionContent({ submission, problems, references }: { submis
           {outOfPlace && (
             <Notice tone="warning" className="mb-4">
               Sent as a {CONTRIBUTION_KIND_LABELS[c.kind]}, but the problem is now {PROBLEM_STATUS_LABELS[problem.status]}, which no longer takes this kind of result.
+              {c.kind === "claim" && " Accepting it records it as an independent solution: the problem already has its claimed solution."}
+            </Notice>
+          )}
+          {claimNow && problem.status === "open" && (
+            <Notice tone="info" className="mb-4">
+              Accepting this claimed solution puts the problem under revision.
             </Notice>
           )}
           {TARGETED_KINDS.includes(c.kind) && (

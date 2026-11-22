@@ -24,6 +24,7 @@ export const commentSchema = z
 /** Kinds offered on the "Submit a result" page: every kind but references, which have their own page. */
 const RESULT_KINDS = [
   "claim",
+  "independent",
   "partial",
   "negative",
   "evidence",

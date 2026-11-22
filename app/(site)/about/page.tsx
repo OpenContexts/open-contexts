@@ -23,7 +23,8 @@ const STATUS_RULES = [
     text: (
       <>
         When a solution is claimed, submitted here or reported to the moderators as a preprint. The community then
-        digests it: comments, verifications, replications, independent solutions and clear expositions. A solution
+        digests it: comments, verifications, replications, independent solutions and clear expositions. A problem
+        has one claimed solution at a time; any further solution counts as an independent one. A solution
         must resolve the problem <em>as stated</em>; a proof of a weaker or modified statement is a partial advance,
         and the modified statement can be proposed as a new problem.
       </>

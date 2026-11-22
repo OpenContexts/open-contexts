@@ -12,7 +12,7 @@ import { formatDate, plural } from "@/lib/format";
 export const metadata: Metadata = { title: "Problems" };
 
 // Open is the normal state, so it stays grey; under revision and solved stand out.
-const statusTone = { open: "neutral", "under-revision": "blue", solved: "green" } as const satisfies Record<ProblemStatus, PillTone>;
+const statusTone = { open: "neutral", "under-revision": "amber", solved: "green" } as const satisfies Record<ProblemStatus, PillTone>;
 
 export default function ProblemsAdminPage({ searchParams }: PageProps<"/admin/problems">) {
   return (

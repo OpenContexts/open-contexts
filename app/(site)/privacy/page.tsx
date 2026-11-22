@@ -10,8 +10,9 @@ import { SITE } from "@/lib/site";
 export const metadata: Metadata = { title: "Privacy policy" };
 
 // The information Art. 13 GDPR asks for, for what the site actually does: hosting on Vercel, the database at
-// Neon in Frankfurt, accounts (email, GitHub, ORCID) through Better Auth, emails over SMTP, no tracking. Keep it
-// in step with the code: a new service, cookie or kind of stored data belongs here, with a new `privacyUpdated`.
+// Neon in Frankfurt, accounts (email, GitHub, ORCID) through Better Auth with Vercel BotID on the email forms,
+// emails over SMTP, cookieless page statistics with Vercel Web Analytics (components/layout/analytics.tsx). Keep it in step with the code: a new service, cookie or kind of stored data
+// belongs here, with a new `privacyUpdated`.
 export default function PrivacyPage() {
   const { operator } = LEGAL;
   // GitHub is named only while GitHub sign-in is switched on (GITHUB_CLIENT_ID); ORCID always.
@@ -23,8 +24,9 @@ export default function PrivacyPage() {
       <PageTitle>Privacy policy</PageTitle>
       <p>
         This policy explains which personal data {SITE.name} processes, why, on what legal basis, and what rights you
-        have. In short: reading the site requires no account and sets no cookies beyond what the hosting needs; we
-        use no analytics, no advertising and no tracking. If you create an account, we store what the account and
+        have. In short: reading the site requires no account and sets no cookies; we count page views without
+        cookies and without telling visitors apart over time, and use no advertising and no tracking across sites. If
+        you create an account, we store what the account and
         your contributions need, and show your name with what you publish.
       </p>
 
@@ -56,12 +58,23 @@ export default function PrivacyPage() {
       </p>
       <p>
         The fonts and the software that typesets mathematics are served from our own site. Pages load nothing from
-        other providers, so no other provider learns that you visited them. Links to papers and other websites
-        lead you there only when you follow them.
+        other providers, so no other provider learns that you visited them; the only additions are Vercel&apos;s
+        page statistics (below) and its bot protection when you send one of the email sign-in forms (section 4).
+        Links to papers and other websites lead you there only when you follow them.
+      </p>
+      <p>
+        <strong>Page statistics.</strong> To learn which pages are read and how the site is found, we use Vercel Web
+        Analytics. When a page opens, a script served from our own address sends Vercel the address of the page
+        (without the part after a question mark), the referring page, and the type of browser, operating system and
+        device; Vercel derives the country from your IP address. It sets no cookies and stores nothing in your
+        browser. To count a visit only once, Vercel forms a pseudonymous value from the request, which it discards
+        after 24 hours, so visitors cannot be recognized across days or sites. We see only totals. The legal basis
+        is our legitimate interest in knowing how the site is used, to improve it (Art. 6(1)(f) GDPR); you can
+        object (section 9), or block the script in your browser. Vercel processes the data on our behalf, as above.
       </p>
 
       <SectionTitle>3. Cookies and storage in your browser</SectionTitle>
-      <p>We use no cookies for analytics, advertising or tracking, and so ask for no consent to them. We only use:</p>
+      <p>We use no cookies for statistics, advertising or tracking, and so ask for no consent to them. We only use:</p>
       <ul>
         <li>
           a <strong>session cookie</strong> once you sign in, which keeps you signed in. It holds a random token and
@@ -108,6 +121,16 @@ export default function PrivacyPage() {
         researchers, which is why sign-up by email asks for the address of a university or research institute.
         Your name is shown with what you publish; your email address is never shown on the site and is seen only by
         the moderators and administrators.
+      </p>
+      <p>
+        <strong>Protection against bots.</strong> When you sign in, create an account or ask for a new password with
+        your email address, Vercel&apos;s bot protection (Vercel BotID, which Vercel runs with its partner Kasada)
+        checks that a person, not an automated program, sent the form. For that request only, a script loaded
+        through our own address runs in your browser and sends Vercel technical characteristics of the browser and
+        device; there is no puzzle to solve. Requests it judges automated are refused. The legal basis is our
+        legitimate interest in protecting accounts against automated attacks such as password guessing and mass
+        sign-ups (Art. 6(1)(f) GDPR); reading these characteristics from your device is strictly necessary for the
+        sign-in you asked for (§ 25(2) no. 2 TDDDG). Vercel processes the data on our behalf (section 2).
       </p>
 
       <SectionTitle>5. Emails</SectionTitle>

@@ -23,7 +23,7 @@ import {
 import { nextProblemNumber, slugify, today, uniqueSlug, withdrawalEntry } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
-import { activityLog, blogPost, comment, contribution, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
+import { activityLog, blogPost, comment, contribution, type HistoryEntry, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
 import { withKeys } from "@/lib/references";
 
 const decisionSchema = z.object({
@@ -133,19 +133,43 @@ async function citeReference(problemId: string, ref: Reference, change: "add" | 
  * An accepted contribution is recorded in its problem's "Progress and history", as the kind of entry its kind
  * makes (CONTRIBUTION_HISTORY_KINDS), linked by its key, which shows who made it. Reopening it takes the entry out
  * again; accepting it again puts it back with the new date. Returns undefined when the history stays as it is.
+ *
+ * A problem has one claimed solution at a time. Accepting a claim on an open problem puts the problem under
+ * revision, with one status entry for both; reopening that claim while the problem is still under revision puts it
+ * back to open. A claim accepted once the problem is no longer open (another claim was accepted while it waited) is
+ * accepted as an independent solution.
  */
 async function recordInHistory(contributionId: string, key: string, change: "add" | "remove") {
   const row = await db.query.contribution.findFirst({ where: eq(contribution.id, contributionId), columns: { problemId: true, kind: true, title: true, withdrawnAt: true } });
-  const kind = row && CONTRIBUTION_HISTORY_KINDS[row.kind];
-  const current = kind ? await readProblem(row.problemId) : undefined;
-  if (!row || !kind || !current) return undefined;
+  const current = row && CONTRIBUTION_HISTORY_KINDS[row.kind] ? await readProblem(row.problemId) : undefined;
+  if (!row || !current) return undefined;
+  const own = current.history.filter((h) => h.contribution === key);
   const others = current.history.filter((h) => h.contribution !== key);
-  if (change === "remove" && others.length === current.history.length) return undefined;
-  const label = CONTRIBUTION_KIND_LABELS[row.kind].replace(/^./, (c) => c.toUpperCase());
+  if (change === "remove") {
+    if (!own.length) return undefined;
+    const reopens = current.status === "under-revision" && own.some((h) => h.kind === "status" && h.status === "under-revision");
+    const status = reopens ? { status: "open" as const, version: sql`${problem.version} + 1`, updatedAt: new Date() } : {};
+    return { queries: [db.update(problem).set({ history: others, ...status }).where(eq(problem.id, row.problemId))] };
+  }
+  const claims = row.kind === "claim" && !row.withdrawnAt;
+  const kind = claims && current.status !== "open" ? "independent" : row.kind;
+  const revises = claims && current.status === "open";
+  const label = CONTRIBUTION_KIND_LABELS[kind].replace(/^./, (c) => c.toUpperCase());
+  const text = `${label}: ${row.title}`;
+  const entry: HistoryEntry = revises ? { date: today(), kind: "status", status: "under-revision", text, contribution: key } : { date: today(), kind: CONTRIBUTION_HISTORY_KINDS[kind]!, text, contribution: key };
   // A result withdrawn by its authors and accepted again keeps the record of the withdrawal.
-  const withdrawal = row.withdrawnAt ? [withdrawalEntry({ ...row, withdrawnAt: row.withdrawnAt }, key)] : [];
-  const history = change === "add" ? [...others, { date: today(), kind, text: `${label}: ${row.title}`, contribution: key }, ...withdrawal] : others;
-  return { queries: [db.update(problem).set({ history, ...(change === "add" && { updatedAt: new Date() }) }).where(eq(problem.id, row.problemId))] };
+  const withdrawal = row.withdrawnAt ? [withdrawalEntry({ ...row, kind, withdrawnAt: row.withdrawnAt }, key)] : [];
+  // A change of status starts no version of the text, but counts as a change, so an editor open meanwhile cannot save over it.
+  const status = revises ? { status: "under-revision" as const, version: sql`${problem.version} + 1` } : {};
+  return {
+    queries: [
+      db
+        .update(problem)
+        .set({ history: [...others, entry, ...withdrawal], ...status, updatedAt: new Date() })
+        .where(eq(problem.id, row.problemId)),
+      ...(kind !== row.kind ? [db.update(contribution).set({ kind }).where(eq(contribution.id, contributionId))] : []),
+    ],
+  };
 }
 
 /** Approving a proposal creates the problem, with the next free number, its first version and its key. */

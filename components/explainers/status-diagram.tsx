@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 
 const STATES = [
   { label: "open", className: "border-brand text-brand bg-brand-tint" },
-  { label: "under revision", className: "border-info text-info bg-info-tint" },
+  { label: "under revision", className: "border-gold text-gold-dark bg-gold-tint" },
   { label: "solved", className: "border-success text-success bg-success-tint" },
 ];
 
