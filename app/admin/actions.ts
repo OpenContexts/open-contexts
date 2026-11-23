@@ -5,7 +5,16 @@ import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, requireModerator } from "@/lib/auth/session";
-import { CONTRIBUTION_HISTORY_KINDS, CONTRIBUTION_KIND_LABELS, MODERATION_ACTIONS, type ModerationAction, SUBMISSION_TYPES, type SubmissionType } from "@/lib/constants";
+import {
+  canDecideQuickly,
+  CONTRIBUTION_HISTORY_KINDS,
+  CONTRIBUTION_KIND_LABELS,
+  type ContributionKind,
+  MODERATION_ACTIONS,
+  type ModerationAction,
+  SUBMISSION_TYPES,
+  type SubmissionType,
+} from "@/lib/constants";
 import { BLOG_TAG } from "@/lib/data/blog";
 import { COUNTS_TAG, communityTag } from "@/lib/data/community";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
@@ -196,7 +205,7 @@ async function publishProposal(id: string, problemId: string) {
 }
 
 /** The submission's status; `pages`: the problem pages that show it once approved; `reference`: what an approved reference adds to its problem. */
-async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; reference?: Reference; withdrawn?: boolean } | undefined> {
+async function currentState(type: SubmissionType, id: string): Promise<{ status: Review["status"]; pages: string[]; kind?: ContributionKind; reference?: Reference; withdrawn?: boolean } | undefined> {
   const columns = { status: true } as const;
   switch (type) {
     case "comment": {
@@ -208,7 +217,7 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
       const row = await db.query.contribution.findFirst({ where: eq(contribution.id, id), columns: { ...columns, problemId: true, kind: true, title: true, url: true, withdrawnAt: true } });
       // Only references with a link are cited on the problem; without one they stay a contribution.
       const reference = row?.kind === "reference" && row.url ? { text: row.title, url: row.url } : undefined;
-      return row && { status: row.status, pages: [row.problemId], reference, withdrawn: !!row.withdrawnAt };
+      return row && { status: row.status, pages: [row.problemId], kind: row.kind, reference, withdrawn: !!row.withdrawnAt };
     }
     // Edits and proposals change the problems themselves, which are cached under the "problems" tag.
     case "revision": {
@@ -233,12 +242,14 @@ async function currentState(type: SubmissionType, id: string): Promise<{ status:
  * Approve, reject or reopen one submission; the decision is logged in the same transaction.
  * Returns false if the submission is gone or was already decided (e.g. by another moderator).
  */
-async function applyDecision(formData: FormData): Promise<{ type: SubmissionType; action: ModerationAction; applied: boolean }> {
+async function applyDecision(formData: FormData, { quick = false } = {}): Promise<{ type: SubmissionType; action: ModerationAction; applied: boolean }> {
   const moderator = await requireModerator();
   const { type, id, action, note } = decisionSchema.parse(Object.fromEntries(formData));
 
   const current = await currentState(type, id);
   if (!current || (action === "reopen") !== (current.status !== "pending")) return { type, action, applied: false };
+  // From the queue list only what can be judged there (canDecideQuickly); results are read on the review page.
+  if (quick && !canDecideQuickly(type, current.kind)) return { type, action, applied: false };
   // Its author took it back before anyone decided on it.
   if (current.withdrawn && current.status === "pending") return { type, action, applied: false };
   // Approved edits and proposals have changed the problem itself; undo those in the problem editor.
@@ -289,7 +300,7 @@ export async function decide(formData: FormData) {
 
 /** From the queue list: decide without leaving the list, which re-renders without the item. */
 export async function quickDecide(formData: FormData) {
-  await applyDecision(formData);
+  await applyDecision(formData, { quick: true });
   refresh();
 }
 

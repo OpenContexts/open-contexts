@@ -39,6 +39,9 @@ export default async function HomePage() {
           <ButtonLink href="#how-it-works" variant="secondary">
             How it works ↓
           </ButtonLink>
+          <ButtonLink href="/progress" variant="secondary">
+            See progress
+          </ButtonLink>
         </p>
       </section>
 

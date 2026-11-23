@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { UserActions } from "@/components/admin/user-controls";
-import { AdminButton, AdminInput, adminButtonStyles, Avatar, Card, EmptyState, PageHeader, Pill, RolePill, Segmented, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
+import { AdminButton, AdminInput, Avatar, Card, EmptyState, PageHeader, Pager, pageParam, Pill, RolePill, Segmented, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/auth/session";
 import { listUsers, USER_FILTERS, USER_FILTER_LABELS, USERS_PER_PAGE, type UserFilter, type UserRow } from "@/lib/data/users";
-import { formatDate, plural } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "Users" };
@@ -35,7 +35,7 @@ async function Users({ searchParams }: Pick<PageProps<"/admin/users">, "searchPa
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const filter = USER_FILTERS.find((f) => f === one(raw.filter)) ?? "all";
   const query = one(raw.q).trim().slice(0, 100);
-  const page = Math.max(1, Math.floor(Number(one(raw.page))) || 1);
+  const page = pageParam(raw.page);
   const { users, total, pages } = await listUsers({ filter, query, page });
   const params: Params = { filter, query, page };
 
@@ -72,20 +72,7 @@ async function Users({ searchParams }: Pick<PageProps<"/admin/users">, "searchPa
               ))}
             </TBody>
           </Table>
-          <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 px-5 py-3 text-xs text-zinc-500">
-            <span className="tabular-nums">
-              {(page - 1) * USERS_PER_PAGE + 1}–{(page - 1) * USERS_PER_PAGE + users.length} of {plural(total, "user")}
-            </span>
-            {pages > 1 && (
-              <nav aria-label="Pages" className="flex items-center gap-2">
-                <PageLink to={page > 1 ? href({ ...params, page: page - 1 }) : undefined}>← Previous</PageLink>
-                <span className="text-xs tabular-nums">
-                  Page {page} of {pages}
-                </span>
-                <PageLink to={page < pages ? href({ ...params, page: page + 1 }) : undefined}>Next →</PageLink>
-              </nav>
-            )}
-          </footer>
+          <Pager page={page} pages={pages} total={total} shown={users.length} perPage={USERS_PER_PAGE} noun={["user"]} href={(p) => href({ ...params, page: p })} className="border-t border-zinc-100" />
         </Card>
       ) : (
         <EmptyState
@@ -135,18 +122,5 @@ function UserTableRow({ user, self }: { user: UserRow; self: boolean }) {
       </Td>
       <Td className="py-2 text-right">{!self && <UserActions user={user} />}</Td>
     </Tr>
-  );
-}
-
-function PageLink({ to, children }: { to?: string; children: React.ReactNode }) {
-  const styles = adminButtonStyles({ size: "sm" });
-  return to ? (
-    <Link href={to} className={styles}>
-      {children}
-    </Link>
-  ) : (
-    <span aria-disabled className={cn(styles, "pointer-events-none opacity-40")}>
-      {children}
-    </span>
   );
 }

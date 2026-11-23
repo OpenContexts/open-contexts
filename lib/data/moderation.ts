@@ -1,8 +1,8 @@
 // Reads for the admin dashboard. Callers must have checked requireModerator().
 import "server-only";
-import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { connection } from "next/server";
-import { type AiUse, type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
+import { type ContributionKind, type LogTargetType, type ModerationStatus, type SubmissionType } from "@/lib/constants";
 import { getPermalinkKeys } from "@/lib/data/permalinks";
 import { getProblems, problemLabel } from "@/lib/data/problems";
 import { db } from "@/lib/db";
@@ -30,32 +30,105 @@ type Author = { id: string | null; name: string; email: string; role: string | n
 /** Edits, proposals and blog posts outlive their author's account (author_id is set to null). */
 const DELETED_AUTHOR: Author = { id: null, name: "Deleted account", email: "—", role: null, banned: null };
 
-/** Full rows with their author, per submission type. */
-async function findMany(type: SubmissionType, status: ModerationStatus, limit: number) {
+/** Submissions per page in the queue lists. */
+export const QUEUE_PER_PAGE = 25;
+
+/** The submissions of one type with this status, in the order the queue lists them. */
+function whereStatus(type: SubmissionType, status: ModerationStatus) {
+  switch (type) {
+    case "comment":
+      return eq(comment.status, status);
+    case "contribution":
+      return waitingContributions(status);
+    case "revision":
+      return eq(problemRevision.status, status);
+    case "proposal":
+      return eq(problemProposal.status, status);
+    case "post":
+      return eq(blogPost.status, status);
+  }
+}
+
+const TABLES = { comment, contribution, revision: problemRevision, proposal: problemProposal, post: blogPost } as const;
+
+/**
+ * One page of rows with their author, per submission type: only the columns the lists show. Contributions are
+ * listed by title, kind and problem; their text is read on the review page.
+ */
+async function findPage(type: SubmissionType, status: ModerationStatus, page: number) {
   // Pending work is handled oldest first; decided items are browsed newest first.
   const order = status === "pending" ? asc : desc;
+  const where = whereStatus(type, status);
+  const window = { limit: QUEUE_PER_PAGE, offset: (page - 1) * QUEUE_PER_PAGE };
+  const name = { columns: { name: true, email: true } } as const;
   switch (type) {
     case "comment":
       return {
         type,
-        rows: await db.query.comment.findMany({ where: eq(comment.status, status), with: { author, contribution: { columns: { title: true } } }, orderBy: order(comment.createdAt), limit }),
+        rows: await db.query.comment.findMany({
+          where,
+          columns: { id: true, body: true, parentId: true, problemId: true, postId: true, contributionId: true, createdAt: true },
+          with: { author: name, contribution: { columns: { title: true } } },
+          orderBy: [order(comment.createdAt), order(comment.id)],
+          ...window,
+        }),
       };
     case "contribution":
-      return { type, rows: await db.query.contribution.findMany({ where: waitingContributions(status), with: { author }, orderBy: order(contribution.createdAt), limit }) };
+      return {
+        type,
+        rows: await db.query.contribution.findMany({
+          where,
+          columns: { id: true, title: true, kind: true, problemId: true, createdAt: true },
+          with: { author: name },
+          orderBy: [order(contribution.createdAt), order(contribution.id)],
+          ...window,
+        }),
+      };
     case "revision":
-      return { type, rows: await db.query.problemRevision.findMany({ where: eq(problemRevision.status, status), with: { author }, orderBy: order(problemRevision.createdAt), limit }) };
+      return {
+        type,
+        rows: await db.query.problemRevision.findMany({
+          where,
+          columns: { id: true, changeSummary: true, title: true, problemId: true, createdAt: true },
+          with: { author: name },
+          orderBy: [order(problemRevision.createdAt), order(problemRevision.id)],
+          ...window,
+        }),
+      };
     case "proposal":
-      return { type, rows: await db.query.problemProposal.findMany({ where: eq(problemProposal.status, status), with: { author }, orderBy: order(problemProposal.createdAt), limit }) };
+      return {
+        type,
+        rows: await db.query.problemProposal.findMany({
+          where,
+          columns: { id: true, title: true, statement: true, problemId: true, createdAt: true },
+          with: { author: name },
+          orderBy: [order(problemProposal.createdAt), order(problemProposal.id)],
+          ...window,
+        }),
+      };
     case "post":
-      return { type, rows: await db.query.blogPost.findMany({ where: eq(blogPost.status, status), with: { author }, orderBy: order(blogPost.createdAt), limit }) };
+      return {
+        type,
+        rows: await db.query.blogPost.findMany({
+          where,
+          columns: { id: true, title: true, body: true, slug: true, status: true, createdAt: true },
+          with: { author: name },
+          orderBy: [order(blogPost.createdAt), order(blogPost.id)],
+          ...window,
+        }),
+      };
     default:
       throw new Error(`Unknown submission type: ${type satisfies never}`);
   }
 }
 
 /** Every blog post with what comments on it need: its title, its page once published, and the references they cite. */
-async function postTargets() {
-  const rows = await db.select({ id: blogPost.id, title: blogPost.title, slug: blogPost.slug, status: blogPost.status, references: blogPost.references }).from(blogPost);
+async function postTargets(ids: string[]) {
+  if (!ids.length) return new Map();
+  const rows = await db
+    .select({ id: blogPost.id, title: blogPost.title, slug: blogPost.slug, status: blogPost.status, references: blogPost.references })
+    .from(blogPost)
+    .where(inArray(blogPost.id, ids));
   return new Map(rows.map((r) => [r.id, r]));
 }
 
@@ -63,13 +136,12 @@ export type QueueItem = {
   id: string;
   title: string;
   excerpt?: string;
-  /** Full markdown text, for deciding straight from the list. */
+  /** Comments: the full markdown text, to decide on straight from the list. */
   body?: string;
-  /** Contributions: what kind of material, how much AI was used, and who is credited. */
+  /** Comments: whether it answers another comment. */
+  reply?: boolean;
+  /** Contributions: what kind of material. */
   kind?: ContributionKind;
-  aiUse?: AiUse;
-  credit?: string;
-  url?: string;
   /** What it belongs to, e.g. "Problem 2: Black hole information", with its public page if it has one. Null for new problems and posts, and when the problem is gone. */
   on: { label: string; href?: string } | null;
   /** What its text cites with \cite{key}: the references of its problem or post. */
@@ -83,24 +155,39 @@ const excerpt = (s: string, n = 140) => {
   return flat.length > n ? `${flat.slice(0, n).trimEnd()}…` : flat;
 };
 
-/** One list shape for every type, for the queue lists. */
-export async function listSubmissions(type: SubmissionType, status: ModerationStatus, limit = 100): Promise<QueueItem[]> {
+/** One page of the queue list for a type, in one shape for every type, with how many there are in all. */
+export async function listSubmissions(type: SubmissionType, status: ModerationStatus, page = 1): Promise<{ items: QueueItem[]; total: number; pages: number }> {
   await connection();
-  const [result, problems, posts] = await Promise.all([findMany(type, status, limit), getProblems(), type === "comment" ? postTargets() : undefined]);
+  const [result, [{ total }], problems] = await Promise.all([
+    findPage(type, status, page),
+    db.select({ total: count() }).from(TABLES[type]).where(whereStatus(type, status)),
+    getProblems(),
+  ]);
   const byId = new Map(problems.map((p) => [p.id, p]));
   const problem = (id: string | null) => {
     const p = id ? byId.get(id) : undefined;
     return { on: p ? { label: problemLabel(p), href: `/problems/${p.slug}` } : null, references: p?.references };
   };
-  const post = (id: string) => {
-    const p = posts?.get(id);
-    return { on: p ? { label: `Blog post: ${p.title}`, href: p.status === "approved" && p.slug ? `/blog/${p.slug}` : undefined } : null, references: p?.references };
-  };
+  const items = await toItems(result, problem);
+  return { items, total, pages: Math.max(1, Math.ceil(total / QUEUE_PER_PAGE)) };
+}
 
+async function toItems(
+  result: Awaited<ReturnType<typeof findPage>>,
+  problem: (id: string | null) => Pick<QueueItem, "on" | "references">,
+): Promise<QueueItem[]> {
+  const author = (a: { name: string; email: string } | null) => a ?? DELETED_AUTHOR;
   switch (result.type) {
     case "comment": {
+      const [keys, posts] = await Promise.all([
+        getPermalinkKeys("contribution", result.rows.flatMap((r) => (r.contributionId ? [r.contributionId] : []))),
+        postTargets(result.rows.flatMap((r) => (r.postId ? [r.postId] : []))),
+      ]);
+      const onPost = (id: string) => {
+        const p = posts.get(id);
+        return { on: p ? { label: `Blog post: ${p.title}`, href: p.status === "approved" && p.slug ? `/blog/${p.slug}` : undefined } : null, references: p?.references };
+      };
       // Comments on a contribution are shown with it, under its permanent link.
-      const keys = await getPermalinkKeys("contribution", result.rows.flatMap((r) => (r.contributionId ? [r.contributionId] : [])));
       const onContribution = (r: (typeof result.rows)[number]) => {
         const { on, references } = problem(r.problemId);
         const key = r.contributionId && keys.get(r.contributionId);
@@ -109,38 +196,26 @@ export async function listSubmissions(type: SubmissionType, status: ModerationSt
       return result.rows.map((r) => ({
         id: r.id,
         title: r.parentId ? "Reply" : "Comment",
-        excerpt: excerpt(r.body),
         body: r.body,
-        ...(r.postId ? post(r.postId) : onContribution(r)),
+        reply: !!r.parentId,
+        ...(r.postId ? onPost(r.postId) : onContribution(r)),
         author: r.author,
         createdAt: r.createdAt,
       }));
     }
     case "contribution":
-      return result.rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        excerpt: excerpt(r.summary),
-        body: r.summary,
-        kind: r.kind,
-        aiUse: r.aiUse,
-        credit: r.credit,
-        url: r.url ?? undefined,
-        ...problem(r.problemId),
-        author: r.author,
-        createdAt: r.createdAt,
-      }));
+      return result.rows.map((r) => ({ id: r.id, title: r.title, kind: r.kind, on: problem(r.problemId).on, author: r.author, createdAt: r.createdAt }));
     case "revision":
-      return result.rows.map((r) => ({ id: r.id, title: r.changeSummary, excerpt: r.title, ...problem(r.problemId), author: r.author ?? DELETED_AUTHOR, createdAt: r.createdAt }));
+      return result.rows.map((r) => ({ id: r.id, title: r.changeSummary, excerpt: r.title, on: problem(r.problemId).on, author: author(r.author), createdAt: r.createdAt }));
     case "proposal":
-      return result.rows.map((r) => ({ id: r.id, title: r.title, excerpt: excerpt(r.statement), ...problem(r.problemId), author: r.author ?? DELETED_AUTHOR, createdAt: r.createdAt }));
+      return result.rows.map((r) => ({ id: r.id, title: r.title, excerpt: excerpt(r.statement), on: problem(r.problemId).on, author: author(r.author), createdAt: r.createdAt }));
     case "post":
       return result.rows.map((r) => ({
         id: r.id,
         title: r.title,
         excerpt: excerpt(r.body),
         on: r.status === "approved" && r.slug ? { label: "Blog post", href: `/blog/${r.slug}` } : null,
-        author: r.author ?? DELETED_AUTHOR,
+        author: author(r.author),
         createdAt: r.createdAt,
       }));
   }
@@ -202,6 +277,24 @@ export async function getRecentActivity(limit = 50) {
     orderBy: desc(activityLog.createdAt),
     limit,
   });
+}
+
+/** Entries per page in the activity log. */
+export const ACTIVITY_PER_PAGE = 50;
+
+/** One page of the activity log, newest first, with how many entries there are in all. */
+export async function getActivityPage(page: number) {
+  await connection();
+  const [rows, [{ total }]] = await Promise.all([
+    db.query.activityLog.findMany({
+      with: { moderator: { columns: { name: true } } },
+      orderBy: [desc(activityLog.createdAt), desc(activityLog.id)],
+      limit: ACTIVITY_PER_PAGE,
+      offset: (page - 1) * ACTIVITY_PER_PAGE,
+    }),
+    db.select({ total: count() }).from(activityLog),
+  ]);
+  return { rows, total, pages: Math.max(1, Math.ceil(total / ACTIVITY_PER_PAGE)) };
 }
 
 /** Where an activity-log entry points to in the dashboard. */

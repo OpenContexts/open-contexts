@@ -31,8 +31,13 @@ export const SUBMISSION_TYPE_NOUNS: Record<SubmissionType, string> = {
   post: "blog post",
 };
 
-/** Simple enough to approve or reject straight from the queue. Edits, new problems and blog posts need the review page. */
-export const QUICK_DECISION_TYPES: readonly SubmissionType[] = ["comment", "contribution"];
+/**
+ * Whether a submission is simple enough to approve or reject straight from the queue: comments, and references
+ * among the contributions. Results, edits, new problems and blog posts need the review page.
+ */
+export function canDecideQuickly(type: SubmissionType, kind?: ContributionKind): boolean {
+  return type === "comment" || (type === "contribution" && kind === "reference");
+}
 
 /** Decisions on submissions. */
 export const MODERATION_ACTIONS = ["approve", "reject", "reopen"] as const;

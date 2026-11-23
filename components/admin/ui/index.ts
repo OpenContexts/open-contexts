@@ -11,3 +11,4 @@ export { Avatar } from "./avatar";
 export { Notice } from "./notice";
 export { Segmented } from "./segmented";
 export { Table, TBody, Td, Th, THead, Tr } from "./table";
+export { Pager, pageParam } from "./pager";

@@ -1,23 +1,32 @@
 import Link from "next/link";
-import { ActionPill, Avatar, Card, EmptyState, PageHeader, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
+import { ActionPill, Avatar, Card, EmptyState, PageHeader, Pager, pageParam, Table, TBody, Td, Th, THead, Tr } from "@/components/admin/ui";
 import { requireModerator } from "@/lib/auth/session";
 import { LOG_TARGET_NOUNS } from "@/lib/constants";
-import { getRecentActivity, logTargetHref } from "@/lib/data/moderation";
+import { ACTIVITY_PER_PAGE, getActivityPage, logTargetHref } from "@/lib/data/moderation";
 import { formatDate, formatRelative } from "@/lib/format";
 
-export default function ActivityPage() {
+const href = (page: number) => (page > 1 ? `/admin/activity?page=${page}` : "/admin/activity");
+
+export default function ActivityPage({ searchParams }: PageProps<"/admin/activity">) {
   return (
     <>
       <PageHeader title="Activity log" description="Every moderation decision and every change to a problem, newest first." />
-      <Activity />
+      <Activity searchParams={searchParams} />
     </>
   );
 }
 
-async function Activity() {
+async function Activity({ searchParams }: Pick<PageProps<"/admin/activity">, "searchParams">) {
   await requireModerator();
-  const decisions = await getRecentActivity(200);
-  if (!decisions.length) return <EmptyState title="No decisions yet" />;
+  const page = pageParam((await searchParams).page);
+  const { rows: decisions, total, pages } = await getActivityPage(page);
+  if (!decisions.length)
+    return (
+      <EmptyState
+        title={total ? "No entries on this page" : "No decisions yet"}
+        description={total ? <Link href={href(1)} className="underline">Back to the first page</Link> : undefined}
+      />
+    );
   return (
     <Card padded={false}>
       <Table>
@@ -59,6 +68,7 @@ async function Activity() {
           ))}
         </TBody>
       </Table>
+      <Pager page={page} pages={pages} total={total} shown={decisions.length} perPage={ACTIVITY_PER_PAGE} noun={["entry", "entries"]} href={href} className="border-t border-zinc-100" />
     </Card>
   );
 }
