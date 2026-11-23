@@ -79,7 +79,8 @@ problem list is empty and the database-backed sections show a setup hint.
 | `pnpm db:push` | Push the schema directly (handy on a throwaway dev branch) |
 | `pnpm db:studio` | Browse the database |
 | `pnpm db:make-admin <email> [role]` | Set a user's role (`admin`, `moderator`, `user`) and mark the account verified |
-| `pnpm update-university-domains` | Refresh the list of university email domains |
+| `pnpm update-university-domains` | Refresh the list of university email domains, and their countries (`lib/geo/university-countries.json`) |
+| `pnpm build-world-map` | Redraw the world map of `/progress` (`lib/geo/world-map.json`) from Natural Earth |
 | `pnpm email:dev` | Preview the email templates in `emails/` at http://localhost:3001 |
 
 ## Project structure

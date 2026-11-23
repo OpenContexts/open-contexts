@@ -5,6 +5,7 @@ import "server-only";
 import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { institutionOf } from "@/lib/auth/institutional";
+import { countryOf } from "@/lib/geo/countries";
 import { BLOG_TAG } from "@/lib/data/blog";
 import { COUNTS_TAG } from "@/lib/data/community";
 import { db, isDbConfigured } from "@/lib/db";
@@ -18,6 +19,10 @@ export type AssessmentFigures = {
   /** Problems on the list with an accepted result, edit or comment, of `problems`. */
   active: number;
   problems: number;
+  /** By country (ISO 3166 alpha-2, countryOf): how many of the researchers, from how many institutions. */
+  countries: Record<string, { researchers: number; institutions: number }>;
+  /** Researchers whose address names no country, so are not on the map. */
+  unplaced: number;
 };
 
 /** The figures for the problems on the list (`problemIds`); recomputed hourly and after moderation decisions. */
@@ -25,7 +30,7 @@ export async function getAssessmentFigures(problemIds: string[]): Promise<Assess
   "use cache";
   cacheLife("hours");
   cacheTag(COUNTS_TAG, "problems", BLOG_TAG);
-  const figures = { researchers: 0, institutions: 0, active: 0, problems: problemIds.length };
+  const figures = { researchers: 0, institutions: 0, active: 0, problems: problemIds.length, countries: {}, unplaced: 0 };
   if (!isDbConfigured()) return figures;
 
   const [comments, contributions, revisions, proposals, posts] = await db.batch([
@@ -44,11 +49,29 @@ export async function getAssessmentFigures(problemIds: string[]): Promise<Assess
         .where(and(inArray(user.id, authors), or(isNull(user.banned), eq(user.banned, false))))
     : [];
   const listed = new Set(problemIds);
+  // Each researcher in the country of their address's institution, each institution counted once there.
+  const institutions = people.map((p) => institutionOf(p.email));
+  const countries: AssessmentFigures["countries"] = {};
+  const seen = new Set<string>();
+  let unplaced = 0;
+  for (const institution of institutions) {
+    const country = institution && countryOf(institution);
+    if (!country) {
+      unplaced++;
+      continue;
+    }
+    const entry = (countries[country] ??= { researchers: 0, institutions: 0 });
+    entry.researchers++;
+    if (!seen.has(institution)) entry.institutions++;
+    seen.add(institution);
+  }
   const active = new Set([...comments, ...contributions, ...revisions].flatMap((r) => (r.problem && listed.has(r.problem) ? [r.problem] : [])));
   return {
     ...figures,
     researchers: people.length,
-    institutions: new Set(people.flatMap((p) => institutionOf(p.email) ?? [])).size,
+    institutions: new Set(institutions.filter((i) => i !== undefined)).size,
     active: active.size,
+    countries,
+    unplaced,
   };
 }

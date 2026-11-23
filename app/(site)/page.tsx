@@ -40,9 +40,6 @@ export default async function HomePage() {
             How it works ↓
           </ButtonLink>
         </p>
-        <p className="mx-auto mt-5 max-w-140 text-sm text-ink-subtle">
-          Companion paper: <PaperTitle />, {SITE.paper.authors} ({SITE.paper.year})
-        </p>
       </section>
 
       <nav aria-label="Counts" className="mt-10 mb-6 flex flex-wrap justify-center gap-x-10 gap-y-2 border-y border-rule-strong py-3">
@@ -133,17 +130,6 @@ export default async function HomePage() {
       )}
 
     </>
-  );
-}
-
-function PaperTitle() {
-  const title = <em>{SITE.paper.title}</em>;
-  return SITE.paper.url ? (
-    <a href={SITE.paper.url} className="text-brand hover:underline">
-      {title}
-    </a>
-  ) : (
-    title
   );
 }
 

@@ -14,6 +14,7 @@
     "db:studio": "drizzle-kit studio",
     "db:make-admin": "tsx scripts/make-admin.ts",
     "update-university-domains": "tsx scripts/update-university-domains.ts",
+    "build-world-map": "tsx scripts/build-world-map.ts",
     "email:dev": "email dev --dir emails --port 3001"
   },
   "dependencies": {
@@ -42,18 +43,27 @@
   "devDependencies": {
     "@react-email/ui": "^6.11.4",
     "@tailwindcss/turbopack": "^4",
+    "@types/d3-geo": "^3.1.1",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-simplify": "^3.0.3",
+    "@types/topojson-specification": "^1.0.5",
+    "d3-geo": "^3.1.2",
     "dotenv": "^18.0.9",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "i18n-iso-countries": "^7.14.0",
     "react-email": "^6.11.4",
     "tailwindcss": "^4",
+    "topojson-client": "^3.1.0",
+    "topojson-simplify": "^3.0.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "world-atlas": "^2.0.2"
   },
   "packageManager": "pnpm@12.5.1"
 }

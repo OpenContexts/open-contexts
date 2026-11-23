@@ -120,7 +120,9 @@ export default function PrivacyPage() {
         details also serve our legitimate interest in the security of accounts (Art. 6(1)(f) GDPR). Accounts are for
         researchers, which is why sign-up by email asks for the address of a university or research institute.
         Your name is shown with what you publish; your email address is never shown on the site and is seen only by
-        the moderators and administrators.
+        the moderators and administrators. From the domains of the addresses of everyone who contributed, the
+        progress page shows totals only: how many contributors and institutions there are, and how many come from
+        each country, never who is from where.
       </p>
       <p>
         <strong>Protection against bots.</strong> When you sign in, create an account or ask for a new password with

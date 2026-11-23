@@ -123,7 +123,26 @@ export default function AboutPage() {
         </Disclosure>
       </Section>
 
-      <Section id="case-study" title="The case study" intro={<>{SITE.name} I runs for one year on a fixed list, and is then assessed publicly.</>}>
+      <Section
+        id="case-study"
+        title="The case study"
+        intro={
+          <>
+            <span className="mb-1.5 block text-sm text-ink-subtle">
+              Companion paper:{" "}
+              {SITE.paper.url ? (
+                <a href={SITE.paper.url} className="text-brand hover:underline">
+                  <em>{SITE.paper.title}</em>
+                </a>
+              ) : (
+                <em>{SITE.paper.title}</em>
+              )}
+              , {SITE.paper.authors} ({SITE.paper.year})
+            </span>
+            {SITE.name} I runs for one year on a fixed list, and is then assessed publicly.
+          </>
+        }
+      >
         <CycleTimeline name={SITE.name} />
         <p className="mx-auto mt-8 max-w-160 text-center text-[0.95rem] text-ink-muted">
           Problems are admitted on four{" "}

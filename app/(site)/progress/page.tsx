@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Section } from "@/components/explainers/section";
 import { MathText } from "@/components/markdown/math-text";
 import { StatusBadge, StatusIcon } from "@/components/problems/status";
+import { ContributorMap } from "@/components/progress/contributor-map";
 import { StatusChart } from "@/components/progress/status-chart";
 import { PageTitle } from "@/components/ui";
 import { cn } from "@/lib/cn";
@@ -69,6 +70,10 @@ export default async function ProgressPage() {
               <Pace value={pace.toClaim.median} label="days from listing to a first claimed solution" count={pace.toClaim.count} />
               <Pace value={pace.toSolved.median} label="days from a claimed solution to solved" count={pace.toSolved.count} />
             </div>
+          </Section>
+
+          <Section title="Where the contributors are" intro="Each researcher who contributed counts in the country of their institution, as their email address gives it.">
+            <ContributorMap countries={figures.countries} unplaced={figures.unplaced} />
           </Section>
 
           <Section title="The first year" intro={<>{SITE.name} is assessed publicly after one year, against targets fixed in advance.</>}>
@@ -159,7 +164,7 @@ function TargetBars({ figures: f, className }: { figures: AssessmentFigures; cla
   const share = f.problems ? Math.round((100 * f.active) / f.problems) : 0;
   const targets = [
     { value: f.researchers, goal: 50, figure: `${f.researchers}`, target: "≥ 50", label: "researchers contributed" },
-    { value: f.institutions, goal: 10, figure: `${f.institutions}`, target: "≥ 10", label: "institutions took part", note: "to the best of our knowledge" },
+    { value: f.institutions, goal: 10, figure: `${f.institutions}`, target: "≥ 10", label: "institutions took part", note: "which we know for sure." },
     { value: share, goal: 50, figure: `${share} %`, target: "≥ 50 %", label: "of the problems got a submission or comment", note: `${f.active} of ${plural(f.problems, "problem")}` },
   ];
   return (
