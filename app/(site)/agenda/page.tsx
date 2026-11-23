@@ -18,7 +18,7 @@ export default async function AgendaPage() {
       <p className="mx-auto mb-4 max-w-140 text-center text-ink-muted">
         Three long-term goals organize the list, and every problem traces to at least one of them. They are provisional,
         and objections are welcome (see{" "}
-        <Link href="/about#cycles" className="text-brand hover:underline">
+        <Link href="/about#case-study" className="text-brand hover:underline">
           About
         </Link>
         ). Click a golden branch to read about its goal.

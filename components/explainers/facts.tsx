@@ -52,13 +52,13 @@ export function AssessmentTargets({ className }: { className?: string }) {
   );
 }
 
-/** The first cycle on a line: a fixed list, a year of work, a public assessment, the next cycle. */
+/** The case study on a line: a fixed list, a year of work, a public assessment, and what follows. */
 export function CycleTimeline({ name }: { name: string }) {
   const steps = [
     { title: `${name} I`, text: "A fixed list of problems" },
     { title: "One year", text: "Work, contributions, discussion" },
     { title: "Assessment", text: "A public white paper, failures included" },
-    { title: "Next cycle", text: "Revised rules, additional problems" },
+    { title: "Afterwards", text: "Revised rules, additional problems" },
   ];
   return (
     <ol className="relative grid gap-4 sm:grid-cols-4">

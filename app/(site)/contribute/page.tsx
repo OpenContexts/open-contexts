@@ -109,13 +109,13 @@ export default function ContributePage() {
           <ButtonLink href="/contribute/new-problem">Propose a new problem</ButtonLink>
         </p>
         <p className="mx-auto mt-3 max-w-140 text-center text-sm text-ink-subtle">
-          The list of the first cycle is fixed: accepted proposals become{" "}
+          The list of the case study is fixed: accepted proposals become{" "}
           <Link href="/additional-problems" className="text-brand hover:underline">
             additional problems
           </Link>
           , open for contributions like any other (see{" "}
-          <Link href="/about#cycles" className="text-brand hover:underline">
-            the cycles
+          <Link href="/about#case-study" className="text-brand hover:underline">
+            the case study
           </Link>
           ).
         </p>

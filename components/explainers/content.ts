@@ -14,7 +14,7 @@ export const PRINCIPLES: TileItem[] = [
 export const FEATURES: TileItem[] = [
   { icon: "◔", title: "Live status", text: "Open, under revision or solved, updated as work proceeds." },
   { icon: "∴", title: "Partial advances", text: "Attempts, partial and negative results, evidence: nothing is lost." },
-  { icon: "≈", title: "Unpolished material", text: "Incomplete proofs and rough computations are welcome, marked as provisional." },
+  { icon: "≈", title: "Unpolished material", text: "Incomplete proofs and rough computations are welcome." },
   { icon: "⟲", title: "Revision and digestion", text: "Others inspect, verify, explain or challenge each claim in the open." },
   { icon: "✎", title: "Contribution tracking", text: "Every entry records who did what, with a permanent link to cite." },
   { icon: "↗", title: "Result updates", text: "Entries stay open after publication: corrections, simpler proofs, follow-ups." },

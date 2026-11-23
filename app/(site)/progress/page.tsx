@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
-import { AssessmentTargets } from "@/components/explainers/facts";
 import { Section } from "@/components/explainers/section";
 import { MathText } from "@/components/markdown/math-text";
 import { StatusBadge, StatusIcon } from "@/components/problems/status";
 import { StatusChart } from "@/components/progress/status-chart";
 import { PageTitle } from "@/components/ui";
+import { cn } from "@/lib/cn";
 import { PROBLEM_STATUS_LABELS, PROBLEM_STATUSES, type ProblemStatus } from "@/lib/constants";
 import type { Problem } from "@/lib/data/problems";
 import { getPublishedProblems } from "@/lib/data/problems";
+import { type AssessmentFigures, getAssessmentFigures } from "@/lib/data/assessment";
 import { paceFigures, statusTimeline } from "@/lib/data/progress";
-import { formatDate, plural } from "@/lib/format";
+import { aoeDate, formatDate, plural } from "@/lib/format";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Progress", description: "How the statuses of the open problems have changed over time." };
@@ -28,10 +29,11 @@ export default async function ProgressPage() {
   cacheLife("days");
   cacheTag("problems");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = aoeDate();
   const problems = await getPublishedProblems();
   const rows = statusTimeline(problems, today);
   const pace = paceFigures(problems, today);
+  const figures = await getAssessmentFigures(problems.map((p) => p.id));
 
   return (
     <>
@@ -69,12 +71,12 @@ export default async function ProgressPage() {
             </div>
           </Section>
 
-          <Section title="The first year" intro={<>{SITE.name} I is assessed publicly after one year, against targets fixed in advance.</>}>
+          <Section title="The first year" intro={<>{SITE.name} is assessed publicly after one year, against targets fixed in advance.</>}>
             <YearBar start={rows[0].date} today={today} />
-            <AssessmentTargets className="mt-6" />
+            <TargetBars figures={figures} className="mt-6" />
             <p className="mt-3 text-center text-sm">
-              <Link href="/about#cycles" className="text-brand hover:underline">
-                About the first cycle →
+              <Link href="/about#case-study" className="text-brand hover:underline">
+                About the case study →
               </Link>
             </p>
           </Section>
@@ -146,6 +148,48 @@ function Pace({ value, label, count }: { value: number | null; label: string; co
       <span className="block text-[0.95rem] text-ink-muted">median {label}</span>
       <span className="block text-sm text-ink-subtle">{count ? `over ${plural(count, "problem")}` : "none yet"}</span>
     </div>
+  );
+}
+
+/**
+ * The targets of the one-year assessment, fixed in advance in the companion paper, each with where it stands: a bar
+ * that fills towards the target, and turns green once it is reached.
+ */
+function TargetBars({ figures: f, className }: { figures: AssessmentFigures; className?: string }) {
+  const share = f.problems ? Math.round((100 * f.active) / f.problems) : 0;
+  const targets = [
+    { value: f.researchers, goal: 50, figure: `${f.researchers}`, target: "≥ 50", label: "researchers contributed" },
+    { value: f.institutions, goal: 10, figure: `${f.institutions}`, target: "≥ 10", label: "institutions took part", note: "to the best of our knowledge" },
+    { value: share, goal: 50, figure: `${share} %`, target: "≥ 50 %", label: "of the problems got a submission or comment", note: `${f.active} of ${plural(f.problems, "problem")}` },
+  ];
+  return (
+    <ul className={cn("mx-auto grid max-w-170 gap-3 sm:grid-cols-3", className)}>
+      {targets.map((t) => {
+        const reached = t.value >= t.goal;
+        return (
+          <li key={t.label} className="flex flex-col rounded-md border border-rule-strong px-4 py-3">
+            <p className="flex items-baseline justify-between gap-2">
+              <strong className="text-[1.6rem] leading-tight tabular-nums">{t.figure}</strong>
+              <span className={cn("font-sans text-xs font-bold whitespace-nowrap", reached ? "text-success" : "text-ink-subtle")}>
+                {reached && "✓ "}target {t.target}
+              </span>
+            </p>
+            <span className="text-[0.95rem]/snug text-ink-muted">{t.label}</span>
+            <span
+              className="mt-auto block pt-3"
+              role="img"
+              aria-label={`${t.figure} ${t.label}, target ${t.target}${reached ? ", reached" : ""}`}
+            >
+              <span className="block h-2 overflow-hidden rounded-full bg-rule">
+                <span className={cn("block h-full rounded-full", reached ? "bg-success" : "bg-gold")} style={{ width: `${Math.min(100, (100 * t.value) / t.goal)}%` }} />
+              </span>
+            </span>
+            {/* Always there, so the bars line up whether or not a note follows. */}
+            <span className="mt-1 min-h-4 text-xs text-ink-subtle">{t.note}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

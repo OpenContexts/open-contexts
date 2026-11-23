@@ -3,6 +3,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  boolean,
   check,
   index,
   integer,
@@ -67,6 +68,8 @@ export const blogPost = pgTable(
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
     /** The post's date: when it was first approved. */
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    /** The one post the home page shows, chosen by the moderators; at most one is set (setFeaturedPost). */
+    featured: boolean("featured").default(false).notNull(),
     ...moderation(),
     ...timestamps(),
   },

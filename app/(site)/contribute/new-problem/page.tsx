@@ -20,7 +20,7 @@ export default async function NewProblemPage() {
           <Link href="/contribute#curation-criteria" className="text-brand hover:underline">
             curation criteria
           </Link>
-          . The list for the first cycle is fixed, so new problems are kept for consideration in the next one.
+          . The list of the case study is fixed, so new problems are kept as additional problems.
         </p>
       }
     >

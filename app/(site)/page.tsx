@@ -3,19 +3,20 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { PostList } from "@/components/blog/post-list";
 import { GoalDiagram } from "@/components/explainers/goal-diagram";
-import { FEATURES } from "@/components/explainers/content";
 import { Figure } from "@/components/explainers/figure";
-import { Tiles } from "@/components/explainers/tiles";
+import { FeatureExplorer } from "@/components/explainers/feature-explorer";
 import { WorkflowFigure } from "@/components/explainers/workflow-figure";
 import { ProblemBox } from "@/components/problems/problem-box";
 import { ProblemList } from "@/components/problems/problem-list";
 import { Button, ButtonLink, Input, SectionTitle } from "@/components/ui";
-import { getPosts } from "@/lib/data/blog";
+import { featuredPost, getPosts } from "@/lib/data/blog";
 import { getPublishedProblems } from "@/lib/data/problems";
 import { SITE } from "@/lib/site";
 
 export default async function HomePage() {
   const [problems, posts] = await Promise.all([getPublishedProblems(), getPosts()]);
+  // The one post the moderators chose for the home page (or the newest, while none is chosen).
+  const post = featuredPost(posts);
   const open = problems.filter((p) => p.status === "open");
 
   await connection(); // a new pick per request, never one frozen into a prerender
@@ -114,7 +115,7 @@ export default async function HomePage() {
       </Figure>
 
       <SectionTitle>V. What the database records</SectionTitle>
-      <Tiles items={FEATURES} columns={3} />
+      <FeatureExplorer />
       <p className="mt-6 text-center">
         <ButtonLink href="/contribute" variant="secondary">
           How to contribute →
@@ -122,21 +123,15 @@ export default async function HomePage() {
       </p>
 
       <SectionTitle>VI. From the blog</SectionTitle>
-      <p className="mx-auto -mt-2 mb-4 max-w-160 text-center text-ink-muted">
-        Informal posts by the community. Anyone can{" "}
-        <Link href="/blog/new" className="text-brand hover:underline">
-          write one
-        </Link>
-        .
-      </p>
-      <PostList posts={posts.slice(0, 3)} empty="No posts yet." />
+      <PostList posts={post ? [post] : []} featured={post?.featured ? "Featured post" : "Latest post"} empty="No posts yet." />
       {posts.length > 0 && (
-        <p className="mt-2 text-right text-sm">
+        <p className="-mt-3 text-right text-sm">
           <Link href="/blog" className="text-brand hover:underline">
             All posts →
           </Link>
         </p>
       )}
+
     </>
   );
 }

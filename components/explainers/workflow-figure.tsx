@@ -69,7 +69,7 @@ export function WorkflowFigure() {
   const [selected, setSelected] = useState<PartId | null>(null);
   const select = (id: PartId) => setSelected((s) => (s === id ? null : id));
   return (
-    <div>
+    <div className="mx-auto max-w-190">
       <p className="mb-1 text-right font-sans text-xs text-ink-subtle max-sm:text-center">
         <span aria-hidden className="mr-1 inline-flex size-4 items-center justify-center rounded-full bg-ink font-bold text-paper">
           i
@@ -159,7 +159,7 @@ function Box({ x, y, w, h, label, tone, size = 24 }: { x: number; y: number; w: 
   return (
     <>
       <rect className="ring fill-none stroke-transparent" x={x - 6} y={y - 6} width={w + 12} height={h + 12} rx={12} strokeWidth={2} />
-      <rect x={x} y={y} width={w} height={h} rx={8} strokeWidth={2.5} className={tone === "gold" ? "fill-gold stroke-gold-dark" : "fill-brand-strong stroke-brand-dark"} />
+      <rect x={x} y={y} width={w} height={h} rx={8} strokeWidth={2.5} className={tone === "gold" ? "fill-gold stroke-[#804000]" : "fill-brand-strong stroke-brand-dark"} />
       {lines.map((line, i) => (
         <text
           key={line}
@@ -191,6 +191,16 @@ function Markers({ ids }: { ids: string }) {
       <marker id={`${ids}-feed`} viewBox="0 0 10 10" refX={6} refY={5} markerWidth={3.6} markerHeight={3.6} orient="auto-start-reverse">
         <path d="M0 0L10 5L0 10z" className="fill-gold-dark" />
       </marker>
+      {/* A light rim around the illustrations, whose dark lines would otherwise sink into a dark page; none on a light one. */}
+      <filter id={`${ids}-rim`} x="-10%" y="-10%" width="120%" height="120%">
+        <feMorphology in="SourceAlpha" operator="dilate" radius={1.4} result="grown" />
+        <feFlood style={{ floodColor: "light-dark(transparent, #cfcac0)" }} />
+        <feComposite in2="grown" operator="in" result="rim" />
+        <feMerge>
+          <feMergeNode in="rim" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
     </defs>
   );
 }
@@ -200,8 +210,8 @@ function Arrow({ d, dashed, ids }: { d: string; dashed?: boolean; ids: string })
 }
 
 /** One of the paper's illustrations (public/figures), placed in the drawing's units; `w` and `h` keep its proportions. */
-function Illustration({ name, x, y, w, h }: { name: string; x: number; y: number; w: number; h: number }) {
-  return <image href={`/figures/${name}.webp`} x={x} y={y} width={w} height={h} aria-hidden />;
+function Illustration({ name, x, y, w, h, ids }: { name: string; x: number; y: number; w: number; h: number; ids: string }) {
+  return <image href={`/figures/${name}.webp`} x={x} y={y} width={w} height={h} filter={`url(#${ids}-rim)`} aria-hidden />;
 }
 
 /** A process arrow in the brown of the paper's drawing: from a gold box into the frame, or out of it. */
@@ -230,25 +240,25 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
 
       {/* Curation, into the frame at "open". */}
       <Hotspot id="curation" {...hot}>
-        <Box x={85} y={82} w={170} h={50} label="Curation" tone="gold" size={27} />
+        <Box x={85} y={82} w={170} h={50} label="Curation" tone="gold" size={21} />
       </Hotspot>
       <Feed ids={W} d="M170 134V170" />
 
       {/* Digestion by people and AI, from above into the step from under revision to solved. */}
-      <Illustration name="researcher-tablet" x={392} y={40} w={70} h={131} />
+      <Illustration name="researcher-tablet" x={392} y={40} w={70} h={131} ids={W} />
       <Hotspot id="digestion" {...hot}>
-        <Box x={500} y={82} w={170} h={50} label="Digestion" tone="gold" size={27} />
+        <Box x={500} y={82} w={170} h={50} label="Digestion" tone="gold" size={21} />
       </Hotspot>
-      <Illustration name="robot-magnifier" x={684} y={62} w={76} h={106} />
+      <Illustration name="robot-magnifier" x={684} y={62} w={76} h={106} ids={W} />
       <Feed ids={W} d="M585 134V170" />
 
       {/* The three states, with the moves forward and the disputes back. */}
       {states.map((s) => (
         <Hotspot key={s.id} id={s.id} {...hot}>
-          <text x={s.x + 85} y={213} textAnchor="middle" fontSize={21} className={cn("font-mono font-bold", STATUS_FILL[s.id])}>
+          <text x={s.x + 85} y={213} textAnchor="middle" fontSize={18} className={cn("font-mono font-bold", STATUS_FILL[s.id])}>
             {s.label}
           </text>
-          <Box x={s.x} y={232} w={170} h={56} label="Problem" tone="red" size={28} />
+          <Box x={s.x} y={232} w={170} h={56} label="Problem" tone="red" size={22} />
           <Apple x={s.x - 34} y={244} s={1.15} />
         </Hotspot>
       ))}
@@ -260,23 +270,23 @@ function Drawing({ selected, onSelect }: { selected: PartId | null; onSelect: (i
         <Arrow ids={W} d="M325 222C305 200 282 200 266 214" dashed />
         <Arrow ids={W} d="M605 222C585 200 562 200 546 214" dashed />
         {[296, 576].map((x) => (
-          <text key={x} x={x} y={196} textAnchor="middle" fontSize={16} textDecoration="underline dotted" className="fill-ink-muted font-serif">
+          <text key={x} x={x} y={196} textAnchor="middle" fontSize={16} textDecoration="underline dotted" className="fill-ink-muted font-serif dark:fill-ink">
             Disputes
           </text>
         ))}
       </Hotspot>
 
       {/* Candidate solutions, by people and AI, up into the step from open to under revision. */}
-      <Illustration name="researcher-pointing" x={150} y={334} w={68} h={106} />
+      <Illustration name="researcher-pointing" x={150} y={334} w={68} h={106} ids={W} />
       <Hotspot id="candidate" {...hot}>
-        <Box x={225} y={362} w={200} h={70} label={["Candidate", "solution"]} tone="gold" size={24} />
+        <Box x={225} y={362} w={200} h={70} label={["Candidate", "solution"]} tone="gold" size={20} />
       </Hotspot>
-      <Illustration name="robot-apple" x={434} y={352} w={72} h={87} />
+      <Illustration name="robot-apple" x={434} y={352} w={72} h={87} ids={W} />
       <Feed ids={W} d="M296 360V330" />
 
       {/* The report, out of the solved problems. */}
       <Hotspot id="report" {...hot}>
-        <Box x={635} y={368} w={170} h={50} label="Report" tone="gold" size={27} />
+        <Box x={635} y={368} w={170} h={50} label="Report" tone="gold" size={21} />
       </Hotspot>
       <Feed ids={W} d="M720 328V362" />
     </svg>
@@ -301,16 +311,16 @@ function TallDrawing({ selected, onSelect }: { selected: PartId | null; onSelect
       <rect x={96} y={100} width={208} height={566} rx={16} className="fill-brand-tint stroke-brand" strokeWidth={3} strokeDasharray="10 9" opacity={0.9} />
 
       <Hotspot id="curation" {...hot}>
-        <Box x={125} y={14} w={150} h={46} label="Curation" tone="gold" size={23} />
+        <Box x={125} y={14} w={150} h={46} label="Curation" tone="gold" size={20} />
       </Hotspot>
       <Feed ids={T} d="M200 62V95" />
 
       {states.map((s) => (
         <Hotspot key={s.id} id={s.id} {...hot}>
-          <text x={212} y={s.y - 14} textAnchor="middle" fontSize={19} className={cn("font-mono font-bold", STATUS_FILL[s.id])}>
+          <text x={212} y={s.y - 14} textAnchor="middle" fontSize={17} className={cn("font-mono font-bold", STATUS_FILL[s.id])}>
             {s.label}
           </text>
-          <Box x={134} y={s.y} w={156} h={50} label="Problem" tone="red" size={24} />
+          <Box x={134} y={s.y} w={156} h={50} label="Problem" tone="red" size={20} />
           <Apple x={103} y={s.y + 12} s={1.05} />
         </Hotspot>
       ))}
@@ -323,32 +333,32 @@ function TallDrawing({ selected, onSelect }: { selected: PartId | null; onSelect
         <rect x={124} y={408} width={74} height={112} className="fill-transparent" />
         <Arrow ids={T} d="M238 300C262 278 262 240 240 216" dashed />
         <Arrow ids={T} d="M186 500C162 478 162 440 184 416" dashed />
-        <text x={278} y={262} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 278 262)" className="fill-ink-muted font-serif">
+        <text x={278} y={262} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 278 262)" className="fill-ink-muted font-serif dark:fill-ink">
           Disputes
         </text>
-        <text x={146} y={462} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 146 462)" className="fill-ink-muted font-serif">
+        <text x={146} y={462} textAnchor="middle" fontSize={14} textDecoration="underline dotted" transform="rotate(-90 146 462)" className="fill-ink-muted font-serif dark:fill-ink">
           Disputes
         </text>
       </Hotspot>
 
       {/* Candidate solutions come in from the left, between open and under revision. */}
-      <Illustration name="researcher-pointing" x={0} y={160} w={44} h={68} />
-      <Illustration name="robot-apple" x={44} y={176} w={44} h={53} />
+      <Illustration name="researcher-pointing" x={0} y={160} w={44} h={68} ids={T} />
+      <Illustration name="robot-apple" x={44} y={176} w={44} h={53} ids={T} />
       <Hotspot id="candidate" {...hot}>
         <Box x={4} y={236} w={84} h={56} label={["Candidate", "solution"]} tone="gold" size={14} />
       </Hotspot>
       <Feed ids={T} d="M90 264H202" />
 
       {/* Digestion comes in from the right, between under revision and solved. */}
-      <Illustration name="researcher-tablet" x={312} y={360} w={42} h={79} />
-      <Illustration name="robot-magnifier" x={352} y={378} w={44} h={61} />
+      <Illustration name="researcher-tablet" x={312} y={360} w={42} h={79} ids={T} />
+      <Illustration name="robot-magnifier" x={352} y={378} w={44} h={61} ids={T} />
       <Hotspot id="digestion" {...hot}>
         <Box x={312} y={446} w={84} h={44} label="Digestion" tone="gold" size={15} />
       </Hotspot>
       <Feed ids={T} d="M310 468H222" />
 
       <Hotspot id="report" {...hot}>
-        <Box x={137} y={706} w={150} h={46} label="Report" tone="gold" size={23} />
+        <Box x={137} y={706} w={150} h={46} label="Report" tone="gold" size={20} />
       </Hotspot>
       <Feed ids={T} d="M212 668V700" />
     </svg>

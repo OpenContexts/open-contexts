@@ -20,7 +20,7 @@ import { siteOrigin } from "@/lib/cite";
 import { AI_USE_LABELS, RESULT_KINDS_BY_STATUS } from "@/lib/constants";
 import { type Resolved, type ResolvedVersion, resolvePermalink } from "@/lib/data/permalinks";
 import { type Problem, problemLabel } from "@/lib/data/problems";
-import { formatDate } from "@/lib/format";
+import { aoeDate, formatDate, formatDateTime } from "@/lib/format";
 import { SITE } from "@/lib/site";
 
 // Permanent links (lib/permalinks.ts): a problem's ("12") and a blog post's ("blog.7") redirect to their
@@ -83,7 +83,7 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
     title: c.title,
     credit: c.credit,
     aiUse: c.aiUse,
-    accepted: c.accepted.toISOString().slice(0, 10),
+    accepted: aoeDate(c.accepted),
     problem: { number: problem.number, title: problem.title },
   };
   // Whether the problem's status still takes verifications and challenges, and the result can still be checked.
@@ -109,7 +109,7 @@ function ContributionView({ contribution: c, problem }: Extract<Resolved, { type
             </h1>
             <p className="mt-2 flex flex-wrap items-baseline gap-x-3 text-ink-muted">
               <span>
-                by {c.credit} · accepted {formatDate(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
+                by {c.credit} · submitted {formatDateTime(c.submitted)} · accepted {formatDateTime(c.accepted)} · {AI_USE_LABELS[c.aiUse]}
               </span>
               <ResponseCounts responses={c.responses} />
             </p>

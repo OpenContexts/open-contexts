@@ -132,6 +132,7 @@ export function HistoryField({ initial, number, error }: { initial: HistoryEntry
           <input type="hidden" name="historyStatus[]" value={row.status ?? ""} />
           <input type="hidden" name="historyVersion[]" value={row.version ?? ""} />
           <input type="hidden" name="historyContribution[]" value={row.contribution ?? ""} />
+          <input type="hidden" name="historyAt[]" value={row.at ?? ""} />
         </span>
       ))}
       <div className="mb-3 flex flex-wrap items-start gap-2 rounded-md bg-zinc-50 p-2 ring-1 ring-zinc-200 ring-inset">

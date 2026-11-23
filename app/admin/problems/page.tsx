@@ -19,7 +19,7 @@ export default function ProblemsAdminPage({ searchParams }: PageProps<"/admin/pr
     <>
       <PageHeader
         title="Problems"
-        description="Every problem on the site: the published list and the additional problems (accepted proposals, kept for a later cycle). Edit a problem directly, publish additional problems, or add and remove problems."
+        description="Every problem on the site: the published list and the additional problems (accepted proposals, kept apart from the list). Edit a problem directly, publish additional problems, or add and remove problems."
         actions={
           <AdminButtonLink href="/admin/problems/new" variant="primary">
             New problem

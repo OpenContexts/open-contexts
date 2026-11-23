@@ -36,11 +36,11 @@ function PostRow({ post: p, comments }: { post: Post; comments: number }) {
   );
 }
 
-/** The newest post, larger and with more of its text, above the others on the blog's page. */
-function FeaturedPost({ post: p, comments }: { post: Post; comments: number }) {
+/** One post, larger and with more of its text: the newest above the others on the blog's page, the chosen one on the home page. */
+function FeaturedPost({ post: p, comments, label }: { post: Post; comments: number; label: string }) {
   return (
     <article className="group relative mb-6 rounded-md border border-rule-strong border-l-4 border-l-gold px-6 py-5 transition-colors hover:bg-surface max-sm:px-4">
-      <p className="font-sans text-xs font-bold tracking-[0.12em] text-gold-dark uppercase">Latest post</p>
+      <p className="font-sans text-xs font-bold tracking-[0.12em] text-gold-dark uppercase">{label}</p>
       <Link href={`/blog/${p.slug}`} className="mt-1.5 block text-[1.45rem]/tight font-bold text-ink group-hover:text-brand after:absolute after:inset-0">
         {p.title}
       </Link>
@@ -56,8 +56,8 @@ function FeaturedPost({ post: p, comments }: { post: Post; comments: number }) {
   );
 }
 
-/** Posts, newest first. `featured`: the newest stands out above the rest. */
-export async function PostList({ posts, empty = "No posts yet.", featured }: { posts: Post[]; empty?: React.ReactNode; featured?: boolean }) {
+/** Posts, newest first. `featured`: the first stands out above the rest, under that label ("Latest post"). */
+export async function PostList({ posts, empty = "No posts yet.", featured }: { posts: Post[]; empty?: React.ReactNode; featured?: string }) {
   if (!posts.length) return <p className="py-4 text-ink-muted">{empty}</p>;
   const counts = await getCommunityCounts();
   const comments = (p: Post) => counts[p.id]?.comments ?? 0;
@@ -65,7 +65,7 @@ export async function PostList({ posts, empty = "No posts yet.", featured }: { p
   const listed = featured ? rest : posts;
   return (
     <>
-      {featured && <FeaturedPost post={first} comments={comments(first)} />}
+      {featured && <FeaturedPost post={first} comments={comments(first)} label={featured} />}
       {listed.length > 0 && (
         <ul className="border-b border-rule">
           {listed.map((p) => (

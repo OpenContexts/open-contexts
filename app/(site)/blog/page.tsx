@@ -34,7 +34,7 @@ export default async function BlogPage() {
       <p className="mx-auto mb-8 max-w-140 text-center text-ink-muted">
         Informal writing on the problems and on generalized contextuality, by the community.
       </p>
-      <PostList posts={posts} featured empty="No posts yet. Be the first to write one." />
+      <PostList posts={posts} featured="Latest post" empty="No posts yet. Be the first to write one." />
 
       {/* The list ends in a rule of its own, so this section does without its top rule. */}
       <Section title="Write a post" intro="Anyone signed in can write one. A moderator reads it before it appears, as with every contribution." className="mt-12 border-t-0 pt-0">

@@ -4,6 +4,7 @@ import "server-only";
 import { desc, eq } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 import { db, isDbConfigured } from "@/lib/db";
+import { aoeDate } from "@/lib/format";
 import { blogPost, type Reference } from "@/lib/db/schema";
 import { withKeys } from "@/lib/references";
 
@@ -20,6 +21,8 @@ export type Post = {
   references: (Reference & { key: string })[];
   /** "YYYY-MM-DD", the day the post was first approved. */
   published: string;
+  /** Chosen by the moderators for the home page. */
+  featured: boolean;
 };
 
 /** Published posts, newest first. */
@@ -31,9 +34,14 @@ export async function getPosts(): Promise<Post[]> {
   const rows = await db.query.blogPost.findMany({ where: eq(blogPost.status, "approved"), orderBy: desc(blogPost.publishedAt) });
   return rows.flatMap((r) =>
     r.slug && r.publishedAt
-      ? [{ id: r.id, slug: r.slug, title: r.title, authors: r.authors, body: r.body, references: withKeys(r.references), published: r.publishedAt.toISOString().slice(0, 10) }]
+      ? [{ id: r.id, slug: r.slug, title: r.title, authors: r.authors, body: r.body, references: withKeys(r.references), published: aoeDate(r.publishedAt), featured: r.featured }]
       : [],
   );
+}
+
+/** The post the home page shows: the one the moderators chose, or while they have chosen none, the newest. */
+export function featuredPost(posts: Post[]): Post | undefined {
+  return posts.find((p) => p.featured) ?? posts[0];
 }
 
 export async function getPost(slug: string): Promise<Post | undefined> {

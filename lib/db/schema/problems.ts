@@ -14,7 +14,8 @@ export type Reference = { key?: string; text: string; url?: string };
  * One entry of a problem's "Progress and history". `version`: the version of the text an edit started;
  * `contribution`: the permanent key ("12.3") of the accepted contribution the entry records.
  */
-export type HistoryEntry = { date: string; kind: HistoryKind; text: string; status?: ProblemStatus; version?: number; contribution?: string };
+/** `at`: when the entry was recorded, as an ISO timestamp, for entries the site records itself; none for those a moderator enters by hand. */
+export type HistoryEntry = { date: string; at?: string; kind: HistoryKind; text: string; status?: ProblemStatus; version?: number; contribution?: string };
 
 export const problem = pgTable("problem", {
   id: uuid("id").primaryKey().defaultRandom(),

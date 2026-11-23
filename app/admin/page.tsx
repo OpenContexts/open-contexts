@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { ActionPill, Card, EmptyState, PageHeader, Pill } from "@/components/admin/ui";
+import { setFeaturedPost } from "@/app/admin/actions";
+import { ActionPill, AdminButton, AdminSelect, Card, EmptyState, PageHeader, Pill } from "@/components/admin/ui";
 import { RefreshCacheButton } from "@/components/admin/refresh-cache";
 import { isAdmin, requireModerator } from "@/lib/auth/session";
 import { LOG_TARGET_NOUNS, SUBMISSION_TYPES, SUBMISSION_TYPE_LABELS } from "@/lib/constants";
+import { getPosts } from "@/lib/data/blog";
 import { getPendingCounts, getRecentActivity, logTargetHref } from "@/lib/data/moderation";
-import { formatRelative } from "@/lib/format";
+import { formatDate, formatRelative } from "@/lib/format";
 
 export default function AdminOverviewPage() {
   return (
@@ -17,7 +19,7 @@ export default function AdminOverviewPage() {
 
 async function Overview() {
   const user = await requireModerator();
-  const [counts, decisions] = await Promise.all([getPendingCounts(), getRecentActivity(8)]);
+  const [counts, decisions, posts] = await Promise.all([getPendingCounts(), getRecentActivity(8), getPosts()]);
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
@@ -70,6 +72,30 @@ async function Overview() {
           <div className="p-5">
             <EmptyState title="No decisions yet" description="Approvals and rejections will be listed here." />
           </div>
+        )}
+      </Card>
+
+      <Card title="Featured blog post">
+        <p className="mb-3 max-w-2xl text-zinc-600">
+          The home page shows one blog post. Choose it here; while none is chosen, it shows the newest.
+        </p>
+        {posts.length ? (
+          // The key resets the select to the saved choice after saving.
+          <form key={posts.find((p) => p.featured)?.id ?? "none"} action={setFeaturedPost} className="flex flex-wrap items-center gap-2">
+            <AdminSelect name="id" defaultValue={posts.find((p) => p.featured)?.id ?? ""} aria-label="Featured blog post" className="h-9 max-w-full min-w-0 flex-1 sm:max-w-lg">
+              <option value="">None: the newest post</option>
+              {posts.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title} ({formatDate(p.published)})
+                </option>
+              ))}
+            </AdminSelect>
+            <AdminButton type="submit" variant="primary">
+              Save
+            </AdminButton>
+          </form>
+        ) : (
+          <p className="text-zinc-500">No posts are published yet.</p>
         )}
       </Card>
 

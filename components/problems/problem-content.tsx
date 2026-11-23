@@ -23,7 +23,8 @@ import { getProblemById, type Problem, statusSince } from "@/lib/data/problems";
 import { cn } from "@/lib/cn";
 import { AI_USE_LABELS } from "@/lib/constants";
 import { SITE } from "@/lib/site";
-import { formatDate, formatNames } from "@/lib/format";
+import { aoeDate, formatDate, formatNames, formatTime } from "@/lib/format";
+import { entryTime } from "@/lib/history-time";
 import { permalinkPath, problemKey } from "@/lib/permalinks";
 
 /** How many entries of the history show before "Show more"; the newest. */
@@ -50,12 +51,18 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
   if (!problem) return null;
 
   const agenda = problem.agenda.map(getAgendaItem).filter((a) => a !== undefined);
-  // Newest first; entries of the same day in reverse order of recording, so the latest is on top.
-  const history = problem.history.map((h, i) => ({ ...h, i })).toSorted((a, b) => b.date.localeCompare(a.date) || b.i - a.i);
   // The versions the entries started, which they link to with who made the change.
   const versions = new Map(versionList.map((v) => [v.version, v]));
   // The accepted contributions the entries record, which they link to with who made them.
   const byKey = new Map(contributions.flatMap((c) => (c.key ? [[c.key, c] as const] : [])));
+  // With its time, if known, and then its day by that time (AoE; older entries were dated in UTC). Newest first;
+  // entries of the same day by time where both have one, else in reverse order of recording, so the latest is on top.
+  const history = problem.history
+    .map((h, i) => {
+      const time = entryTime(h, { version: h.version ? versions.get(h.version) : undefined, contribution: h.contribution ? byKey.get(h.contribution) : undefined });
+      return { ...h, i, time, date: time ? aoeDate(time) : h.date };
+    })
+    .toSorted((a, b) => b.date.localeCompare(a.date) || (a.time && b.time ? b.time.localeCompare(a.time) : 0) || b.i - a.i);
   const contributors = activeContributors(contributorsOf({ problem, contributions, versions: versionList, proposer }));
 
   return (
@@ -127,15 +134,21 @@ export async function ProblemContent({ id, commentBox }: { id: string; commentBo
           {history.map((h, i) => {
             const look = historyLook(h);
             return (
-              // The date in a column of its own beside the timeline; on small screens above the entry, next to its
-              // kind, so that the text has the whole width.
+              // The date, and the time below it, in a column of their own beside the timeline; on small screens above
+              // the entry, next to its kind, so that the text has the whole width.
               <li key={i} className="grid grid-cols-[6.6rem_minmax(0,1fr)] gap-x-5 max-sm:block">
-                <span className="pt-3 text-right text-[0.95rem] text-ink-subtle tabular-nums max-sm:hidden">{formatDate(h.date)}</span>
+                <span className="pt-3 text-right text-[0.95rem] text-ink-subtle tabular-nums max-sm:hidden">
+                  {formatDate(h.date)}
+                  {h.time && <span className="block text-[0.8rem]">{formatTime(h.time)}</span>}
+                </span>
                 {/* A timeline: one line down the entries, with a marker in the colour of each entry's kind. */}
                 <div className="relative border-l-2 border-rule py-3 pl-5 max-sm:ml-1.5 max-sm:py-2.5 max-sm:pl-4 max-sm:text-[0.97rem]">
                   <span aria-hidden className={cn("absolute top-[1.15rem] -left-[7px] size-3 rounded-full ring-3 ring-paper", toneColors[look.tone].bg)} />
                   <KindTag look={look} className="relative -top-px mr-2" />
-                  <span className="mr-2 text-sm text-ink-subtle tabular-nums sm:hidden">{formatDate(h.date)}</span>
+                  <span className="mr-2 text-sm text-ink-subtle tabular-nums sm:hidden">
+                    {formatDate(h.date)}
+                    {h.time && `, ${formatTime(h.time)}`}
+                  </span>
                   <br className="sm:hidden" />
                   <MarkdownInline source={h.text} references={problem.references} />
                   {h.version && versions.has(h.version) && <VersionLine version={versions.get(h.version)!} />}

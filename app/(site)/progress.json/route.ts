@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { siteOrigin } from "@/lib/cite";
+import { aoeDate } from "@/lib/format";
 import { PROBLEM_STATUSES } from "@/lib/constants";
 import { getPublishedProblems, statusSince } from "@/lib/data/problems";
 import { paceFigures, statusTimeline } from "@/lib/data/progress";
@@ -21,7 +22,7 @@ async function progressData() {
   cacheLife("days");
   cacheTag("problems");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = aoeDate();
   const problems = await getPublishedProblems();
   const origin = siteOrigin();
   const timeline = statusTimeline(problems, today);

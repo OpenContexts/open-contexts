@@ -123,7 +123,7 @@ export default function AboutPage() {
         </Disclosure>
       </Section>
 
-      <Section id="cycles" title="The first cycle" intro={<>{SITE.name} I is a case study, assessed publicly after one year.</>}>
+      <Section id="case-study" title="The case study" intro={<>{SITE.name} I runs for one year on a fixed list, and is then assessed publicly.</>}>
         <CycleTimeline name={SITE.name} />
         <p className="mx-auto mt-8 max-w-160 text-center text-[0.95rem] text-ink-muted">
           Problems are admitted on four{" "}
@@ -135,7 +135,7 @@ export default function AboutPage() {
             additional problems
           </Link>
           , with the same features, kept apart so the assessment can report on the main list alone. Objections to a
-          long-term goal are welcome: send them to the moderators for the next cycle.
+          long-term goal are welcome: send them to the moderators, to be weighed at the assessment.
         </p>
         <SubTitle>
           <span id="assessment" className="scroll-mt-6">
@@ -157,7 +157,7 @@ export default function AboutPage() {
         <ModeratorList />
       </Section>
 
-      <Section id="paper" title="Citing">
+      <Section id="paper" title="Citing and companion paper">
         <p className="text-center">
           Companion paper:{" "}
           {SITE.paper.url ? (

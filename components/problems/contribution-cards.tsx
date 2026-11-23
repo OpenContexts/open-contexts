@@ -15,7 +15,7 @@ import { cn } from "@/lib/cn";
 import { AI_USE_LABELS, type ContributionKind } from "@/lib/constants";
 import type { ApprovedContribution } from "@/lib/data/community";
 import { excerpt } from "@/lib/excerpt";
-import { formatDate, plural } from "@/lib/format";
+import { formatDate, formatDateTime, plural } from "@/lib/format";
 import { permalinkPath } from "@/lib/permalinks";
 import { displayUrl } from "@/lib/references";
 import { SITE } from "@/lib/site";
@@ -64,7 +64,9 @@ export function ResultCard({ item: c, references }: { item: ApprovedContribution
         <div className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-2", tone.tint, look.strong ? tone.border : "border-rule")}>
           <KindTag look={look} />
           {c.key && <span className="font-sans text-xs font-bold text-ink-subtle tabular-nums">{SITE.name} {c.key}</span>}
-          <span className="ml-auto text-sm text-ink-subtle">{formatDate(c.createdAt)}</span>
+          <time dateTime={c.createdAt.toISOString()} className="ml-auto text-sm text-ink-subtle tabular-nums">
+            {formatDateTime(c.createdAt)}
+          </time>
         </div>
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 px-4 pt-3 pb-3.5">
           <div className="relative z-10 flex flex-col items-center gap-2 self-start">
@@ -192,7 +194,7 @@ export function ReferenceLine({ item: c, references }: { item: ApprovedContribut
         </p>
         <details className="group mt-0.5 text-sm">
           <summary className="cursor-pointer list-none text-ink-subtle hover:text-ink">
-            Suggested by {c.credit} · {formatDate(c.createdAt)} · <span className="text-brand group-open:hidden">Why it is relevant ▾</span>
+            Suggested by {c.credit} · {formatDateTime(c.createdAt)} · <span className="text-brand group-open:hidden">Why it is relevant ▾</span>
             <span className="hidden text-brand group-open:inline">Hide ▴</span>
           </summary>
           <MarkdownContent source={c.summary} untrusted references={references} className="mt-1.5 text-[0.95rem] text-ink-muted [&>*:last-child]:mb-0" />

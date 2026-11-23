@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -20,7 +20,7 @@ import {
   runBatch,
   versionQuery,
 } from "@/lib/data/permalinks";
-import { nextProblemNumber, slugify, today, uniqueSlug, withdrawalEntry } from "@/lib/data/problem-writes";
+import { nextProblemNumber, slugify, stamp, today, uniqueSlug, withdrawalEntry } from "@/lib/data/problem-writes";
 import { readProblem } from "@/lib/data/problems";
 import { db } from "@/lib/db";
 import { activityLog, blogPost, comment, contribution, type HistoryEntry, problem, problemProposal, problemRevision, type Reference } from "@/lib/db/schema";
@@ -94,7 +94,7 @@ async function applyRevision(id: string) {
           title: text.title,
           statement: text.statement,
           body: text.body,
-          history: [...current.history, { date: today(), kind: "edit", text: revision.changeSummary, version }],
+          history: [...current.history, { ...stamp(), kind: "edit", text: revision.changeSummary, version }],
           version: sql`${problem.version} + 1`,
           updatedAt: new Date(),
         })
@@ -156,7 +156,7 @@ async function recordInHistory(contributionId: string, key: string, change: "add
   const revises = claims && current.status === "open";
   const label = CONTRIBUTION_KIND_LABELS[kind].replace(/^./, (c) => c.toUpperCase());
   const text = `${label}: ${row.title}`;
-  const entry: HistoryEntry = revises ? { date: today(), kind: "status", status: "under-revision", text, contribution: key } : { date: today(), kind: CONTRIBUTION_HISTORY_KINDS[kind]!, text, contribution: key };
+  const entry: HistoryEntry = revises ? { ...stamp(), kind: "status", status: "under-revision", text, contribution: key } : { ...stamp(), kind: CONTRIBUTION_HISTORY_KINDS[kind]!, text, contribution: key };
   // A result withdrawn by its authors and accepted again keeps the record of the withdrawal.
   const withdrawal = row.withdrawnAt ? [withdrawalEntry({ ...row, kind, withdrawnAt: row.withdrawnAt }, key)] : [];
   // A change of status starts no version of the text, but counts as a change, so an editor open meanwhile cannot save over it.
@@ -188,7 +188,7 @@ async function publishProposal(id: string, problemId: string) {
     posed: today(),
     statement: proposal.statement,
     body: proposal.body,
-    history: [{ date: today(), kind: "posed", text: "Proposed by the community and accepted by the moderators." }],
+    history: [{ ...stamp(), kind: "posed", text: "Proposed by the community and accepted by the moderators." }],
     references: withKeys(proposal.references),
     createdById: proposal.authorId,
   } satisfies typeof problem.$inferInsert;
@@ -290,6 +290,21 @@ export async function decide(formData: FormData) {
 /** From the queue list: decide without leaving the list, which re-renders without the item. */
 export async function quickDecide(formData: FormData) {
   await applyDecision(formData);
+  refresh();
+}
+
+/**
+ * Chooses the blog post the home page shows (`id`), or none (empty), so the home page shows the newest. Only a
+ * published post can be chosen; choosing one unsets the one before.
+ */
+export async function setFeaturedPost(formData: FormData) {
+  await requireModerator();
+  const id = z.union([z.uuid(), z.literal("")]).parse(formData.get("id") ?? "");
+  await runBatch([
+    db.update(blogPost).set({ featured: false }).where(eq(blogPost.featured, true)),
+    ...(id ? [db.update(blogPost).set({ featured: true }).where(and(eq(blogPost.id, id), eq(blogPost.status, "approved")))] : []),
+  ]);
+  updateTag(BLOG_TAG);
   refresh();
 }
 

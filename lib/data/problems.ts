@@ -8,6 +8,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import type { AgendaId } from "@/lib/agenda";
 import type { ProblemStatus } from "@/lib/constants";
 import { db, isDbConfigured } from "@/lib/db";
+import { aoeDate } from "@/lib/format";
 import { type HistoryEntry, problem, type Reference } from "@/lib/db/schema";
 import { withKeys } from "@/lib/references";
 
@@ -41,7 +42,8 @@ export type Problem = {
   version: number;
 };
 
-const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+/** The day of a moment, AoE, like every date the site shows. */
+const isoDate = (d: Date) => aoeDate(d);
 
 function toProblem(r: typeof problem.$inferSelect): Problem {
   return {

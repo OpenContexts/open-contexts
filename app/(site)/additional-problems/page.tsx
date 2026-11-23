@@ -27,14 +27,14 @@ export default async function AdditionalProblemsPage() {
       </p>
       <PageTitle className="mt-5">Additional problems</PageTitle>
       <p className="mb-8 text-justify hyphens-auto max-sm:text-left">
-        For the first cycle, {SITE.name} I, the{" "}
+        For the case study, {SITE.name} I, the{" "}
         <Link href="/problems" className="text-brand hover:underline">
           list of problems
         </Link>{" "}
         is fixed in advance. The problems below have been proposed and accepted by the moderators since, and are kept
-        for consideration in the next cycle; the moderators may also admit some of them to the list earlier (see{" "}
-        <Link href="/about#cycles" className="text-brand hover:underline">
-          the first cycle
+        for consideration after it; the moderators may also admit some of them to the list earlier (see{" "}
+        <Link href="/about#case-study" className="text-brand hover:underline">
+          the case study
         </Link>
         ). They are open for comments and contributions like any other problem.
       </p>

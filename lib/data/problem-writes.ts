@@ -4,9 +4,16 @@ import "server-only";
 import { max, ne } from "drizzle-orm";
 import { CONTRIBUTION_KIND_LABELS, type ContributionKind, PROBLEM_STATUS_LABELS, type ProblemStatus } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { aoeDate } from "@/lib/format";
 import { type HistoryEntry, permalink, problem, problemVersion } from "@/lib/db/schema";
 
-export const today = () => new Date().toISOString().slice(0, 10);
+/** Today, AoE (lib/format.ts), like every date the site shows. */
+export const today = () => aoeDate();
+
+/** The date and time of a history entry recorded now, or at `when`. */
+export function stamp(when = new Date()): Pick<HistoryEntry, "date" | "at"> {
+  return { date: aoeDate(when), at: when.toISOString() };
+}
 
 /** "The Strong CP Problem!" → "the-strong-cp-problem" */
 export function slugify(title: string): string {
@@ -48,10 +55,10 @@ export async function nextProblemNumber(): Promise<number> {
  * text the change started, if it started one, which the entry links to.
  */
 export function changeEntries({ summary, from, to, version }: { summary?: string; from: ProblemStatus; to: ProblemStatus; version?: number }): HistoryEntry[] {
-  const date = today();
+  const now = stamp();
   const started = version && { version };
-  if (from !== to) return [{ date, kind: "status", text: summary || `Status changed to ${PROBLEM_STATUS_LABELS[to]}.`, status: to, ...started }];
-  return summary ? [{ date, kind: "edit", text: summary, ...started }] : [];
+  if (from !== to) return [{ ...now, kind: "status", text: summary || `Status changed to ${PROBLEM_STATUS_LABELS[to]}.`, status: to, ...started }];
+  return summary ? [{ ...now, kind: "edit", text: summary, ...started }] : [];
 }
 
 /**
@@ -60,5 +67,5 @@ export function changeEntries({ summary, from, to, version }: { summary?: string
  */
 export function withdrawalEntry(row: { kind: ContributionKind; title: string; withdrawnAt: Date }, key: string): HistoryEntry {
   const label = CONTRIBUTION_KIND_LABELS[row.kind].replace(/^./, (c) => c.toUpperCase());
-  return { date: row.withdrawnAt.toISOString().slice(0, 10), kind: "note", text: `${label} withdrawn by its authors: ${row.title}`, contribution: key };
+  return { ...stamp(row.withdrawnAt), kind: "note", text: `${label} withdrawn by its authors: ${row.title}`, contribution: key };
 }

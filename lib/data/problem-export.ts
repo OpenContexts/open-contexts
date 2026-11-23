@@ -20,7 +20,7 @@ import { contributorsOf, getProposer, roleText } from "@/lib/data/contributors";
 import { getProblem, type Reference, statusSince } from "@/lib/data/problems";
 import { getVersions } from "@/lib/data/permalinks";
 import { permalinkPath, problemKey, versionKey } from "@/lib/permalinks";
-import { formatDate, formatNames } from "@/lib/format";
+import { aoeDate, formatDate, formatNames } from "@/lib/format";
 import { citesToText } from "@/lib/references";
 import { SITE } from "@/lib/site";
 
@@ -58,6 +58,8 @@ export type ProblemExport = {
      */
     history: {
       date: string;
+      /** When the site recorded the entry (ISO, UTC); null for entries entered by hand and for older ones. */
+      at: string | null;
       kind: HistoryKind;
       status: ProblemStatus | null;
       text: string;
@@ -99,7 +101,7 @@ export type ProblemExport = {
 
 type ExportComment = { date: string; author: string; body: string; replies: Omit<ExportComment, "replies">[] };
 
-const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+const isoDate = (d: Date) => aoeDate(d);
 
 /** Cached like the problem page: until the problem or what users added to it changes. */
 export async function getProblemExport(slug: string): Promise<ProblemExport | undefined> {
@@ -156,6 +158,7 @@ export async function getProblemExport(slug: string): Promise<ProblemExport | un
           const c = h.contribution ? byKey.get(h.contribution) : undefined;
           return {
             date: h.date,
+            at: h.at ?? null,
             kind: h.kind,
             status: h.status ?? null,
             text: h.text,

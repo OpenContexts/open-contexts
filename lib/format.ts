@@ -1,12 +1,37 @@
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** "2000-05-24" → "24 May 2000", "1998-09" → "Sep 1998", "1967" → "1967". Also accepts a Date. */
+/**
+ * The site keeps time Anywhere on Earth (AoE, UTC−12), as conference deadlines do: a day has begun everywhere once
+ * it has begun there, and the pages, rendered once for everyone, read the same anywhere. The moment as an ISO string
+ * in AoE, "2026-11-22T19:09:00.000" without a zone.
+ */
+function aoe(value: string | Date): string {
+  const t = value instanceof Date ? value.getTime() : Date.parse(value);
+  return new Date(t - 12 * 3_600_000).toISOString().slice(0, 23);
+}
+
+/** The day of a moment, AoE: "2026-11-22". */
+export function aoeDate(value: string | Date = new Date()): string {
+  return aoe(value).slice(0, 10);
+}
+
+/** "2000-05-24" → "24 May 2000", "1998-09" → "Sep 1998", "1967" → "1967". A Date counts by its day AoE. */
 export function formatDate(value: string | Date): string {
-  const iso = value instanceof Date ? value.toISOString().slice(0, 10) : value;
+  const iso = value instanceof Date ? aoeDate(value) : value;
   const [y, m, d] = iso.split("-");
   if (!m) return y;
   const month = MONTHS[Number(m) - 1];
   return d ? `${Number(d)} ${month} ${y}` : `${month} ${y}`;
+}
+
+/** The time of day AoE, "07:05 AoE", from a Date or an ISO timestamp with its zone. */
+export function formatTime(value: string | Date): string {
+  return `${aoe(value).slice(11, 16)} AoE`;
+}
+
+/** "24 May 2000, 07:05 AoE", from a Date or an ISO timestamp with its zone. */
+export function formatDateTime(value: string | Date): string {
+  return `${formatDate(aoeDate(value))}, ${formatTime(value)}`;
 }
 
 /** "Ada", "Ada and Bob", "Ada, Bob and Cy". */

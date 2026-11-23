@@ -18,6 +18,8 @@ const historyRows = {
   "historyVersion[]": z.array(z.string()).default([]),
   /** The contribution an entry records, by its key, kept as it is: set when the contribution is accepted. */
   "historyContribution[]": z.array(z.string()).default([]),
+  /** When the site recorded an entry, kept as it is, unless the entry's date is changed. */
+  "historyAt[]": z.array(z.string()).default([]),
 };
 
 export const problemSchema = z
@@ -57,7 +59,7 @@ export const problemSchema = z
       .optional()
       .transform((v) => v === "on"),
   })
-  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "historyVersion[]": versions, "historyContribution[]": contributions, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
+  .transform(({ "historyDate[]": dates, "historyKind[]": kinds, "historyText[]": texts, "historyStatus[]": statuses, "historyVersion[]": versions, "historyContribution[]": contributions, "historyAt[]": times, "referenceText[]": refTexts, "referenceUrl[]": refUrls, "referenceKey[]": refKeys, ...rest }, ctx) => {
     const history: HistoryEntry[] = [];
     dates.forEach((date, i) => {
       const kind = kinds[i] as HistoryKind;
@@ -65,6 +67,7 @@ export const problemSchema = z
       const status = statuses[i] as ProblemStatus | "";
       const version = Number(versions[i]);
       const contribution = contributions[i] ?? "";
+      const at = times[i] ?? "";
       const problem = !PARTIAL_DATE.test(date)
         ? "needs a date like 2019, 2019-07 or 2019-07-04"
         : !HISTORY_KINDS.includes(kind)
@@ -76,6 +79,7 @@ export const problemSchema = z
       else
         history.push({
           date,
+          ...(at.slice(0, 10) === date && !Number.isNaN(Date.parse(at)) && { at }),
           kind,
           text: entryText,
           ...(status && PROBLEM_STATUSES.includes(status) && { status }),
