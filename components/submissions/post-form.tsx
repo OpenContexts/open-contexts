@@ -27,7 +27,7 @@ export function PostForm({ defaultAuthors }: { defaultAuthors: string }) {
           <Input id="authors" name="authors" defaultValue={valueOf(state, "authors", defaultAuthors)} required />
         </Field>
         <Field label="Text" htmlFor="body" error={errorOf(state, "body")} hint="Markdown with LaTeX math. Use ## for section headings, and \cite{key} for the references below.">
-          <MarkdownEditor id="body" name="body" rows={18} defaultValue={valueOf(state, "body")} invalid={!!errorOf(state, "body")} />
+          <MarkdownEditor id="body" name="body" rows={18} images defaultValue={valueOf(state, "body")} invalid={!!errorOf(state, "body")} />
         </Field>
         <ReferencesField refs={refs} error={errorOf(state, "references")} />
 

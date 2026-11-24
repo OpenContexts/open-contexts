@@ -7,6 +7,7 @@ import { checkBotId } from "botid/server";
 import { revalidateTag } from "next/cache";
 import { MODERATOR_ROLES, type Role } from "@/lib/constants";
 import { MODERATORS_TAG } from "@/lib/data/moderators";
+import { sweepUploads } from "@/lib/data/uploads";
 import { db, schema } from "@/lib/db";
 import { sendEmail } from "@/lib/email/send";
 import ResetPassword from "@/emails/reset-password";
@@ -58,6 +59,8 @@ export const auth = betterAuth({
       delete: {
         after: async (u) => {
           if (isListedModerator(u)) moderatorsChanged();
+          // The account's contributions went with it, and so may their images.
+          await sweepUploads();
         },
       },
     },

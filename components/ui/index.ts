@@ -13,7 +13,7 @@ export { ExpandableList } from "./expandable-list";
 export { Field } from "./field";
 export { FramedBox } from "./framed-box";
 export { PageTitle, PartTitle, SectionTitle } from "./heading";
-export { CheckIcon, CommentIcon, CopyIcon, DownloadIcon, Spinner } from "./icons";
+export { CheckIcon, CommentIcon, CopyIcon, DownloadIcon, ImageIcon, LinkIcon, Spinner } from "./icons";
 export { Input, Select, Textarea } from "./input";
 export { RecentItems } from "./recent-items";
 export { SegmentLink, Segmented } from "./segmented";

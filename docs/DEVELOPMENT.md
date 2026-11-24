@@ -15,6 +15,7 @@ see [PLAN.md](PLAN.md).
 | Email    | react-email templates (`emails/`), sent with nodemailer over SMTP; printed to the terminal in development without SMTP |
 | Content  | Markdown + YAML frontmatter, rendered with react-markdown + KaTeX |
 | Validation | zod |
+| Images   | Vercel Blob, compressed in the browser before uploading (see Notes) |
 
 ## Quick start
 
@@ -223,6 +224,14 @@ is cached per post with `communityTag(postId)`.
   both and lists them as `<link rel="alternate">`. `/progress.json` serves the progress page's figures.
 - **Reference contributions** with a link are also cited on the problem: approving one appends its text and link to the
   problem's references (unless the same text or link is already there); reopening it removes the entry again.
+- **Images**: the Image button of the editors (`components/markdown/image-upload.tsx`) scales and compresses
+  the image in the browser (`compress-image.ts`: WebP, or JPEG in Safari; at most 2000 px, about 150 kB, the
+  limits in `lib/images.ts`), so the upload stays far below the 1 MB limit of server actions.
+  `lib/actions/uploads.ts` checks the file's format by its first bytes, limits uploads to 40 a day per person
+  (moderators: no limit), stores it in Vercel Blob as `images/<id>.webp` and records it in the `upload` table.
+  The text then holds `![description](url)`. Nothing records which text uses which image: `sweepUploads`
+  (`lib/data/uploads.ts`) searches all stored texts for image addresses in one query and deletes the files none
+  uses. Comments are not searched, and have no Image button.
 - **Transactions**: the Neon HTTP driver has no interactive transactions. Use `db.batch([...])` for atomic
   multi-statement writes, as the moderation action does.
 - **Schema changes**: edit `lib/db/schema/*`, run `pnpm db:generate`, review the SQL in `drizzle/`, then run

@@ -105,10 +105,10 @@ export function ProblemForm({ initial, id, number, version, nextNumber }: { init
                 <AdminInput id="title" name="title" defaultValue={value("title")} required className="w-full" />
               </AdminField>
               <AdminField label="Statement" htmlFor="statement" error={error("statement")} hint="The precise question, shown in the red box.">
-                <MarkdownField id="statement" name="statement" defaultValue={value("statement")} rows={5} invalid={!!error("statement")} />
+                <MarkdownField id="statement" name="statement" defaultValue={value("statement")} rows={5} images invalid={!!error("statement")} />
               </AdminField>
               <AdminField label="Text" htmlFor="body" error={error("body")} hint="Use ## headings for the sections Background, Relevance and Significance.">
-                <MarkdownField id="body" name="body" defaultValue={value("body")} rows={18} invalid={!!error("body")} />
+                <MarkdownField id="body" name="body" defaultValue={value("body")} rows={18} images invalid={!!error("body")} />
               </AdminField>
             </div>
           </Card>

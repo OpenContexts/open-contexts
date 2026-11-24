@@ -49,11 +49,11 @@ export function EditForm({
           </Field>
         ) : (
           <Field label="Statement (the boxed problem)" htmlFor="statement" error={errorOf(state, "statement")}>
-            <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement", problem.statement.trim())} invalid={!!errorOf(state, "statement")} />
+            <MarkdownEditor id="statement" name="statement" rows={6} images defaultValue={valueOf(state, "statement", problem.statement.trim())} invalid={!!errorOf(state, "statement")} />
           </Field>
         )}
         <Field label="Background, relevance and significance" htmlFor="body" error={errorOf(state, "body")} hint="Use “## Heading” to start a section.">
-          <MarkdownEditor id="body" name="body" rows={18} defaultValue={valueOf(state, "body", problem.body.trim())} invalid={!!errorOf(state, "body")} />
+          <MarkdownEditor id="body" name="body" rows={18} images defaultValue={valueOf(state, "body", problem.body.trim())} invalid={!!errorOf(state, "body")} />
         </Field>
 
         <h2 className="mt-7 font-sans text-sm font-bold">Credit</h2>

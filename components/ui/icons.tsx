@@ -48,6 +48,27 @@ export function CommentIcon({ className }: { className?: string }) {
   );
 }
 
+/** A framed picture of a hill under a sun: an image. */
+export function ImageIcon({ className }: { className?: string }) {
+  return (
+    <Line className={className}>
+      <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
+      <circle cx="5.75" cy="6.25" r="1.25" />
+      <path d="m2.5 12 3.5-3.5 2.5 2.5 2-2 3 3" />
+    </Line>
+  );
+}
+
+/** Two links of a chain: a link. */
+export function LinkIcon({ className }: { className?: string }) {
+  return (
+    <Line className={className}>
+      <path d="M6.75 9.25a2.75 2.75 0 0 0 3.9 0l2.1-2.1a2.75 2.75 0 0 0-3.9-3.9l-.85.85" />
+      <path d="M9.25 6.75a2.75 2.75 0 0 0-3.9 0l-2.1 2.1a2.75 2.75 0 0 0 3.9 3.9l.85-.85" />
+    </Line>
+  );
+}
+
 export function CheckIcon({ className }: { className?: string }) {
   return (
     <Line className={className}>

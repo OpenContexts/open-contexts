@@ -3,15 +3,31 @@
 import { useRef, useState } from "react";
 import { AdminTextarea } from "@/components/admin/ui";
 import { CiteAutocomplete, useCitations } from "@/components/markdown/cite-autocomplete";
+import { ImageButton } from "@/components/markdown/image-upload";
+import { LinkButton } from "@/components/markdown/link-button";
 import { MarkdownContent } from "@/components/markdown/markdown";
 import { MarkdownHelp } from "@/components/markdown/markdown-help";
 import { cn } from "@/lib/cn";
 
 /**
  * A markdown textarea with a preview in the site's typography. Uncontrolled, so form resets work.
- * Inside a CitationsProvider, typing \cite{ offers the references to cite.
+ * Inside a CitationsProvider, typing \cite{ offers the references to cite. `images`: offers to upload images into the text.
  */
-export function MarkdownField({ id, name, defaultValue, rows, invalid }: { id: string; name: string; defaultValue: string; rows: number; invalid?: boolean }) {
+export function MarkdownField({
+  id,
+  name,
+  defaultValue,
+  rows,
+  invalid,
+  images,
+}: {
+  id: string;
+  name: string;
+  defaultValue: string;
+  rows: number;
+  invalid?: boolean;
+  images?: boolean;
+}) {
   const [preview, setPreview] = useState(false);
   const [value, setValue] = useState(defaultValue);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -31,6 +47,8 @@ export function MarkdownField({ id, name, defaultValue, rows, invalid }: { id: s
       <div className="mb-1.5 flex items-center gap-1">
         {tab(false, "Write")}
         {tab(true, "Preview")}
+        <LinkButton textarea={textarea} admin />
+        {images && <ImageButton textarea={textarea} admin />}
         <MarkdownHelp cite={!!references} admin />
       </div>
       <div className="relative">

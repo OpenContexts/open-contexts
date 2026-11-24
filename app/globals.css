@@ -184,6 +184,7 @@
     & blockquote { @apply mb-4 border-l-2 border-rule-strong pl-4 text-ink-muted; }
     & code { @apply font-mono text-[0.92em]; }
     & pre { @apply mb-4 overflow-auto rounded-sm border border-rule bg-surface px-4 py-3 text-sm; }
+    & img { @apply mx-auto my-2 block h-auto max-h-[40rem] w-auto max-w-full; }
     & h2 { @apply mt-12 mb-4 text-center text-base; }
     & h3 { @apply mt-6 mb-2 text-center text-base font-medium italic; }
     & > :last-child { @apply mb-0; }

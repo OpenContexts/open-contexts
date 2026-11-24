@@ -49,7 +49,7 @@ export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
           error={errorOf(state, "statement")}
           hint="The precise question, as it will appear in the red box. Fix the objects and assumptions, and make clear what counts as a solution."
         >
-          <MarkdownEditor id="statement" name="statement" rows={6} defaultValue={valueOf(state, "statement")} invalid={!!errorOf(state, "statement")} />
+          <MarkdownEditor id="statement" name="statement" rows={6} images defaultValue={valueOf(state, "statement")} invalid={!!errorOf(state, "statement")} />
         </Field>
         <ChoiceCards
           type="checkbox"
@@ -63,7 +63,7 @@ export function ProposalForm({ defaultPosedBy }: { defaultPosedBy: string }) {
 
         <h2 className="mt-7 font-sans text-sm font-bold">2. Context</h2>
         <Field label="Background, relevance, significance and feasibility" htmlFor="body" error={errorOf(state, "body")} hint="Please keep the recommended structure.">
-          <MarkdownEditor id="body" name="body" rows={16} defaultValue={valueOf(state, "body", BODY_TEMPLATE)} invalid={!!errorOf(state, "body")} />
+          <MarkdownEditor id="body" name="body" rows={16} images defaultValue={valueOf(state, "body", BODY_TEMPLATE)} invalid={!!errorOf(state, "body")} />
         </Field>
         <ReferencesField refs={refs} error={errorOf(state, "references")} />
         <Field label="Tags (optional)" htmlFor="tags" error={errorOf(state, "tags")} hint="Comma-separated keywords.">

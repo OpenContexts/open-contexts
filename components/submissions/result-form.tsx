@@ -125,7 +125,7 @@ export function ResultForm({
       </Field>
       <Field label="Summary" htmlFor="summary" error={errorOf(state, "summary")} hint="What is shown, how, and under which assumptions. Readers should understand the claim without opening the link.">
         <CitationsProvider references={references}>
-          <MarkdownEditor id="summary" name="summary" rows={10} maxLength={RESULT_SUMMARY_MAX} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
+          <MarkdownEditor id="summary" name="summary" rows={10} images maxLength={RESULT_SUMMARY_MAX} defaultValue={valueOf(state, "summary")} invalid={!!errorOf(state, "summary")} />
         </CitationsProvider>
       </Field>
       <Field label="Link to the full work (optional)" htmlFor="url" error={errorOf(state, "url")} hint="arXiv, journal, code repository, notebook…">

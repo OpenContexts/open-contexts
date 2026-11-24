@@ -1,7 +1,7 @@
 # Setup: database and sign-in providers
 
-How to set up the three external services OpenContexts depends on: the **Neon** Postgres database (required),
-and **GitHub** and **ORCID** sign-in (both optional). Email (SMTP) is covered in the
+How to set up the external services OpenContexts depends on: the **Neon** Postgres database (required),
+**GitHub** and **ORCID** sign-in, and **Vercel Blob** for images (all optional). Email (SMTP) is covered in the
 [development notes](DEVELOPMENT.md#quick-start).
 
 All settings live in environment variables. Locally they go in `.env.local`. Copy `.env.example` to start;
@@ -12,8 +12,9 @@ host's settings, for instance Vercel → Project → Settings → Environment Va
 - [2. Neon database](#2-neon-database)
 - [3. GitHub sign-in](#3-github-sign-in)
 - [4. ORCID sign-in](#4-orcid-sign-in)
-- [5. Going to production](#5-going-to-production)
-- [6. Troubleshooting](#6-troubleshooting)
+- [5. Image uploads (Vercel Blob)](#5-image-uploads-vercel-blob)
+- [6. Going to production](#6-going-to-production)
+- [7. Troubleshooting](#7-troubleshooting)
 
 ## 1. Better Auth basics
 
@@ -256,27 +257,51 @@ Restart `pnpm dev`. **Continue with ORCID** then appears on `/sign-in` and `/sig
   `<orcid-id>@orcid.invalid`. Admins can also change roles in the dashboard under **Users**, which shows each
   account's sign-in methods.
 
-## 5. Going to production
+## 5. Image uploads (Vercel Blob)
+
+The editors for blog posts, results, suggested edits, proposed problems and the dashboard's problem editor
+(statement and text) have an **Image** button. The image is scaled down and compressed in the browser (at most
+2000 px, about 150 kB), checked by the server and stored in a [Vercel Blob](https://vercel.com/docs/vercel-blob)
+store. Comments cannot have images.
+
+1. In the Vercel dashboard: **Storage → Create → Blob**, with **public** access. Connect it to the project
+   (all environments, or separate stores for production and preview). Vercel then sets
+   `BLOB_READ_WRITE_TOKEN` for the deployments.
+2. For local development, copy the token from the store's page (**.env.local** tab) into `.env.local`.
+   Uploads from your machine then go to that store; use a separate store for development if you prefer.
+3. Run `pnpm db:migrate`: the `upload` table keeps track of the files.
+
+Without the token, the button is still there, but uploading says that image uploads are not set up.
+
+**Cleanup.** An image stays as long as a stored text uses it: a problem (or one of its earlier versions, while
+the problem exists), a suggested edit, a proposed problem, a contribution or a blog post, pending and rejected
+ones included. After uploads and after the problem editor saves or deletes a problem (and when an account is
+deleted), `sweepUploads` in `lib/data/uploads.ts` deletes the files no text uses any more: at once if a saved
+text used them before, otherwise 24 hours after the upload (an image uploaded for a text that was never sent).
+
+## 6. Going to production
 
 1. **Database**: use the production branch's pooled connection string as `DATABASE_URL`, and run
    `pnpm db:migrate` against it before the first deploy and after every new migration.
 2. **Better Auth**: a new `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL="https://your-domain.org"`.
 3. **GitHub**: the production OAuth app's credentials (callback on your domain).
 4. **ORCID**: the production client's credentials, without `ORCID_SANDBOX`.
-5. **Email**: real SMTP settings. Without `SMTP_HOST`, production refuses to send email (so email sign-ups
+5. **Images**: a Blob store connected to the project (section 5).
+6. **Email**: real SMTP settings. Without `SMTP_HOST`, production refuses to send email (so email sign-ups
    fail with an error) rather than dropping confirmation links silently.
-6. Sign up, make yourself admin with `pnpm db:make-admin` (with `DATABASE_URL` pointing at production), and
+7. Sign up, make yourself admin with `pnpm db:make-admin` (with `DATABASE_URL` pointing at production), and
    check each sign-in method once.
 
 If the domain changes later, update `BETTER_AUTH_URL` and the callback URLs at GitHub and ORCID together.
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause and fix |
 | ------- | ------------- |
 | `DATABASE_URL is not set` | `.env.local` is missing or has no `DATABASE_URL`. It must be in the project root. Restart `pnpm dev` after creating it. |
 | The problem list is empty | Normal for a new database: create problems under `/admin/problems`. |
 | `relation "…" does not exist` | The migrations haven't run on this database or branch: `pnpm db:migrate`. |
+| "Image uploads are not set up on this site yet." | `BLOB_READ_WRITE_TOKEN` is missing. Connect a Blob store (section 5) and redeploy, or add the token to `.env.local` and restart `pnpm dev`. |
 | The GitHub or ORCID button doesn't appear | One of the two credentials is missing or empty. Check the variable names, then restart `pnpm dev`. |
 | GitHub: "The redirect_uri is not associated with this application" | The app's **Authorization callback URL** differs from `<BETTER_AUTH_URL>/api/auth/callback/github`. Check `localhost` against `127.0.0.1`, the port, `http` against `https`, and trailing slashes. |
 | ORCID: "invalid redirect URI" or "redirect_uri_mismatch" | Register `<BETTER_AUTH_URL>/api/auth/callback/orcid` exactly under the client's redirect URIs. Check that `ORCID_SANDBOX` matches where the client was registered: sandbox credentials don't work on `orcid.org`, and the other way round. |

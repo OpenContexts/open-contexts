@@ -10,7 +10,7 @@ const EXAMPLE_REFERENCES = [
 type Row = { type: string; get: ReactNode };
 
 /** What is typed, and what it looks like: rendered by the site's own renderer, so the two cannot drift apart. */
-const rendered = (source: string) => <MarkdownContent source={source} references={EXAMPLE_REFERENCES} className="[&_ol]:mb-0 [&_ul]:mb-0 [&>*]:mb-0" />;
+const rendered = (source: string) => <MarkdownContent source={source} references={EXAMPLE_REFERENCES} className="[&_ol]:mb-0 [&_ul]:mb-0 *:mb-0" />;
 
 const SECTIONS: { title: string; rows: Row[]; cite?: boolean }[] = [
   {
@@ -28,6 +28,7 @@ const SECTIONS: { title: string; rows: Row[]; cite?: boolean }[] = [
       { type: "## Background", get: "A section heading; on a problem page, sections are lettered A., B., …" },
       { type: "### Special cases", get: "A subsection heading" },
       { type: "> A quotation", get: rendered("> A quotation") },
+      { type: "![A description](https://…)", get: "Add an image by a link" },
     ],
   },
   {

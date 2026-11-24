@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { Textarea } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { CiteAutocomplete, useCitations } from "./cite-autocomplete";
+import { ImageButton } from "./image-upload";
+import { LinkButton } from "./link-button";
 import { MarkdownContent } from "./markdown";
 import { MarkdownHelp } from "./markdown-help";
 
@@ -12,7 +14,7 @@ import { MarkdownHelp } from "./markdown-help";
  * site will. The textarea stays uncontrolled, so React's form reset and `defaultValue` work.
  * Inside a CitationsProvider, typing \cite{ offers the references to cite. `maxLength`: the most characters the
  * server accepts, counted in the corner as one types. Not enforced here, so a pasted text that is too long is not cut
- * off unseen; the counter turns red instead.
+ * off unseen; the counter turns red instead. `images`: offers to upload images into the text (not for comments).
  */
 export function MarkdownEditor({
   id,
@@ -24,6 +26,7 @@ export function MarkdownEditor({
   describedBy,
   autoFocus,
   maxLength,
+  images,
 }: {
   id: string;
   name: string;
@@ -34,6 +37,7 @@ export function MarkdownEditor({
   describedBy?: string;
   autoFocus?: boolean;
   maxLength?: number;
+  images?: boolean;
 }) {
   const [mode, setMode] = useState<"write" | "preview">("write");
   const [value, setValue] = useState(defaultValue);
@@ -60,6 +64,8 @@ export function MarkdownEditor({
       <div className="mb-1.5 flex items-center gap-3">
         {tab("write", "Write")}
         {tab("preview", "Preview")}
+        <LinkButton textarea={textarea} />
+        {images && <ImageButton textarea={textarea} />}
         <MarkdownHelp cite={!!references} />
       </div>
       <div className="relative">

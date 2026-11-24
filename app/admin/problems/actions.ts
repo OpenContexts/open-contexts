@@ -15,6 +15,7 @@ import { type HistoryEntry, activityLog, problem, type Reference } from "@/lib/d
 import { amendLatestVersion, nextVersion, PERMALINKS_TAG, problemPermalink, runBatch, versionChanged, versionQuery } from "@/lib/data/permalinks";
 import { changeEntries, nextProblemNumber, slugify, uniqueSlug } from "@/lib/data/problem-writes";
 import { type Problem, problemLabel, readProblem } from "@/lib/data/problems";
+import { sweepUploadsLater } from "@/lib/data/uploads";
 import { type ProblemInput, problemSchema } from "@/lib/validation/problems";
 
 /** The stored columns that the editor changes. Number and URL name are set once, when a problem is created. */
@@ -107,6 +108,9 @@ export async function updateProblem(_: FormState, formData: FormData): Promise<F
     db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "update", moderatorId: moderator.id, note: input.changeSummary || problemLabel(current) }),
   ]);
   updateTag("problems");
+  // An image taken out by a minor change (which amends the version) or out of the note is no longer used anywhere.
+  // One taken out by a new version stays: the earlier version still shows it.
+  sweepUploadsLater();
   redirect(`/admin/problems/${id}?saved=updated`);
 }
 
@@ -141,6 +145,8 @@ export async function deleteProblem(id: string): Promise<{ error?: string }> {
     db.insert(activityLog).values({ targetType: "problem", targetId: id, action: "delete", moderatorId: moderator.id, note: problemLabel(current) }),
   ]);
   updateTag("problems");
+  // Its images, unless another text uses them too.
+  sweepUploadsLater();
   redirect("/admin/problems?deleted=1");
 }
 

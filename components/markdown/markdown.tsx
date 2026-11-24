@@ -65,6 +65,12 @@ function components(untrusted: boolean, cites?: Map<string, Citable>): Component
         {children}
       </a>
     ),
+    // Uploaded through the editors (lib/images.ts) or linked from elsewhere. Their sizes are not known, which
+    // next/image needs. Loaded as they scroll into view, and without telling another site which page shows them.
+    img: ({ src, alt }) => (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+    ),
     ...(cites && {
       cite: ({ node }) => {
         const keys = String(node?.properties?.dataKeys ?? "").split(",").filter(Boolean);
@@ -103,11 +109,14 @@ export function MarkdownContent({
   );
 }
 
-/** For one-line text (titles, history entries): renders math and emphasis without a wrapping <p>. */
+/**
+ * For one-line text (titles, history entries, the first lines in lists): renders math and emphasis without a
+ * wrapping <p>. Images are left out: they have no place in a line.
+ */
 export function MarkdownInline({ source, references }: { source: string; references?: CitableReferences }) {
   const { remarkPlugins, components } = setup(false, references);
   return (
-    <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={{ ...components, p: ({ children }) => <>{children}</> }}>
+    <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={{ ...components, p: ({ children }) => <>{children}</>, img: () => null }}>
       {source}
     </Markdown>
   );
