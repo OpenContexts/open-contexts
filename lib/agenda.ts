@@ -31,7 +31,7 @@ The long-term goal is to determine whether the criterion captures the appropriat
   {
     id: "framework",
     numeral: "II",
-    title: "Towards a better framework",
+    title: "Generalizing the ontological-models framework",
     summary:
       "Develop a formalism that generalizes ontological models while cleanly separating causal (ontic) from inferential (epistemic) elements, in which a suitably adapted notion of noncontextuality can be formulated.",
     description: String.raw`Generalized noncontextuality was conceived as an extension of Kochen–Specker noncontextuality, not as a route to reconceptualizing classicality. It has also served as a formal tool for a more foundational project: systematizing and rethinking epistemic interpretations of quantum theory. That project is tied to a milestone of the field, Spekkens's toy theory, since extended to a full generalized probabilistic theory, studied within diagrammatic frameworks, and connected to the Clifford subtheory of quantum theory. Because generalized noncontextuality is provably incompatible with quantum theory, an epistemic interpretation that keeps Leibniz's principle of the identity of indiscernibles has to move beyond the standard ontological-models framework, within which the no-go theorem leaves no room for it.
