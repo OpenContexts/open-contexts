@@ -1,4 +1,4 @@
-# OpenContexts
+# OpenContexts Websbite
 
 **Open problems in generalized contextuality.** A community-curated, moderated database of precisely stated
 open problems in the subfield of quantum foundations that asks when experimental statistics resist a
