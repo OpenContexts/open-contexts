@@ -4,7 +4,7 @@ export const SITE = {
   subtitle: "Open problems in generalized contextuality",
   description:
     "A community-curated, moderated database of precisely stated open problems in generalized contextuality, with recorded progress, discussion and fine-grained credit.",
-  repo: "",
+  repo: "https://github.com/OpenContexts/open-contexts",
   contact: "rafael.wagner@uni-ulm.de",
   /** The companion paper that sets out the methodology. Pages link to it once `url` is set. */
   paper: {
